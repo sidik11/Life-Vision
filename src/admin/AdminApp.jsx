@@ -202,12 +202,22 @@ export default function AdminApp() {
   useEffect(() => {
     let unsubscribe = null;
     try {
-      const q = query(collection(db, "training_applications"), orderBy("createdAt", "desc"));
+      const q = collection(db, "training_applications");
       unsubscribe = onSnapshot(q, (snapshot) => {
-        const firestoreApps = snapshot.docs.map(docSnap => ({
-          ...docSnap.data(),
-          firestoreId: docSnap.id
-        }));
+        const firestoreApps = snapshot.docs.map(docSnap => {
+          const data = docSnap.data();
+          return {
+            ...data,
+            firestoreId: docSnap.id
+          };
+        });
+
+        // Sort applications by timestamp / application date descending
+        firestoreApps.sort((a, b) => {
+          const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.applicationDate || 0).getTime();
+          const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.applicationDate || 0).getTime();
+          return timeB - timeA;
+        });
 
         setApplications(prev => {
           // Merge Firestore apps with any local-only submissions

@@ -200,6 +200,32 @@ Regards,
 Life Vision Society
 Skill Development & Training Team`;
 
+      if (recipientEmail) {
+        // Send direct confirmation email to student via FormSubmit
+        fetch(`https://formsubmit.co/ajax/${recipientEmail}`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            name: studentName,
+            email: recipientEmail,
+            _subject: `Training Registration Confirmation – Life Vision Society`,
+            _autorespond: emailBody,
+            _captcha: 'false',
+            _template: 'table',
+            "Student Name": studentName,
+            "Registration ID": regId,
+            "Course": courseName,
+            "Training Centre": trainingCentre,
+            "Registration Date": regDate,
+            "Confirmation Message": emailBody
+          })
+        }).catch(err => console.warn("Student email dispatch notice:", err));
+      }
+
+      // Also send notification copy to admin support
       fetch('https://formsubmit.co/ajax/support.lifevision@gmail.com', {
         method: 'POST',
         headers: { 
@@ -207,7 +233,9 @@ Skill Development & Training Team`;
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          _subject: `Training Registration Confirmation – Life Vision Society`,
+          name: studentName,
+          email: recipientEmail || 'support.lifevision@gmail.com',
+          _subject: `[New Student Application] ${studentName} - ${regId}`,
           _replyto: recipientEmail || 'support.lifevision@gmail.com',
           _autorespond: emailBody,
           _captcha: 'false',
@@ -222,7 +250,7 @@ Skill Development & Training Team`;
           "District": formData.district || 'N/A',
           "Full Confirmation Message": emailBody
         })
-      }).catch(emailErr => console.warn("Confirmation email dispatch notice:", emailErr));
+      }).catch(emailErr => console.warn("Admin notification email notice:", emailErr));
 
       setTimeout(() => {
         setSubmitted(false);

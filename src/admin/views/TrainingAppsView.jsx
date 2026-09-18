@@ -21,13 +21,21 @@ export default function TrainingAppsView({
   const itemsPerPage = 5;
 
   const filteredApps = useMemo(() => {
-    return applications.filter(app => {
-      const matchesSearch = app.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            app.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            app.mobile.includes(searchTerm);
-      const matchesCourse = courseFilter === 'All' || app.course.includes(courseFilter);
-      const matchesStatus = statusFilter === 'All' || app.status === statusFilter;
-      const matchesLocation = locationFilter === 'All' || app.location.toLowerCase().includes(locationFilter.toLowerCase());
+    return (applications || []).filter(app => {
+      if (!app) return false;
+      const appName = String(app.name || app.fullName || '').toLowerCase();
+      const appId = String(app.id || '').toLowerCase();
+      const appMobile = String(app.mobile || app.phone || '');
+      const appCourse = String(app.course || '');
+      const appStatus = String(app.status || 'New');
+      const appLocation = String(app.location || app.address || app.district || '');
+
+      const matchesSearch = appName.includes(searchTerm.toLowerCase()) ||
+                            appId.includes(searchTerm.toLowerCase()) ||
+                            appMobile.includes(searchTerm);
+      const matchesCourse = courseFilter === 'All' || appCourse.includes(courseFilter);
+      const matchesStatus = statusFilter === 'All' || appStatus === statusFilter;
+      const matchesLocation = locationFilter === 'All' || appLocation.toLowerCase().includes(locationFilter.toLowerCase());
 
       return matchesSearch && matchesCourse && matchesStatus && matchesLocation;
     }).sort((a, b) => {
