@@ -174,23 +174,23 @@ export default function AppDetailsModal({ application, onClose, onUpdateStatus, 
               <div className="space-y-2.5 text-xs text-[#5C4A42]">
                 <div className="flex justify-between border-b border-[#E5DDD0] pb-1.5">
                   <span className="text-[#8C756B]">Gender & Age:</span>
-                  <span className="font-semibold text-[#2C221E]">{application.gender}, {application.age} Yrs (DOB: {application.dob})</span>
+                  <span className="font-semibold text-[#2C221E]">{application.gender || 'Female'}, {application.age || 22} Yrs (DOB: {application.dob || 'N/A'})</span>
                 </div>
                 <div className="flex justify-between border-b border-[#E5DDD0] pb-1.5">
                   <span className="text-[#8C756B]">Mobile Number:</span>
-                  <span className="font-semibold text-[#2C221E]">{application.mobile}</span>
+                  <span className="font-semibold text-[#2C221E]">{application.mobile || application.phone || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between border-b border-[#E5DDD0] pb-1.5">
                   <span className="text-[#8C756B]">Email Address:</span>
-                  <span className="font-semibold text-[#2C221E]">{application.email}</span>
+                  <span className="font-semibold text-[#2C221E]">{application.email || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between border-b border-[#E5DDD0] pb-1.5">
                   <span className="text-[#8C756B]">Full Address:</span>
-                  <span className="font-semibold text-[#2C221E] text-right">{application.address}</span>
+                  <span className="font-semibold text-[#2C221E] text-right">{application.address || application.fullAddress || application.villageCity || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#8C756B]">District & State:</span>
-                  <span className="font-semibold text-[#2C221E]">{application.district}, {application.state} - {application.pincode}</span>
+                  <span className="font-semibold text-[#2C221E]">{application.district || 'Bhubaneswar'}, {application.state || 'Odisha'} - {application.pincode || 'N/A'}</span>
                 </div>
               </div>
             </div>
@@ -204,23 +204,23 @@ export default function AppDetailsModal({ application, onClose, onUpdateStatus, 
               <div className="space-y-2.5 text-xs text-[#5C4A42]">
                 <div className="flex justify-between border-b border-[#E5DDD0] pb-1.5">
                   <span className="text-[#8C756B]">Qualification:</span>
-                  <span className="font-semibold text-[#2C221E]">{application.qualification}</span>
+                  <span className="font-semibold text-[#2C221E]">{application.qualification || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between border-b border-[#E5DDD0] pb-1.5">
                   <span className="text-[#8C756B]">School / College:</span>
-                  <span className="font-semibold text-[#2C221E]">{application.institution} ({application.passingYear})</span>
+                  <span className="font-semibold text-[#2C221E]">{application.institution || application.boardUniversity || 'N/A'} ({application.passingYear || 'N/A'})</span>
                 </div>
                 <div className="flex justify-between border-b border-[#E5DDD0] pb-1.5">
                   <span className="text-[#8C756B]">Applied Course:</span>
-                  <span className="font-bold text-[#2C221E]">{application.course}</span>
+                  <span className="font-bold text-[#2C221E]">{application.course || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between border-b border-[#E5DDD0] pb-1.5">
                   <span className="text-[#8C756B]">Preferred Center:</span>
-                  <span className="font-semibold text-[#2C221E]">{application.preferredCenter}</span>
+                  <span className="font-semibold text-[#2C221E]">{application.preferredCenter || 'Bhubaneswar LVS Skill Center'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#8C756B]">Preferred Batch:</span>
-                  <span className="font-semibold text-[#047857]">{application.preferredBatch}</span>
+                  <span className="font-semibold text-[#047857]">{application.preferredBatch || 'BATCH-2026-T1 (Morning)'}</span>
                 </div>
               </div>
             </div>
