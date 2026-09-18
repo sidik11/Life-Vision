@@ -215,7 +215,7 @@ Skill Development & Training Team`;
         }).catch(err => console.warn("Student email dispatch notice:", err));
       }
 
-      // Also send admin notification copy to support
+      // Send admin notification with ONLY the 6 specified fields
       fetch('https://formsubmit.co/ajax/support.lifevision@gmail.com', {
         method: 'POST',
         headers: { 
@@ -225,18 +225,16 @@ Skill Development & Training Team`;
         body: JSON.stringify({
           name: studentName,
           email: recipientEmail || 'support.lifevision@gmail.com',
-          _subject: `[New Student Application] ${studentName} - ${regId}`,
+          _subject: `[New Training Application] ${studentName} (${regId})`,
           _replyto: recipientEmail || 'support.lifevision@gmail.com',
-          _autorespond: emailBody,
           _captcha: 'false',
           _template: 'table',
           "Student Name": studentName,
           "Registration ID": regId,
           "Course": courseName,
           "Registration Date": regDate,
-          "Mobile": formData.phone,
-          "Email": recipientEmail || 'N/A',
-          "District": formData.district || 'N/A'
+          "Mobile": formData.phone || 'N/A',
+          "Email": recipientEmail || 'N/A'
         })
       }).catch(emailErr => console.warn("Admin notification email notice:", emailErr));
 
