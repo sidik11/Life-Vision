@@ -173,13 +173,10 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
       const studentName = formData.fullName || 'Student';
       const courseName = formData.course || selectedCourse || 'Tailoring & Stitching Training';
       const regId = newApp.id;
-      const trainingCentre = newApp.preferredCenter || 'Bhubaneswar LVS Skill Center';
       const regDate = newApp.applicationDate;
       const recipientEmail = formData.email ? formData.email.trim() : '';
 
-      const emailBody = `Subject: Training Registration Confirmation – Life Vision Society
-
-Dear ${studentName},
+      const emailBody = `Dear ${studentName},
 
 Thank you for registering for the ${courseName} training program with Life Vision Society.
 
@@ -189,7 +186,6 @@ Registration Details:
 • Name: ${studentName}
 • Course: ${courseName}
 • Registration ID: ${regId}
-• Centre: ${trainingCentre}
 • Registration Date: ${regDate}
 
 Our team will review your registration and contact you regarding the next steps, training schedule, and admission confirmation.
@@ -201,7 +197,7 @@ Life Vision Society
 Skill Development & Training Team`;
 
       if (recipientEmail) {
-        // Send direct confirmation email to student via FormSubmit
+        // Send direct clean confirmation email to student via FormSubmit
         fetch(`https://formsubmit.co/ajax/${recipientEmail}`, {
           method: 'POST',
           headers: { 
@@ -214,18 +210,12 @@ Skill Development & Training Team`;
             _subject: `Training Registration Confirmation – Life Vision Society`,
             _autorespond: emailBody,
             _captcha: 'false',
-            _template: 'table',
-            "Student Name": studentName,
-            "Registration ID": regId,
-            "Course": courseName,
-            "Training Centre": trainingCentre,
-            "Registration Date": regDate,
-            "Confirmation Message": emailBody
+            message: emailBody
           })
         }).catch(err => console.warn("Student email dispatch notice:", err));
       }
 
-      // Also send notification copy to admin support
+      // Also send admin notification copy to support
       fetch('https://formsubmit.co/ajax/support.lifevision@gmail.com', {
         method: 'POST',
         headers: { 
@@ -243,12 +233,10 @@ Skill Development & Training Team`;
           "Student Name": studentName,
           "Registration ID": regId,
           "Course": courseName,
-          "Training Centre": trainingCentre,
           "Registration Date": regDate,
           "Mobile": formData.phone,
           "Email": recipientEmail || 'N/A',
-          "District": formData.district || 'N/A',
-          "Full Confirmation Message": emailBody
+          "District": formData.district || 'N/A'
         })
       }).catch(emailErr => console.warn("Admin notification email notice:", emailErr));
 
