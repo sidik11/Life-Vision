@@ -95,17 +95,22 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
 
     try {
+      // Small photo thumbnail or default placeholder (strip heavy base64 data to prevent browser quota crashes)
+      const safePhoto = (documents.photo && documents.photo.length < 150000) 
+        ? documents.photo 
+        : '/hero_training.png';
+
       const newApp = {
         id: `APP-LVS-2026-${Math.floor(100 + Math.random() * 900)}`,
         name: formData.fullName || 'New Applicant',
         fullName: formData.fullName || 'New Applicant',
-        photo: documents.photo || '/hero_training.png',
+        photo: safePhoto,
         gender: formData.gender || 'Female',
         age: 22,
         dob: formData.dob || '2004-01-01',
@@ -132,39 +137,37 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
           educationCertificate: documents.marksheetName ? `Uploaded (${documents.marksheetName})` : 'Marksheet (Optional)',
           other: 'Registration Form'
         },
-        uploadedPhoto: documents.photo,
-        uploadedAadhaar: documents.aadhaar,
-        uploadedMarksheet: documents.marksheet,
+        uploadedPhotoName: documents.photoName || null,
+        uploadedAadhaarName: documents.aadhaarName || null,
+        uploadedMarksheetName: documents.marksheetName || null,
         createdAt: new Date().toISOString()
       };
 
-      // 1. Save to Firebase Firestore Database
-      try {
-        const firestorePayload = {
-          ...newApp,
-          createdAt: serverTimestamp(),
-          uploadedPhoto: documents.photo && documents.photo.length < 500000 ? documents.photo : null,
-          uploadedAadhaar: documents.aadhaar && documents.aadhaar.length < 500000 ? documents.aadhaar : null,
-          uploadedMarksheet: documents.marksheet && documents.marksheet.length < 500000 ? documents.marksheet : null,
-        };
-        const docRef = await addDoc(collection(db, "training_applications"), firestorePayload);
-        newApp.firestoreId = docRef.id;
-      } catch (firebaseErr) {
-        console.warn("Firebase training application save notice:", firebaseErr);
-      }
-
-      // 2. Save locally for fallback/Admin Panel
+      // 1. Save locally for instant UI feedback
       try {
         const existing = JSON.parse(localStorage.getItem('lvs_submitted_applications') || '[]');
         localStorage.setItem('lvs_submitted_applications', JSON.stringify([newApp, ...existing]));
         window.dispatchEvent(new CustomEvent('lvs_new_application', { detail: newApp }));
       } catch (err) {
-        console.error(err);
+        console.warn("Local storage save notice:", err);
       }
 
       setLastRegId(newApp.id);
       setSubmitted(true);
       setIsSubmitting(false);
+
+      // 2. Save to Firebase Firestore Database in Background (Non-blocking)
+      const firestorePayload = {
+        ...newApp,
+        createdAt: serverTimestamp()
+      };
+      addDoc(collection(db, "training_applications"), firestorePayload)
+        .then((docRef) => {
+          newApp.firestoreId = docRef.id;
+        })
+        .catch((firebaseErr) => {
+          console.warn("Firebase training application save notice:", firebaseErr);
+        });
 
       // 3. Automated Confirmation Email Dispatch (Non-blocking)
       const studentName = formData.fullName || 'Student';
