@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, Send, GraduationCap, User, Phone, Mail, BookOpen, MapPin, Calendar, Briefcase, Award, Share2, FileCheck, Upload } from 'lucide-react';
+import { db, collection, addDoc, serverTimestamp } from '../firebase';
 
 export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
   const [submitted, setSubmitted] = useState(false);
+  const [lastRegId, setLastRegId] = useState('');
   const [formData, setFormData] = useState({
     // Course
     course: selectedCourse || 'Tailoring & Stitching Training',
@@ -92,7 +94,7 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newApp = {
@@ -128,9 +130,26 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
       },
       uploadedPhoto: documents.photo,
       uploadedAadhaar: documents.aadhaar,
-      uploadedMarksheet: documents.marksheet
+      uploadedMarksheet: documents.marksheet,
+      createdAt: serverTimestamp()
     };
 
+    // 1. Save to Firebase Firestore Database
+    try {
+      const firestorePayload = {
+        ...newApp,
+        // Ensure base64 fields don't exceed Firestore limits
+        uploadedPhoto: documents.photo && documents.photo.length < 500000 ? documents.photo : null,
+        uploadedAadhaar: documents.aadhaar && documents.aadhaar.length < 500000 ? documents.aadhaar : null,
+        uploadedMarksheet: documents.marksheet && documents.marksheet.length < 500000 ? documents.marksheet : null,
+      };
+      const docRef = await addDoc(collection(db, "training_applications"), firestorePayload);
+      newApp.firestoreId = docRef.id;
+    } catch (firebaseErr) {
+      console.warn("Firebase training application save notice:", firebaseErr);
+    }
+
+    // 2. Save locally for fallback/Admin Panel
     try {
       const existing = JSON.parse(localStorage.getItem('lvs_submitted_applications') || '[]');
       localStorage.setItem('lvs_submitted_applications', JSON.stringify([newApp, ...existing]));
@@ -139,11 +158,73 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
       console.error(err);
     }
 
+    setLastRegId(newApp.id);
+
+    // 3. Send Automated Confirmation Email to Student & Admin Alert
+    try {
+      const studentName = formData.fullName || 'Student';
+      const courseName = formData.course || selectedCourse || 'Tailoring & Stitching Training';
+      const regId = newApp.id;
+      const trainingCentre = newApp.preferredCenter || 'Bhubaneswar LVS Skill Center';
+      const regDate = newApp.applicationDate;
+      const recipientEmail = formData.email ? formData.email.trim() : '';
+
+      const emailBody = `Subject: Training Registration Confirmation – Life Vision Society
+
+Dear ${studentName},
+
+Thank you for registering for the ${courseName} training program with Life Vision Society.
+
+Your registration has been successfully received.
+
+Registration Details:
+• Name: ${studentName}
+• Course: ${courseName}
+• Registration ID: ${regId}
+• Centre: ${trainingCentre}
+• Registration Date: ${regDate}
+
+Our team will review your registration and contact you regarding the next steps, training schedule, and admission confirmation.
+
+Please keep your Registration ID for future reference.
+
+Regards,
+Life Vision Society
+Skill Development & Training Team`;
+
+      // Dispatch confirmation email notice
+      await fetch('https://formsubmit.co/ajax/support.lifevision@gmail.com', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          _subject: `Training Registration Confirmation – Life Vision Society`,
+          _replyto: recipientEmail || 'support.lifevision@gmail.com',
+          _autorespond: emailBody,
+          _captcha: 'false',
+          _template: 'table',
+          "Student Name": studentName,
+          "Registration ID": regId,
+          "Course": courseName,
+          "Training Centre": trainingCentre,
+          "Registration Date": regDate,
+          "Mobile": formData.phone,
+          "Email": recipientEmail || 'N/A',
+          "District": formData.district || 'N/A',
+          "Full Confirmation Message": emailBody
+        })
+      });
+    } catch (emailErr) {
+      console.warn("Confirmation email dispatch notice:", emailErr);
+    }
+
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
       onClose();
-    }, 3000);
+    }, 4000);
   };
 
   return (
@@ -160,13 +241,18 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
         </button>
 
         {submitted ? (
-          <div className="text-center py-12 space-y-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-[#006B3C] text-white rounded-full flex items-center justify-center mx-auto shadow-lg">
-              <CheckCircle2 className="w-12 h-12" />
+          <div className="text-center py-10 space-y-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-[#006B3C] text-white rounded-full flex items-center justify-center mx-auto shadow-lg">
+              <CheckCircle2 className="w-10 h-10" />
             </div>
-            <h3 className="text-2xl sm:text-3xl font-serif font-black text-[#6B1D52]">Application Submitted Successfully!</h3>
-            <p className="text-sm text-slate-600 font-medium max-w-md mx-auto leading-relaxed">
-              Thank you for applying for skill development training at Life Vision Society. Our team will review your application and contact you shortly.
+            <h3 className="text-2xl sm:text-3xl font-serif font-black text-[#6B1D52]">Registration Successful!</h3>
+            {lastRegId && (
+              <div className="inline-block bg-pink-50 border border-pink-200 rounded-xl px-4 py-2 text-xs font-mono font-bold text-[#C52B75] shadow-xs">
+                Registration ID: {lastRegId}
+              </div>
+            )}
+            <p className="text-xs sm:text-sm text-slate-600 font-medium max-w-md mx-auto leading-relaxed">
+              Thank you for registering with Life Vision Society. A confirmation email has been sent to your registered email address with your Registration ID and details.
             </p>
           </div>
         ) : (

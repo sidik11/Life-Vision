@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { db, collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc } from '../firebase';
 import AdminLogin from './components/AdminLogin';
 import Sidebar from './components/Sidebar';
 import TopHeader from './components/TopHeader';
@@ -197,11 +198,48 @@ export default function AdminApp() {
   // Selected Item Modal State
   const [selectedApp, setSelectedApp] = useState(null);
 
+  // Real-time synchronization with Firebase Firestore for Training Applications
+  useEffect(() => {
+    let unsubscribe = null;
+    try {
+      const q = query(collection(db, "training_applications"), orderBy("createdAt", "desc"));
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        const firestoreApps = snapshot.docs.map(docSnap => ({
+          ...docSnap.data(),
+          firestoreId: docSnap.id
+        }));
+
+        setApplications(prev => {
+          // Merge Firestore apps with any local-only submissions
+          const firestoreIds = new Set(firestoreApps.map(a => a.id));
+          const localOnly = prev.filter(a => !firestoreIds.has(a.id));
+          const merged = [...firestoreApps, ...localOnly];
+          try {
+            localStorage.setItem('lvs_submitted_applications', JSON.stringify(merged));
+          } catch (e) {}
+          return merged;
+        });
+      }, (error) => {
+        console.warn("Firestore training_applications sync notice:", error);
+      });
+    } catch (err) {
+      console.warn("Firestore setup notice:", err);
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
   // Sync state with window event listeners for real public submissions
   useEffect(() => {
     const handleNewApplication = (e) => {
       if (e.detail) {
-        setApplications((prev) => [e.detail, ...prev]);
+        setApplications((prev) => {
+          const exists = prev.some(a => a.id === e.detail.id);
+          if (exists) return prev;
+          return [e.detail, ...prev];
+        });
         showToast(`New Application received from ${e.detail.fullName || e.detail.name || 'Student'}!`, 'info');
       }
     };
@@ -408,8 +446,9 @@ export default function AdminApp() {
             applications={applications} 
             setApplications={setApplications}
             onViewApp={(app) => setSelectedApp(app)}
-            onDeleteApp={(appId) => {
+            onDeleteApp={async (appId) => {
               if (window.confirm('Are you sure you want to delete this candidate application?')) {
+                const targetApp = applications.find(a => a.id === appId);
                 setApplications(prev => {
                   const updated = prev.filter(a => a.id !== appId);
                   try {
@@ -417,6 +456,14 @@ export default function AdminApp() {
                   } catch (e) {}
                   return updated;
                 });
+                
+                if (targetApp && targetApp.firestoreId) {
+                  try {
+                    await deleteDoc(doc(db, "training_applications", targetApp.firestoreId));
+                  } catch (err) {
+                    console.warn("Firebase document delete notice:", err);
+                  }
+                }
                 showToast('Candidate application deleted.', 'info');
               }
             }}
@@ -527,18 +574,33 @@ export default function AdminApp() {
         <AppDetailsModal 
           application={selectedApp} 
           onClose={() => setSelectedApp(null)} 
-          onUpdateStatus={(id, newStatus, step) => {
+          onUpdateStatus={async (id, newStatus, step) => {
+            const targetApp = applications.find(a => a.id === id);
+            const updatedStep = step !== undefined ? step : (targetApp?.timelineStep || 1);
+
             setApplications(prev => {
-              const updated = prev.map(a => a.id === id ? { ...a, status: newStatus, timelineStep: step !== undefined ? step : a.timelineStep } : a);
+              const updated = prev.map(a => a.id === id ? { ...a, status: newStatus, timelineStep: updatedStep } : a);
               try {
                 localStorage.setItem('lvs_submitted_applications', JSON.stringify(updated));
               } catch (e) {}
               return updated;
             });
-            setSelectedApp(prev => prev && prev.id === id ? { ...prev, status: newStatus, timelineStep: step !== undefined ? step : prev.timelineStep } : null);
+            setSelectedApp(prev => prev && prev.id === id ? { ...prev, status: newStatus, timelineStep: updatedStep } : null);
+
+            if (targetApp && targetApp.firestoreId) {
+              try {
+                await updateDoc(doc(db, "training_applications", targetApp.firestoreId), {
+                  status: newStatus,
+                  timelineStep: updatedStep
+                });
+              } catch (err) {
+                console.warn("Firebase document update notice:", err);
+              }
+            }
             showToast(`Application ${id} status updated to ${newStatus}`);
           }}
-          onAssignBatch={(id, batch) => {
+          onAssignBatch={async (id, batch) => {
+            const targetApp = applications.find(a => a.id === id);
             setApplications(prev => {
               const updated = prev.map(a => a.id === id ? { ...a, preferredBatch: batch, timelineStep: 5 } : a);
               try {
@@ -547,6 +609,17 @@ export default function AdminApp() {
               return updated;
             });
             setSelectedApp(prev => prev && prev.id === id ? { ...prev, preferredBatch: batch, timelineStep: 5 } : null);
+
+            if (targetApp && targetApp.firestoreId) {
+              try {
+                await updateDoc(doc(db, "training_applications", targetApp.firestoreId), {
+                  preferredBatch: batch,
+                  timelineStep: 5
+                });
+              } catch (err) {
+                console.warn("Firebase batch update notice:", err);
+              }
+            }
             showToast(`Batch ${batch} assigned to candidate ${id}`);
           }}
         />

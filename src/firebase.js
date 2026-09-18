@@ -1,6 +1,9 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "firebase/firestore";
+import { 
+  getFirestore, collection, addDoc, getDocs, query, orderBy, 
+  serverTimestamp, doc, updateDoc, deleteDoc, onSnapshot 
+} from "firebase/firestore";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "firebase/auth";
 
 // Your web app's Firebase configuration
@@ -33,6 +36,10 @@ export {
   query, 
   orderBy, 
   serverTimestamp,
+  doc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
