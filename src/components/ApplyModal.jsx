@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, Send, GraduationCap, User, Phone, Mail, BookOpen, MapPin, Calendar, Briefcase, Award, Share2, FileCheck, Upload } from 'lucide-react';
+import { X, CheckCircle2, Send, GraduationCap, User, Phone, Mail, BookOpen, MapPin, Calendar, Briefcase, Award, Share2, FileCheck, Upload, Loader2 } from 'lucide-react';
 import { db, collection, addDoc, serverTimestamp } from '../firebase';
 
 export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastRegId, setLastRegId] = useState('');
   const [formData, setFormData] = useState({
     // Course
@@ -96,72 +97,76 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
-    const newApp = {
-      id: `APP-LVS-2026-${Math.floor(100 + Math.random() * 900)}`,
-      name: formData.fullName || 'New Applicant',
-      fullName: formData.fullName || 'New Applicant',
-      photo: documents.photo || '/hero_training.png',
-      gender: formData.gender || 'Female',
-      age: 22,
-      dob: formData.dob || '2004-01-01',
-      mobile: formData.phone || '+91 98000 00000',
-      phone: formData.phone || '+91 98000 00000',
-      email: formData.email || 'applicant@gmail.com',
-      address: formData.fullAddress || formData.villageCity || 'Main Village Road',
-      district: formData.district || 'Bhubaneswar',
-      state: formData.state || 'Odisha',
-      pincode: formData.pincode || '751001',
-      qualification: formData.qualification || '12th Pass',
-      institution: formData.boardUniversity || 'Odisha Board',
-      passingYear: formData.passingYear || '2022',
-      course: formData.course || selectedCourse || 'Tailoring & Stitching Training',
-      preferredCenter: 'Bhubaneswar LVS Skill Center',
-      preferredBatch: 'BATCH-2026-T1 (Morning)',
-      applicationDate: new Date().toISOString().split('T')[0],
-      status: 'New',
-      location: `${formData.district || 'Bhubaneswar'}, ${formData.state || 'Odisha'}`,
-      timelineStep: 1,
-      documents: {
-        photo: documents.photoName ? `Uploaded (${documents.photoName})` : 'Applicant Photo',
-        idProof: documents.aadhaarName ? `Uploaded (${documents.aadhaarName})` : 'Aadhaar Card (Optional)',
-        educationCertificate: documents.marksheetName ? `Uploaded (${documents.marksheetName})` : 'Marksheet (Optional)',
-        other: 'Registration Form'
-      },
-      uploadedPhoto: documents.photo,
-      uploadedAadhaar: documents.aadhaar,
-      uploadedMarksheet: documents.marksheet,
-      createdAt: serverTimestamp()
-    };
-
-    // 1. Save to Firebase Firestore Database
     try {
-      const firestorePayload = {
-        ...newApp,
-        // Ensure base64 fields don't exceed Firestore limits
-        uploadedPhoto: documents.photo && documents.photo.length < 500000 ? documents.photo : null,
-        uploadedAadhaar: documents.aadhaar && documents.aadhaar.length < 500000 ? documents.aadhaar : null,
-        uploadedMarksheet: documents.marksheet && documents.marksheet.length < 500000 ? documents.marksheet : null,
+      const newApp = {
+        id: `APP-LVS-2026-${Math.floor(100 + Math.random() * 900)}`,
+        name: formData.fullName || 'New Applicant',
+        fullName: formData.fullName || 'New Applicant',
+        photo: documents.photo || '/hero_training.png',
+        gender: formData.gender || 'Female',
+        age: 22,
+        dob: formData.dob || '2004-01-01',
+        mobile: formData.phone || '+91 98000 00000',
+        phone: formData.phone || '+91 98000 00000',
+        email: formData.email || 'applicant@gmail.com',
+        address: formData.fullAddress || formData.villageCity || 'Main Village Road',
+        district: formData.district || 'Bhubaneswar',
+        state: formData.state || 'Odisha',
+        pincode: formData.pincode || '751001',
+        qualification: formData.qualification || '12th Pass',
+        institution: formData.boardUniversity || 'Odisha Board',
+        passingYear: formData.passingYear || '2022',
+        course: formData.course || selectedCourse || 'Tailoring & Stitching Training',
+        preferredCenter: 'Bhubaneswar LVS Skill Center',
+        preferredBatch: 'BATCH-2026-T1 (Morning)',
+        applicationDate: new Date().toISOString().split('T')[0],
+        status: 'New',
+        location: `${formData.district || 'Bhubaneswar'}, ${formData.state || 'Odisha'}`,
+        timelineStep: 1,
+        documents: {
+          photo: documents.photoName ? `Uploaded (${documents.photoName})` : 'Applicant Photo',
+          idProof: documents.aadhaarName ? `Uploaded (${documents.aadhaarName})` : 'Aadhaar Card (Optional)',
+          educationCertificate: documents.marksheetName ? `Uploaded (${documents.marksheetName})` : 'Marksheet (Optional)',
+          other: 'Registration Form'
+        },
+        uploadedPhoto: documents.photo,
+        uploadedAadhaar: documents.aadhaar,
+        uploadedMarksheet: documents.marksheet,
+        createdAt: new Date().toISOString()
       };
-      const docRef = await addDoc(collection(db, "training_applications"), firestorePayload);
-      newApp.firestoreId = docRef.id;
-    } catch (firebaseErr) {
-      console.warn("Firebase training application save notice:", firebaseErr);
-    }
 
-    // 2. Save locally for fallback/Admin Panel
-    try {
-      const existing = JSON.parse(localStorage.getItem('lvs_submitted_applications') || '[]');
-      localStorage.setItem('lvs_submitted_applications', JSON.stringify([newApp, ...existing]));
-      window.dispatchEvent(new CustomEvent('lvs_new_application', { detail: newApp }));
-    } catch (err) {
-      console.error(err);
-    }
+      // 1. Save to Firebase Firestore Database
+      try {
+        const firestorePayload = {
+          ...newApp,
+          createdAt: serverTimestamp(),
+          uploadedPhoto: documents.photo && documents.photo.length < 500000 ? documents.photo : null,
+          uploadedAadhaar: documents.aadhaar && documents.aadhaar.length < 500000 ? documents.aadhaar : null,
+          uploadedMarksheet: documents.marksheet && documents.marksheet.length < 500000 ? documents.marksheet : null,
+        };
+        const docRef = await addDoc(collection(db, "training_applications"), firestorePayload);
+        newApp.firestoreId = docRef.id;
+      } catch (firebaseErr) {
+        console.warn("Firebase training application save notice:", firebaseErr);
+      }
 
-    setLastRegId(newApp.id);
+      // 2. Save locally for fallback/Admin Panel
+      try {
+        const existing = JSON.parse(localStorage.getItem('lvs_submitted_applications') || '[]');
+        localStorage.setItem('lvs_submitted_applications', JSON.stringify([newApp, ...existing]));
+        window.dispatchEvent(new CustomEvent('lvs_new_application', { detail: newApp }));
+      } catch (err) {
+        console.error(err);
+      }
 
-    // 3. Send Automated Confirmation Email to Student & Admin Alert
-    try {
+      setLastRegId(newApp.id);
+      setSubmitted(true);
+      setIsSubmitting(false);
+
+      // 3. Automated Confirmation Email Dispatch (Non-blocking)
       const studentName = formData.fullName || 'Student';
       const courseName = formData.course || selectedCourse || 'Tailoring & Stitching Training';
       const regId = newApp.id;
@@ -192,8 +197,7 @@ Regards,
 Life Vision Society
 Skill Development & Training Team`;
 
-      // Dispatch confirmation email notice
-      await fetch('https://formsubmit.co/ajax/support.lifevision@gmail.com', {
+      fetch('https://formsubmit.co/ajax/support.lifevision@gmail.com', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -215,16 +219,17 @@ Skill Development & Training Team`;
           "District": formData.district || 'N/A',
           "Full Confirmation Message": emailBody
         })
-      });
-    } catch (emailErr) {
-      console.warn("Confirmation email dispatch notice:", emailErr);
-    }
+      }).catch(emailErr => console.warn("Confirmation email dispatch notice:", emailErr));
 
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      onClose();
-    }, 4000);
+      setTimeout(() => {
+        setSubmitted(false);
+        onClose();
+      }, 4000);
+
+    } catch (err) {
+      console.error("Form submission error:", err);
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -714,10 +719,20 @@ Skill Development & Training Team`;
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-[#C52B75] to-[#A82260] hover:from-[#A82260] hover:to-[#8C1B4E] text-white font-bold py-4 px-6 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer text-sm active:scale-98 mt-6"
+                disabled={isSubmitting}
+                className="w-full bg-gradient-to-r from-[#C52B75] to-[#A82260] hover:from-[#A82260] hover:to-[#8C1B4E] text-white font-bold py-4 px-6 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer text-sm active:scale-98 mt-6 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <span>Submit Training Application</span>
-                <Send className="w-4 h-4" />
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Submitting Application...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Submit Training Application</span>
+                    <Send className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </form>
           </div>
