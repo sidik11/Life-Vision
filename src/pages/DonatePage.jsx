@@ -389,7 +389,7 @@ export default function DonatePage({ onOpenApply }) {
 
                   <div className="bg-amber-400 text-slate-950 font-extrabold py-3 px-4 rounded-2xl text-center shadow-xs flex items-center justify-center gap-2 text-xs tracking-wide">
                     <PhoneCall className="w-4 h-4 shrink-0" />
-                    <span>Helpline : +91 98765 43210</span>
+                    <span>Helpline : +91 9416362914</span>
                   </div>
                 </div>
 

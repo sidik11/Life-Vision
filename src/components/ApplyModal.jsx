@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, Send, GraduationCap, User, Phone, Mail, BookOpen, MapPin, Calendar, Briefcase, Award, Share2 } from 'lucide-react';
+import { X, CheckCircle2, Send, GraduationCap, User, Phone, Mail, BookOpen, MapPin, Calendar, Briefcase, Award, Share2, FileCheck, Upload } from 'lucide-react';
 
 export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
   const [submitted, setSubmitted] = useState(false);
@@ -35,6 +35,50 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
     hearAboutUs: 'Social Media',
   });
 
+  // Optional Document Uploads (< 5MB limit each)
+  const [documents, setDocuments] = useState({
+    photo: null,
+    photoName: '',
+    aadhaar: null,
+    aadhaarName: '',
+    marksheet: null,
+    marksheetName: ''
+  });
+
+  const [docErrors, setDocErrors] = useState({
+    photo: '',
+    aadhaar: '',
+    marksheet: ''
+  });
+
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB limit in bytes
+
+  const handleFileUpload = (e, field) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      setDocErrors((prev) => ({
+        ...prev,
+        [field]: 'File size exceeds 5MB limit. Please choose a file smaller than 5MB.'
+      }));
+      e.target.value = '';
+      return;
+    }
+
+    setDocErrors((prev) => ({ ...prev, [field]: '' }));
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setDocuments((prev) => ({
+        ...prev,
+        [field]: reader.result,
+        [`${field}Name`]: file.name
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   useEffect(() => {
     if (selectedCourse) {
       setFormData((prev) => ({ ...prev, course: selectedCourse }));
@@ -54,11 +98,13 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
     const newApp = {
       id: `APP-LVS-2026-${Math.floor(100 + Math.random() * 900)}`,
       name: formData.fullName || 'New Applicant',
-      photo: '/hero_training.png',
+      fullName: formData.fullName || 'New Applicant',
+      photo: documents.photo || '/hero_training.png',
       gender: formData.gender || 'Female',
       age: 22,
       dob: formData.dob || '2004-01-01',
       mobile: formData.phone || '+91 98000 00000',
+      phone: formData.phone || '+91 98000 00000',
       email: formData.email || 'applicant@gmail.com',
       address: formData.fullAddress || formData.villageCity || 'Main Village Road',
       district: formData.district || 'Bhubaneswar',
@@ -67,7 +113,7 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
       qualification: formData.qualification || '12th Pass',
       institution: formData.boardUniversity || 'Odisha Board',
       passingYear: formData.passingYear || '2022',
-      course: formData.course || selectedCourse || 'Tailoring & Stitching',
+      course: formData.course || selectedCourse || 'Tailoring & Stitching Training',
       preferredCenter: 'Bhubaneswar LVS Skill Center',
       preferredBatch: 'BATCH-2026-T1 (Morning)',
       applicationDate: new Date().toISOString().split('T')[0],
@@ -75,11 +121,14 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
       location: `${formData.district || 'Bhubaneswar'}, ${formData.state || 'Odisha'}`,
       timelineStep: 1,
       documents: {
-        idProof: 'Aadhaar Card (Pending Verification)',
-        educationCertificate: 'Marksheet Uploaded',
-        photo: 'Applicant Photo',
-        other: 'Application Form Copy'
-      }
+        photo: documents.photoName ? `Uploaded (${documents.photoName})` : 'Applicant Photo',
+        idProof: documents.aadhaarName ? `Uploaded (${documents.aadhaarName})` : 'Aadhaar Card (Optional)',
+        educationCertificate: documents.marksheetName ? `Uploaded (${documents.marksheetName})` : 'Marksheet (Optional)',
+        other: 'Registration Form'
+      },
+      uploadedPhoto: documents.photo,
+      uploadedAadhaar: documents.aadhaar,
+      uploadedMarksheet: documents.marksheet
     };
 
     try {
@@ -241,7 +290,7 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
                       type="tel"
                       name="phone"
                       required
-                      placeholder="+91 98765 43210"
+                      placeholder="+91 94163 62914"
                       value={formData.phone}
                       onChange={handleChange}
                       className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none font-medium"
@@ -504,6 +553,75 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
                     <option value="Training Center">Training Center</option>
                     <option value="Other">Other</option>
                   </select>
+                </div>
+              </div>
+
+              {/* 7. UPLOAD DOCUMENTS (MAX 5MB) */}
+              <div className="space-y-4 pt-2">
+                <div className="border-b border-slate-100 pb-2">
+                  <h4 className="text-xs font-black text-slate-800 tracking-wider flex items-center gap-2 font-serif">
+                    <FileCheck className="w-4 h-4 text-[#C52B75]" />
+                    <span>7. Upload Documents (Max 5MB per file)</span>
+                  </h4>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Candidate Photo */}
+                  <div className="p-3 bg-[#FFF7F6]/60 rounded-2xl border border-pink-100 space-y-2">
+                    <label className="block text-[11px] font-bold text-slate-700">
+                      Candidate Photo
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e, 'photo')}
+                      className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-extrabold file:bg-pink-100 file:text-[#C52B75] hover:file:bg-pink-200 cursor-pointer"
+                    />
+                    {documents.photoName && (
+                      <p className="text-[10px] text-emerald-700 font-bold truncate">✓ {documents.photoName}</p>
+                    )}
+                    {docErrors.photo && (
+                      <p className="text-[10px] text-rose-600 font-bold leading-tight">{docErrors.photo}</p>
+                    )}
+                  </div>
+
+                  {/* Aadhaar Card */}
+                  <div className="p-3 bg-[#FFF7F6]/60 rounded-2xl border border-pink-100 space-y-2">
+                    <label className="block text-[11px] font-bold text-slate-700">
+                      Aadhaar Card
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => handleFileUpload(e, 'aadhaar')}
+                      className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-extrabold file:bg-pink-100 file:text-[#C52B75] hover:file:bg-pink-200 cursor-pointer"
+                    />
+                    {documents.aadhaarName && (
+                      <p className="text-[10px] text-emerald-700 font-bold truncate">✓ {documents.aadhaarName}</p>
+                    )}
+                    {docErrors.aadhaar && (
+                      <p className="text-[10px] text-rose-600 font-bold leading-tight">{docErrors.aadhaar}</p>
+                    )}
+                  </div>
+
+                  {/* Education Marksheet */}
+                  <div className="p-3 bg-[#FFF7F6]/60 rounded-2xl border border-pink-100 space-y-2">
+                    <label className="block text-[11px] font-bold text-slate-700">
+                      Education Marksheet
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => handleFileUpload(e, 'marksheet')}
+                      className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-extrabold file:bg-pink-100 file:text-[#C52B75] hover:file:bg-pink-200 cursor-pointer"
+                    />
+                    {documents.marksheetName && (
+                      <p className="text-[10px] text-emerald-700 font-bold truncate">✓ {documents.marksheetName}</p>
+                    )}
+                    {docErrors.marksheet && (
+                      <p className="text-[10px] text-rose-600 font-bold leading-tight">{docErrors.marksheet}</p>
+                    )}
+                  </div>
                 </div>
               </div>
 

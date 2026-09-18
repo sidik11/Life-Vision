@@ -354,7 +354,7 @@ export default function DonateModal({ isOpen, onClose }) {
 
                 <div className="bg-amber-400 text-slate-950 font-black py-3 px-4 rounded-2xl text-center shadow-xs flex items-center justify-center gap-2 text-xs sm:text-sm tracking-wide">
                   <PhoneCall className="w-4 h-4 shrink-0" />
-                  <span>Call Now : +91 98765 43210</span>
+                  <span>Call Now : +91 9416362914</span>
                 </div>
               </div>
 

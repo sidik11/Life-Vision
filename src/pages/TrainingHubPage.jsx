@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Calendar, MapPin, CheckCircle2, Clock, Users, ArrowRight, ShieldCheck, FileText, Award, ChevronLeft, ChevronRight, ChevronDown, GraduationCap, Heart, Sparkles, Send } from 'lucide-react';
+import { BookOpen, Calendar, MapPin, CheckCircle2, Clock, Users, ArrowRight, ShieldCheck, FileText, Award, ChevronLeft, ChevronRight, ChevronDown, GraduationCap, Heart, Sparkles, Send, Briefcase } from 'lucide-react';
 import StudentPlacementForm from '../components/StudentPlacementForm';
 
 // 3D Sewing Machine Icon
@@ -92,8 +92,8 @@ export default function TrainingHubPage({ onOpenApply, onOpenStudentPlacement })
       image: '/image/Tailoring_training.png',
       icon: SewingMachine3DIcon,
       iconBg: 'bg-gradient-to-br from-pink-500 to-[#C52B75] text-white',
-      duration: '15 Days Intensive',
-      fee: '100% Free NGO Aid',
+      duration: '15 Days',
+      fee: 'Free Course',
       qualification: 'Open for All Women',
       seats: '30 Trainees / Batch',
       desc: '100% free sewing machine practice, blouse cutting, dress stitching, and boutique startup guidance. Graduates get a free sewing machine.',
@@ -104,8 +104,8 @@ export default function TrainingHubPage({ onOpenApply, onOpenStudentPlacement })
       image: '/image/Beautician.png',
       icon: BeautyBrush3DIcon,
       iconBg: 'bg-gradient-to-br from-purple-500 to-[#6B1D52] text-white',
-      duration: '15 Days Intensive',
-      fee: '100% Free NGO Aid',
+      duration: '15 Days',
+      fee: 'Free Course',
       qualification: 'Open for All Women',
       seats: '30 Trainees / Batch',
       desc: 'Facial skincare, bridal makeup, hair styling, and salon work skills, complete with a free starter beauty toolkit.',
@@ -116,8 +116,8 @@ export default function TrainingHubPage({ onOpenApply, onOpenStudentPlacement })
       image: '/image/Agriculture.png',
       icon: AgriSprout3DIcon,
       iconBg: 'bg-gradient-to-br from-emerald-500 to-[#006B3C] text-white',
-      duration: '3 Months Workshop',
-      fee: '100% Free NGO Aid',
+      duration: '3 Months',
+      fee: 'Free Course',
       qualification: 'Farmers & Rural Youth',
       seats: '30 Trainees / Batch',
       desc: 'Organic crop farming, mushroom growing, natural fertilizer composting, and direct market selling guidance.',
@@ -128,12 +128,36 @@ export default function TrainingHubPage({ onOpenApply, onOpenStudentPlacement })
       image: '/image/Healthcare&caregiving.png',
       icon: Healthcare3DIcon,
       iconBg: 'bg-gradient-to-br from-amber-500 to-amber-700 text-white',
-      duration: '3 Months Workshop',
-      fee: '100% Free NGO Aid',
+      duration: '3 Months',
+      fee: 'Free Course',
       qualification: 'Basic Literacy',
       seats: '30 Trainees / Batch',
       desc: 'First aid care, elder caregiving, mother & child health education, and rural health camp coordination.',
       courseName: 'Healthcare Program'
+    },
+    {
+      title: 'Tourism & Hospitality',
+      image: '/image/Tourism & hospitality.png',
+      icon: Briefcase,
+      iconBg: 'bg-gradient-to-br from-teal-500 to-emerald-700 text-white',
+      duration: '3 Months',
+      fee: 'Free Course',
+      qualification: '12th Pass',
+      seats: '30 Trainees / Batch',
+      desc: 'Front office operations, guest relations management, housekeeping standards, and travel tourism services.',
+      courseName: 'Tourism & Hospitality Training'
+    },
+    {
+      title: 'Food & Beverages',
+      image: '/image/Food & Beverages.png',
+      icon: Sparkles,
+      iconBg: 'bg-gradient-to-br from-orange-500 to-red-600 text-white',
+      duration: '3 Months',
+      fee: 'Free Course',
+      qualification: '10th Pass',
+      seats: '25 Trainees / Batch',
+      desc: 'Culinary arts basics, food preparation, beverage service, hygiene standards, and catering industry training.',
+      courseName: 'Food & Beverages Training'
     }
   ];
 
@@ -287,7 +311,7 @@ export default function TrainingHubPage({ onOpenApply, onOpenStudentPlacement })
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {availableCourses.map((course, idx) => {
             const CourseIcon = course.icon;
             return (
@@ -331,7 +355,7 @@ export default function TrainingHubPage({ onOpenApply, onOpenStudentPlacement })
                   onClick={() => onOpenApply(course.courseName)}
                   className="w-full bg-gradient-to-r from-[#C52B75] to-[#A82260] hover:opacity-90 text-white font-bold text-xs py-3 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <span>Apply Free Aid</span>
+                  <span>Apply For Training</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>

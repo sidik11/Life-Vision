@@ -54,7 +54,7 @@ export default function FloatingCallButton({ onOpenDonate }) {
             </a>
 
             <a
-              href="https://wa.me/919876543210"
+              href="https://wa.me/919416362914"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 p-2.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-[#006B3C] transition-all duration-200 border border-emerald-100 group"

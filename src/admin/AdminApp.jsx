@@ -25,6 +25,8 @@ import DocumentsView from './views/DocumentsView';
 import NotificationsView from './views/NotificationsView';
 import UsersRolesView from './views/UsersRolesView';
 import SettingsView from './views/SettingsView';
+import StaffView from './views/StaffView';
+import ReportsView from './views/ReportsView';
 
 // Real Data fetched directly from Public Website
 import { 
@@ -37,12 +39,29 @@ import {
 
 export default function AdminApp() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [adminUser, setAdminUser] = useState({
-    name: 'Life Vision Society',
-    email: 'support.lifevision@gmail.com',
-    role: 'Super Admin',
-    avatar: '/image/logo.png'
+  const [adminUser, setAdminUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lvs_admin_profile');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {
+      name: 'Life Vision Society',
+      email: 'support.lifevision@gmail.com',
+      role: 'Super Admin',
+      phone: '+91 98610 12345',
+      avatar: '/image/logo.png'
+    };
   });
+
+  const handleUpdateAdminUser = (updatedData) => {
+    setAdminUser(prev => {
+      const nextUser = typeof updatedData === 'function' ? updatedData(prev) : { ...prev, ...updatedData };
+      try {
+        localStorage.setItem('lvs_admin_profile', JSON.stringify(nextUser));
+      } catch (e) {}
+      return nextUser;
+    });
+  };
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -54,7 +73,7 @@ export default function AdminApp() {
     setToast({ message, type });
   };
 
-  // Datasets State initialized ONLY with Real Public Website Submissions (starts empty [] if no submissions exist)
+  // Datasets State initialized ONLY with Real Public Website Submissions
   const [applications, setApplications] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('lvs_submitted_applications') || '[]');
@@ -95,25 +114,95 @@ export default function AdminApp() {
     }
   });
 
-  const [programs, setPrograms] = useState(initialPrograms);
-  const [centers, setCenters] = useState(initialCenters);
-  const [batches, setBatches] = useState(initialBatches);
-  const [students, setStudents] = useState(initialStudents);
-  const [certificates, setCertificates] = useState(initialCertificates);
-  const [volunteers, setVolunteers] = useState(initialVolunteers);
-  const [stories, setStories] = useState(initialStories);
-  const [documents, setDocuments] = useState(initialDocuments);
+  const [volunteers, setVolunteers] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('lvs_submitted_volunteers') || '[]');
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [stories, setStories] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('lvs_submitted_stories') || '[]');
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [programs, setPrograms] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lvs_submitted_programs');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return initialPrograms;
+  });
+
+  const handleAddProgram = (newProg) => {
+    setPrograms((prev) => {
+      const updated = [newProg, ...prev];
+      try {
+        localStorage.setItem('lvs_submitted_programs', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    showToast(`New NQR Qualification Pack (${newProg.qpCode || newProg.name}) created successfully!`, 'success');
+  };
+
+  const [centers, setCenters] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('lvs_submitted_centers') || '[]');
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [batches, setBatches] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('lvs_submitted_batches') || '[]');
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [students, setStudents] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('lvs_submitted_students') || '[]');
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [certificates, setCertificates] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('lvs_submitted_certificates') || '[]');
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [documents, setDocuments] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('lvs_submitted_documents') || '[]');
+    } catch (e) {
+      return [];
+    }
+  });
+
   const [adminUsers, setAdminUsers] = useState(initialAdminUsers);
 
   // Selected Item Modal State
   const [selectedApp, setSelectedApp] = useState(null);
 
-  // Sync state with window event listeners for live public submissions
+  // Sync state with window event listeners for real public submissions
   useEffect(() => {
     const handleNewApplication = (e) => {
       if (e.detail) {
         setApplications((prev) => [e.detail, ...prev]);
-        showToast(`New Application received from ${e.detail.fullName || 'Student'}!`, 'info');
+        showToast(`New Application received from ${e.detail.fullName || e.detail.name || 'Student'}!`, 'info');
       }
     };
 
@@ -124,19 +213,65 @@ export default function AdminApp() {
       }
     };
 
+    const handleNewDonation = (e) => {
+      if (e.detail) {
+        setDonations((prev) => [e.detail, ...prev]);
+        showToast(`New Donation received from ${e.detail.donor || 'Donor'} (${e.detail.amount})!`, 'success');
+      }
+    };
+
+    const handleNewPartner = (e) => {
+      if (e.detail) {
+        setPartners((prev) => [e.detail, ...prev]);
+        showToast(`New Partner Application from ${e.detail.orgName || 'Organization'}!`, 'info');
+      }
+    };
+
+    const handleNewPlacement = (e) => {
+      if (e.detail) {
+        setPlacements((prev) => [e.detail, ...prev]);
+        showToast(`New Placement Request for ${e.detail.student || 'Trainee'}!`, 'info');
+      }
+    };
+
+    const handleNewVolunteer = (e) => {
+      if (e.detail) {
+        setVolunteers((prev) => [e.detail, ...prev]);
+        showToast(`New Volunteer Application from ${e.detail.name || 'Volunteer'}!`, 'info');
+      }
+    };
+
     window.addEventListener('lvs_new_application', handleNewApplication);
     window.addEventListener('lvs_new_contact', handleNewContact);
+    window.addEventListener('lvs_new_donation', handleNewDonation);
+    window.addEventListener('lvs_new_partner', handleNewPartner);
+    window.addEventListener('lvs_new_placement', handleNewPlacement);
+    window.addEventListener('lvs_new_volunteer', handleNewVolunteer);
 
     return () => {
       window.removeEventListener('lvs_new_application', handleNewApplication);
       window.removeEventListener('lvs_new_contact', handleNewContact);
+      window.removeEventListener('lvs_new_donation', handleNewDonation);
+      window.removeEventListener('lvs_new_partner', handleNewPartner);
+      window.removeEventListener('lvs_new_placement', handleNewPlacement);
+      window.removeEventListener('lvs_new_volunteer', handleNewVolunteer);
     };
   }, []);
 
   const handleLogin = (user) => {
-    setAdminUser(user);
+    let userToUse = user;
+    try {
+      const saved = localStorage.getItem('lvs_admin_profile');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        userToUse = { ...user, ...parsed };
+      } else {
+        localStorage.setItem('lvs_admin_profile', JSON.stringify(user));
+      }
+    } catch (e) {}
+    setAdminUser(userToUse);
     setIsAuthenticated(true);
-    showToast(`Welcome back, ${user.name}! Connected to Life Vision Society Admin.`, 'success');
+    showToast(`Welcome back, ${userToUse.name}! Connected to Life Vision Society Admin.`, 'success');
   };
 
   const handleLogout = () => {
@@ -166,122 +301,164 @@ export default function AdminApp() {
             onViewApp={(app) => setSelectedApp(app)}
           />
         );
-      case 'applications':
-        return (
-          <TrainingAppsView 
-            applications={applications} 
-            setApplications={setApplications}
-            onViewApp={(app) => setSelectedApp(app)}
-            showToast={showToast}
-          />
-        );
+
+      // 📚 TRAINING
       case 'programs':
         return (
           <TrainingProgramsView 
             programs={programs} 
             setPrograms={setPrograms} 
+            onAddProgram={handleAddProgram} 
+            applications={applications}
+            setApplications={setApplications}
+            onViewApp={(app) => setSelectedApp(app)}
             showToast={showToast} 
           />
         );
       case 'centers':
-        return (
-          <TrainingCentersView 
-            centers={centers} 
-            setCenters={setCenters} 
-            showToast={showToast} 
-          />
-        );
+        return <TrainingCentersView centers={centers} setCenters={setCenters} showToast={showToast} />;
       case 'batches':
-        return (
-          <BatchesView 
-            batches={batches} 
-            setBatches={setBatches} 
-            showToast={showToast} 
-          />
-        );
+        return <BatchesView batches={batches} setBatches={setBatches} showToast={showToast} />;
       case 'students':
-        return (
-          <StudentsView 
-            students={students} 
-            setStudents={setStudents} 
-            showToast={showToast} 
-          />
-        );
+      case 'trainers':
+        return <StudentsView students={students} setStudents={setStudents} showToast={showToast} filter={activeTab} />;
       case 'attendance':
         return <AttendanceView batches={batches} students={students} showToast={showToast} />;
-      case 'assessment':
+      case 'assessments':
         return <AssessmentView students={students} showToast={showToast} />;
       case 'certificates':
-        return (
-          <CertificatesView 
-            certificates={certificates} 
-            setCertificates={setCertificates} 
-            students={students} 
-            showToast={showToast} 
-          />
-        );
-      case 'placements':
-        return (
-          <PlacementView 
-            placements={placements} 
-            setPlacements={setPlacements} 
-            showToast={showToast} 
-          />
-        );
+        return <CertificatesView certificates={certificates} setCertificates={setCertificates} students={students} showToast={showToast} />;
+      case 'training-reports':
+        return <ReportsView activeSubTab="report-training" showToast={showToast} />;
+
+      // 💼 PLACEMENT
+      case 'placement':
+      case 'placement-overview':
+      case 'students-seeking-jobs':
+      case 'job-opportunities':
+      case 'interviews':
+      case 'selected-students':
+      case 'employed-students':
+      case 'self-employed':
+        return <PlacementView placements={placements} setPlacements={setPlacements} showToast={showToast} activeSubTab={activeTab} />;
+      case 'placement-reports':
+        return <ReportsView activeSubTab="report-placement" showToast={showToast} />;
+
+      // 🤝 PARTNERS
       case 'partners':
-        return (
-          <PartnersView 
-            partners={partners} 
-            setPartners={setPartners} 
-            showToast={showToast} 
-          />
-        );
-      case 'volunteers':
-        return (
-          <VolunteersView 
-            volunteers={volunteers} 
-            setVolunteers={setVolunteers} 
-            showToast={showToast} 
-          />
-        );
+      case 'all-partners':
+      case 'csr-partners':
+      case 'corporate-partners':
+      case 'training-partners':
+      case 'employment-partners':
+      case 'ngo-partners':
+      case 'gov-partners':
+      case 'partner-applications':
+        return <PartnersView partners={partners} setPartners={setPartners} showToast={showToast} activeSubTab={activeTab} />;
+
+      // 💰 DONATIONS
       case 'donations':
-        return (
-          <DonationsView 
-            donations={donations} 
-            setDonations={setDonations} 
-            showToast={showToast} 
-          />
-        );
+      case 'donation-overview':
+      case 'all-donations':
+      case 'successful-donations':
+      case 'pending-donations':
+      case 'failed-donations':
+      case 'campaigns':
+      case 'donation-receipts':
+        return <DonationsView donations={donations} setDonations={setDonations} showToast={showToast} activeSubTab={activeTab} />;
+
+      // ⭐ SUCCESS STORIES
       case 'stories':
+      case 'all-stories':
+      case 'add-success-story':
+      case 'featured-stories':
+      case 'draft-stories':
+      case 'published-stories':
+        return <SuccessStoriesView stories={stories} setStories={setStories} showToast={showToast} activeSubTab={activeTab} />;
+
+      // 👥 STAFF MEMBERS
+      case 'staff':
+      case 'all-staff':
+      case 'add-staff':
+      case 'staff-id-cards':
+      case 'staff-attendance':
+      case 'leave-management':
+      case 'staff-documents':
+      case 'staff-departments':
+      case 'staff-reports':
+        return <StaffView activeSubTab={activeTab} showToast={showToast} />;
+
+      // 🙋 VOLUNTEERS
+      case 'volunteers':
+      case 'all-volunteers':
+      case 'volunteer-new-apps':
+      case 'active-volunteers':
+      case 'volunteer-projects':
+      case 'volunteer-reports':
+        return <VolunteersView volunteers={volunteers} setVolunteers={setVolunteers} showToast={showToast} activeSubTab={activeTab} />;
+
+      // 📩 APPLICATIONS
+      case 'applications':
+      case 'app-training':
+      case 'app-partner':
+      case 'app-volunteer':
+      case 'app-contact':
         return (
-          <SuccessStoriesView 
-            stories={stories} 
-            setStories={setStories} 
-            showToast={showToast} 
+          <TrainingAppsView 
+            applications={applications} 
+            setApplications={setApplications}
+            onViewApp={(app) => setSelectedApp(app)}
+            onDeleteApp={(appId) => {
+              if (window.confirm('Are you sure you want to delete this candidate application?')) {
+                setApplications(prev => {
+                  const updated = prev.filter(a => a.id !== appId);
+                  try {
+                    localStorage.setItem('lvs_submitted_applications', JSON.stringify(updated));
+                  } catch (e) {}
+                  return updated;
+                });
+                showToast('Candidate application deleted.', 'info');
+              }
+            }}
+            showToast={showToast}
+            activeTab={activeTab}
           />
         );
-      case 'cms':
-        return <ContentCmsView showToast={showToast} />;
-      case 'documents':
-        return (
-          <DocumentsView 
-            documents={documents} 
-            setDocuments={setDocuments} 
-            showToast={showToast} 
-          />
-        );
-      case 'notifications':
+
+      // 📰 CONTENT
+      case 'content':
+      case 'content-news-blog':
+      case 'content-events':
+      case 'content-gallery':
+      case 'content-homepage':
+      case 'content-website-sections':
+        return <ContentCmsView showToast={showToast} activeSubTab={activeTab} />;
+
+      // 📊 REPORTS
+      case 'reports':
+      case 'report-training':
+      case 'report-student':
+      case 'report-placement':
+      case 'report-staff':
+      case 'report-partner':
+      case 'report-donation':
+      case 'report-impact':
+        return <ReportsView activeSubTab={activeTab} showToast={showToast} />;
+
+      // ⚙️ ADMINISTRATION
+      case 'administration':
+      case 'admin-users-roles':
+        return <UsersRolesView adminUsers={adminUsers} setAdminUsers={setAdminUsers} showToast={showToast} />;
+      case 'admin-notifications':
         return <NotificationsView showToast={showToast} />;
-      case 'users':
-        return (
-          <UsersRolesView 
-            adminUsers={adminUsers} 
-            setAdminUsers={setAdminUsers} 
-            showToast={showToast} 
-          />
-        );
+      case 'admin-documents':
+        return <DocumentsView documents={documents} setDocuments={setDocuments} showToast={showToast} />;
       case 'settings':
-        return <SettingsView adminUser={adminUser} setAdminUser={setAdminUser} showToast={showToast} />;
+      case 'admin-settings':
+        return <SettingsView adminUser={adminUser} setAdminUser={handleUpdateAdminUser} showToast={showToast} />;
+      case 'admin-activity-logs':
+        return <NotificationsView showToast={showToast} activeSubTab="logs" />;
+
       default:
         return (
           <DashboardView 
@@ -321,6 +498,7 @@ export default function AdminApp() {
         setIsCollapsed={setIsCollapsed}
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Area */}
@@ -328,11 +506,14 @@ export default function AdminApp() {
         
         {/* Top Header */}
         <TopHeader 
-          adminUser={adminUser} 
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          isCollapsed={isCollapsed}
+          setIsCollapsed={setIsCollapsed}
+          setMobileOpen={setMobileOpen}
+          user={adminUser} 
           onLogout={handleLogout}
-          onOpenMobileNav={() => setMobileOpen(true)}
           unreadCount={applications.filter(a => a.status === 'Pending' || a.status === 'Unread' || a.status === 'New').length}
-          contactsCount={contacts.length}
         />
 
         {/* View Dynamic Body */}
@@ -346,10 +527,27 @@ export default function AdminApp() {
         <AppDetailsModal 
           application={selectedApp} 
           onClose={() => setSelectedApp(null)} 
-          onUpdateStatus={(id, newStatus) => {
-            setApplications(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a));
+          onUpdateStatus={(id, newStatus, step) => {
+            setApplications(prev => {
+              const updated = prev.map(a => a.id === id ? { ...a, status: newStatus, timelineStep: step !== undefined ? step : a.timelineStep } : a);
+              try {
+                localStorage.setItem('lvs_submitted_applications', JSON.stringify(updated));
+              } catch (e) {}
+              return updated;
+            });
+            setSelectedApp(prev => prev && prev.id === id ? { ...prev, status: newStatus, timelineStep: step !== undefined ? step : prev.timelineStep } : null);
             showToast(`Application ${id} status updated to ${newStatus}`);
-            setSelectedApp(null);
+          }}
+          onAssignBatch={(id, batch) => {
+            setApplications(prev => {
+              const updated = prev.map(a => a.id === id ? { ...a, preferredBatch: batch, timelineStep: 5 } : a);
+              try {
+                localStorage.setItem('lvs_submitted_applications', JSON.stringify(updated));
+              } catch (e) {}
+              return updated;
+            });
+            setSelectedApp(prev => prev && prev.id === id ? { ...prev, preferredBatch: batch, timelineStep: 5 } : null);
+            showToast(`Batch ${batch} assigned to candidate ${id}`);
           }}
         />
       )}

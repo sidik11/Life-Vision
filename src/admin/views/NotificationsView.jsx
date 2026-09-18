@@ -1,23 +1,28 @@
 import React, { useState } from 'react';
-import { Bell, CheckCircle2, Clock, Trash2, Filter, Mail, Phone, User, MessageSquare } from 'lucide-react';
+import { Bell, CheckCircle2, Clock, Trash2, Filter, Mail, Phone, User, MessageSquare, Shield, Activity } from 'lucide-react';
 
-export default function NotificationsView({ contacts = [], onShowToast }) {
-  const [filter, setFilter] = useState('All'); // 'All' | 'Contacts' | 'System'
+export default function NotificationsView({ contacts = [], showToast, onShowToast, activeSubTab }) {
+  const notify = showToast || onShowToast || (() => {});
+  const [filter, setFilter] = useState(() => {
+    if (activeSubTab === 'logs') return 'System';
+    return 'All';
+  });
 
   const [systemNotifications, setSystemNotifications] = useState([
     { id: 'SYS-1', title: 'New Training Application Received', desc: 'Sunita Sahu submitted application for Tailoring & Stitching (Bhubaneswar Center)', time: '10 mins ago', category: 'Application', unread: true },
     { id: 'SYS-2', title: 'CSR Grant Sanctioned', desc: 'HDFC Parivartan Foundation approved ₹45 Lakhs grant for women empowerment', time: '2 hours ago', category: 'Donation', unread: true },
     { id: 'SYS-3', title: 'Batch Completed & Certified', desc: 'BATCH-2026-T1 completed graduation with 96% pass rate', time: 'Yesterday', category: 'Training', unread: false },
+    { id: 'SYS-4', title: 'Super Admin Login Alert', desc: 'Successful login from Bhubaneswar IP 192.168.1.8', time: 'Today, 10:15 AM', category: 'Security', unread: false }
   ]);
 
   const handleMarkAllRead = () => {
     setSystemNotifications(prev => prev.map(n => ({ ...n, unread: false })));
-    onShowToast('All notifications marked as read!', 'info');
+    notify('All notifications marked as read!', 'info');
   };
 
   const handleClearAll = () => {
     setSystemNotifications([]);
-    onShowToast('System notifications cleared!', 'info');
+    notify('System notifications cleared!', 'info');
   };
 
   return (
@@ -25,15 +30,15 @@ export default function NotificationsView({ contacts = [], onShowToast }) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Notification & Contact Messages</h1>
-          <p className="text-xs text-slate-500">Live operational alerts, contact form inquiries & website submissions</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight font-serif">Notifications & Activity Logs</h1>
+          <p className="text-xs text-slate-500">Live operational alerts, contact form inquiries & system security logs</p>
         </div>
 
         <div className="flex items-center space-x-3">
           <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
             <button
               onClick={() => setFilter('All')}
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                 filter === 'All' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -41,7 +46,7 @@ export default function NotificationsView({ contacts = [], onShowToast }) {
             </button>
             <button
               onClick={() => setFilter('Contacts')}
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                 filter === 'Contacts' ? 'bg-[#16A34A] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -49,11 +54,11 @@ export default function NotificationsView({ contacts = [], onShowToast }) {
             </button>
             <button
               onClick={() => setFilter('System')}
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                filter === 'System' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                filter === 'System' ? 'bg-[#123B5D] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              System Alerts ({systemNotifications.length})
+              System Activity Logs ({systemNotifications.length})
             </button>
           </div>
 
@@ -61,7 +66,7 @@ export default function NotificationsView({ contacts = [], onShowToast }) {
             onClick={handleMarkAllRead}
             className="px-3.5 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 rounded-xl text-xs font-bold shadow-xs cursor-pointer"
           >
-            Mark All as Read
+            Mark All Read
           </button>
         </div>
       </div>
@@ -113,18 +118,18 @@ export default function NotificationsView({ contacts = [], onShowToast }) {
         </div>
       )}
 
-      {/* System Notifications List */}
+      {/* System Notifications & Activity Logs */}
       {(filter === 'All' || filter === 'System') && (
         <div className="space-y-3 pt-2">
           <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-            <Bell className="w-4 h-4 text-slate-700" />
-            <span>System Activity Alerts ({systemNotifications.length})</span>
+            <Activity className="w-4 h-4 text-[#123B5D]" />
+            <span>System Audit & Activity Logs ({systemNotifications.length})</span>
           </h2>
 
           <div className="rounded-2xl bg-white border border-slate-200 divide-y divide-slate-100 overflow-hidden shadow-sm">
             {systemNotifications.length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-xs">
-                No system alerts.
+                No activity logs.
               </div>
             ) : (
               systemNotifications.map((n) => (

@@ -77,8 +77,7 @@ export default function Navbar({ activeSection, setActiveSection, onOpenDonate, 
       borderHover: 'hover:border-[#C52B75]',
       bgHover: 'hover:bg-pink-50/90',
       dropdownItems: [
-        { name: 'Student Scholarship & Placement Support', targetId: 'student-education-aid', icon: GraduationCap, badge: 'Free Aid', desc: 'Higher education tuition sponsorship' },
-        { name: 'Women Vocational Skill Drives', targetId: 'available-courses', icon: Send, badge: 'Beneficiary', desc: '100% sponsored training & toolkits' },
+        { name: 'Student Scholarship & Placement Support', targetId: 'student-education-aid', icon: GraduationCap, desc: 'Higher education tuition sponsorship' },
         { name: 'Available Vocational Courses', targetId: 'available-courses', icon: BookOpen, desc: 'Free skill modules' },
         { name: 'Welfare Locations & Reach', targetId: 'training-centers', icon: MapPin, desc: 'Districts served' },
       ]

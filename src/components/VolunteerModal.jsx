@@ -18,6 +18,27 @@ export default function VolunteerModal({ isOpen, onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const newVol = {
+      id: `VOL-LVS-${Date.now().toString().slice(-4)}`,
+      name: formData.fullName,
+      email: formData.email,
+      phone: formData.mobile,
+      location: formData.city,
+      skills: formData.roleInterest,
+      interest: formData.roleInterest,
+      availability: formData.availability,
+      applicationDate: new Date().toISOString().split('T')[0],
+      status: 'Pending'
+    };
+
+    try {
+      const existing = JSON.parse(localStorage.getItem('lvs_submitted_volunteers') || '[]');
+      localStorage.setItem('lvs_submitted_volunteers', JSON.stringify([newVol, ...existing]));
+      window.dispatchEvent(new CustomEvent('lvs_new_volunteer', { detail: newVol }));
+    } catch (err) {
+      console.error(err);
+    }
+
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);

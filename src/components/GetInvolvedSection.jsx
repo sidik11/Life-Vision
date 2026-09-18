@@ -43,7 +43,7 @@ export default function GetInvolvedSection({ onOpenDonate, onOpenVolunteer, onOp
       borderHover: 'hover:border-[#C52B75]',
       buttonBg: 'bg-gradient-to-r from-[#C52B75] to-[#A82260] text-white',
       onClick: () => {
-        if (setActiveSection) setActiveSection('programs', 'women-empowerment');
+        if (setActiveSection) setActiveSection('training', 'available-courses');
       }
     },
     {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Heart, ShieldCheck, GraduationCap } from 'lucide-react';
+import { ArrowRight, Heart, ShieldCheck, GraduationCap, Briefcase, Sparkles } from 'lucide-react';
 
 // 3D Sewing Machine Icon
 const SewingMachine3DIcon = ({ className = "w-5 h-5" }) => (
@@ -51,17 +51,7 @@ export default function TrainingPrograms({ onOpenApply, onOpenDonate, onOpenStud
       image: '/image/Tailoring_training.png',
       badge: 'Free Skill Course',
       description: 'Comprehensive practical tailoring classes covering pattern drafting, garment cutting, dress stitching, and boutique trade skills.',
-    },
-    {
-      id: 'student-aid',
-      targetId: 'student-education-aid',
-      title: 'Student Education & Placement Aid',
-      icon: GraduationCap,
-      iconBg: 'bg-gradient-to-br from-indigo-600 to-purple-800 text-white shadow-indigo-500/30',
-      image: '/image/youth empowerment.jpg',
-      badge: 'Scholarship Aid',
-      description: 'Helping poor students pay college fees, providing study materials and scholarships, and connecting graduates with employers for job placements.',
-      isStudentAid: true
+      courseName: 'Tailoring & Stitching Training'
     },
     {
       id: 'beautician',
@@ -72,16 +62,7 @@ export default function TrainingPrograms({ onOpenApply, onOpenDonate, onOpenStud
       image: '/image/Beautician.png',
       badge: 'Free Skill Course',
       description: 'Practical skincare routines, facial care, bridal makeup techniques, hair styling, and salon work training for women.',
-    },
-    {
-      id: 'healthcare',
-      targetId: 'healthcare-programs',
-      title: 'Community Healthcare & Nursing Training',
-      icon: Healthcare3DIcon,
-      iconBg: 'bg-gradient-to-br from-amber-500 to-amber-700 text-white shadow-amber-500/30',
-      image: '/image/Healthcare&caregiving.png',
-      badge: 'Healthcare Course',
-      description: 'Practical training in first aid care, patient caregiving, maternal-child health literacy, and village healthcare assistance.',
+      courseName: 'Beautician & Wellness Training'
     },
     {
       id: 'agriculture',
@@ -92,6 +73,40 @@ export default function TrainingPrograms({ onOpenApply, onOpenDonate, onOpenStud
       image: '/image/Agriculture.png',
       badge: 'Agri Skill Course',
       description: 'Practical training for farmers in organic agriculture, mushroom cultivation, natural composting, and crop management.',
+      courseName: 'Agriculture & Farming Training'
+    },
+    {
+      id: 'healthcare',
+      targetId: 'healthcare-programs',
+      title: 'Community Healthcare & Nursing Training',
+      icon: Healthcare3DIcon,
+      iconBg: 'bg-gradient-to-br from-amber-500 to-amber-700 text-white shadow-amber-500/30',
+      image: '/image/Healthcare&caregiving.png',
+      badge: 'Healthcare Course',
+      description: 'Practical training in first aid care, patient caregiving, maternal-child health literacy, and village healthcare assistance.',
+      courseName: 'Healthcare Program'
+    },
+    {
+      id: 'tourism',
+      targetId: 'tourism-hospitality',
+      title: 'Tourism & Hospitality Training',
+      icon: Briefcase,
+      iconBg: 'bg-gradient-to-br from-teal-500 to-emerald-700 text-white shadow-teal-500/30',
+      image: '/image/Tourism & hospitality.png',
+      badge: 'Hospitality Course',
+      description: 'Front office management, guest relations, housekeeping standards, and travel tourism operations.',
+      courseName: 'Tourism & Hospitality Training'
+    },
+    {
+      id: 'food',
+      targetId: 'food-beverages',
+      title: 'Food & Beverages Training',
+      icon: Sparkles,
+      iconBg: 'bg-gradient-to-br from-orange-500 to-red-600 text-white shadow-orange-500/30',
+      image: '/image/Food & Beverages.png',
+      badge: 'Culinary Course',
+      description: 'Basic culinary arts, food safety & hygiene, beverage serving, catering operations, and kitchen management.',
+      courseName: 'Food & Beverages Training'
     }
   ];
 
@@ -201,16 +216,16 @@ export default function TrainingPrograms({ onOpenApply, onOpenDonate, onOpenStud
           })}
         </div>
 
-        {/* View All Causes Button */}
+        {/* View More Courses Button */}
         {limit && (
           <div className="text-center pt-10">
             <button
               onClick={() => {
-                if (setActiveSection) setActiveSection('programs');
+                if (setActiveSection) setActiveSection('training', 'available-courses');
               }}
               className="inline-flex items-center gap-2.5 bg-gradient-to-r from-[#C52B75] via-[#A82260] to-[#6B1D52] hover:from-[#A82260] hover:to-[#4A1039] text-white font-extrabold text-xs sm:text-sm px-8 py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer active:scale-95 border border-pink-300/40 hover:scale-105"
             >
-              <span>View All Causes & Initiatives</span>
+              <span>View More Courses & Initiatives</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

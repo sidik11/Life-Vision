@@ -121,10 +121,11 @@ export default function App() {
               onOpenCsr={() => setIsCsrOpen(true)}
               onOpenStudentPlacement={handleOpenStudentPlacement}
               onOpenApply={handleOpenApply}
+              setActiveSection={handleSectionChange}
             />
 
             <TrainingPrograms 
-              limit={4}
+              limit={3}
               onOpenApply={handleOpenApply}
               onOpenDonate={() => handleSectionChange('donate')}
               onOpenStudentPlacement={handleOpenStudentPlacement}

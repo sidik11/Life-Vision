@@ -11,7 +11,8 @@ export default function TopHeader({
   setIsCollapsed,
   setMobileOpen,
   user,
-  onLogout 
+  onLogout,
+  unreadCount = 0
 }) {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -31,34 +32,99 @@ export default function TopHeader({
 
   const breadcrumbMap = {
     'dashboard': ['Dashboard', 'Operational Overview'],
-    'training-apps': ['Applications', 'Training Applications'],
-    'partner-apps': ['Applications', 'Partner Applications'],
-    'volunteer-apps': ['Applications', 'Volunteer Applications'],
-    'contact-enquiries': ['Applications', 'Contact Enquiries'],
-    'programs': ['Training', 'Vocational Programs'],
-    'centers': ['Training', 'Skill Hub Centers'],
+    
+    // Training
+    'programs': ['Training', 'Training Programs'],
+    'centers': ['Training', 'Training Centres'],
     'batches': ['Training', 'Batches'],
-    'students': ['Training', 'Trainees'],
-    'attendance': ['Training', 'Daily Attendance'],
+    'students': ['Training', 'Students'],
+    'trainers': ['Training', 'Trainers'],
+    'attendance': ['Training', 'Attendance'],
     'assessments': ['Training', 'Assessments'],
     'certificates': ['Training', 'Certificates'],
-    'placement': ['Training', 'Livelihood & Placement'],
+    'training-reports': ['Training', 'Training Reports'],
+
+    // Placement
+    'placement-overview': ['Placement', 'Placement Overview'],
+    'students-seeking-jobs': ['Placement', 'Students Seeking Jobs'],
+    'job-opportunities': ['Placement', 'Job Opportunities'],
+    'interviews': ['Placement', 'Interviews'],
+    'selected-students': ['Placement', 'Selected Students'],
+    'employed-students': ['Placement', 'Employed Students'],
+    'self-employed': ['Placement', 'Self-Employed'],
+    'placement-reports': ['Placement', 'Placement Reports'],
+
+    // Partners
+    'all-partners': ['Partners', 'All Partners'],
     'csr-partners': ['Partners', 'CSR Partners'],
+    'corporate-partners': ['Partners', 'Corporate Partners'],
     'training-partners': ['Partners', 'Training Partners'],
     'employment-partners': ['Partners', 'Employment Partners'],
-    'community-partners': ['Partners', 'Community Alliances'],
-    'donations-list': ['Donations', 'Donations Overview'],
+    'ngo-partners': ['Partners', 'NGO Partners'],
+    'gov-partners': ['Partners', 'Government / Institutional'],
+    'partner-applications': ['Partners', 'Partner Applications'],
+
+    // Donations
+    'donation-overview': ['Donations', 'Donation Overview'],
+    'all-donations': ['Donations', 'All Donations'],
+    'successful-donations': ['Donations', 'Successful Donations'],
+    'pending-donations': ['Donations', 'Pending Donations'],
+    'failed-donations': ['Donations', 'Failed / Refunded'],
     'campaigns': ['Donations', 'Campaigns'],
-    'receipts': ['Donations', '80G Receipts'],
-    'stories': ['Content', 'Success Stories'],
-    'news-blog': ['Content', 'News & Blog'],
-    'events': ['Content', 'Events'],
-    'gallery': ['Content', 'Gallery'],
-    'documents': ['Documents', 'Files & Compliance'],
-    'notifications': ['System', 'Notifications'],
-    'website-cms': ['System', 'Website CMS'],
-    'users-roles': ['Administration', 'Users & Access Roles'],
-    'settings': ['Administration', 'Settings']
+    'donation-receipts': ['Donations', 'Donation Receipts'],
+
+    // Success Stories
+    'all-stories': ['Success Stories', 'All Stories'],
+    'add-success-story': ['Success Stories', 'Add Success Story'],
+    'featured-stories': ['Success Stories', 'Featured Stories'],
+    'draft-stories': ['Success Stories', 'Draft Stories'],
+    'published-stories': ['Success Stories', 'Published Stories'],
+
+    // Staff
+    'all-staff': ['Staff Members', 'All Staff'],
+    'add-staff': ['Staff Members', 'Add Staff'],
+    'staff-id-cards': ['Staff Members', 'Staff ID Cards'],
+    'staff-attendance': ['Staff Members', 'Staff Attendance'],
+    'leave-management': ['Staff Members', 'Leave Management'],
+    'staff-documents': ['Staff Members', 'Staff Documents'],
+    'staff-departments': ['Staff Members', 'Departments'],
+    'staff-reports': ['Staff Members', 'Staff Reports'],
+
+    // Volunteers
+    'all-volunteers': ['Volunteers', 'All Volunteers'],
+    'volunteer-new-apps': ['Volunteers', 'New Applications'],
+    'active-volunteers': ['Volunteers', 'Active Volunteers'],
+    'volunteer-projects': ['Volunteers', 'Volunteer Projects'],
+    'volunteer-reports': ['Volunteers', 'Volunteer Reports'],
+
+    // Applications
+    'app-training': ['Applications', 'Training Applications'],
+    'app-partner': ['Applications', 'Partner Applications'],
+    'app-volunteer': ['Applications', 'Volunteer Applications'],
+    'app-contact': ['Applications', 'Contact Enquiries'],
+
+    // Content
+    'content-news-blog': ['Content', 'News & Blogs'],
+    'content-events': ['Content', 'Events'],
+    'content-gallery': ['Content', 'Gallery'],
+    'content-homepage': ['Content', 'Homepage Content'],
+    'content-website-sections': ['Content', 'Website Sections'],
+
+    // Reports
+    'report-training': ['Reports', 'Training Reports'],
+    'report-student': ['Reports', 'Student Reports'],
+    'report-placement': ['Reports', 'Placement Reports'],
+    'report-staff': ['Reports', 'Staff Reports'],
+    'report-partner': ['Reports', 'Partner Reports'],
+    'report-donation': ['Reports', 'Donation Reports'],
+    'report-impact': ['Reports', 'Impact Reports'],
+
+    // Administration
+    'admin-users-roles': ['Administration', 'Users & Roles'],
+    'admin-notifications': ['Administration', 'Notifications'],
+    'admin-documents': ['Administration', 'Documents'],
+    'admin-settings': ['Administration', 'Settings'],
+    'admin-activity-logs': ['Administration', 'Activity Logs']
   };
 
   const breadcrumbs = breadcrumbMap[activeTab] || ['Dashboard', 'Overview'];
@@ -136,7 +202,7 @@ export default function TopHeader({
               <div className="p-4 bg-[#123B5D] border-b border-[#123B5D] flex items-center justify-between text-white">
                 <h3 className="text-xs font-bold uppercase tracking-wider">System Notifications</h3>
                 <span className="px-2.5 py-0.5 text-[10px] font-bold bg-[#F59E0B] text-slate-950 rounded-full">
-                  2 Unread
+                  {unreadCount > 0 ? `${unreadCount} Unread` : 'Notifications'}
                 </span>
               </div>
               <div className="max-h-80 overflow-y-auto divide-y divide-[#E2E8F0]">
@@ -144,7 +210,7 @@ export default function TopHeader({
                   <div 
                     key={n.id} 
                     onClick={() => {
-                      setActiveTab('notifications');
+                      setActiveTab('admin-notifications');
                       setShowNotifications(false);
                     }}
                     className={`p-3.5 hover:bg-[#F8FAFC] transition-colors cursor-pointer flex items-start space-x-3 ${
@@ -167,7 +233,7 @@ export default function TopHeader({
               <div className="p-3 bg-[#F8FAFC] border-t border-[#E2E8F0] text-center">
                 <button
                   onClick={() => {
-                    setActiveTab('notifications');
+                    setActiveTab('admin-notifications');
                     setShowNotifications(false);
                   }}
                   className="text-xs font-bold text-[#2563EB] hover:underline transition-colors"
@@ -207,16 +273,16 @@ export default function TopHeader({
             <div className="absolute right-0 mt-3 w-56 bg-white border border-[#E2E8F0] rounded-2xl shadow-xl z-50 py-2">
               <div className="px-4 py-3 border-b border-[#E2E8F0] bg-[#F8FAFC]">
                 <p className="text-xs font-bold text-[#1E293B]">{user?.name || "Life Vision Society"}</p>
-                <p className="text-[11px] text-[#64748B] truncate">{user?.email || "info.lifevision@gmail.com"}</p>
+                <p className="text-[11px] text-[#64748B] truncate">{user?.email || "support.lifevision@gmail.com"}</p>
               </div>
 
               <div className="py-1">
                 <button
                   onClick={() => {
-                    setActiveTab('settings');
+                    setActiveTab('admin-settings');
                     setShowProfileDropdown(false);
                   }}
-                  className="w-full text-left px-4 py-2 text-xs font-semibold text-[#1E293B] hover:bg-[#F8FAFC] flex items-center space-x-2"
+                  className="w-full text-left px-4 py-2 text-xs font-semibold text-[#1E293B] hover:bg-[#F8FAFC] flex items-center space-x-2 cursor-pointer"
                 >
                   <User className="w-4 h-4 text-[#64748B]" />
                   <span>Profile Settings</span>
@@ -226,7 +292,7 @@ export default function TopHeader({
               <div className="border-t border-[#E2E8F0] pt-1">
                 <button
                   onClick={onLogout}
-                  className="w-full text-left px-4 py-2 text-xs font-bold text-[#DC2626] hover:bg-rose-50 flex items-center space-x-2"
+                  className="w-full text-left px-4 py-2 text-xs font-bold text-[#DC2626] hover:bg-rose-50 flex items-center space-x-2 cursor-pointer"
                 >
                   <LogOut className="w-4 h-4 text-[#DC2626]" />
                   <span>Logout</span>
@@ -260,7 +326,7 @@ export default function TopHeader({
               <p className="text-[11px] font-semibold text-[#64748B] uppercase">Search Results</p>
               
               <div 
-                onClick={() => { setActiveTab('training-apps'); setShowSearchModal(false); }}
+                onClick={() => { setActiveTab('app-training'); setShowSearchModal(false); }}
                 className="p-3 bg-[#F8FAFC] hover:bg-slate-100 border border-[#E2E8F0] rounded-xl flex items-center justify-between cursor-pointer"
               >
                 <div>
@@ -268,17 +334,6 @@ export default function TopHeader({
                   <div className="text-[11px] text-[#64748B]">ID: APP-LVS-2026-001 • Bhubaneswar Hub</div>
                 </div>
                 <span className="px-2.5 py-0.5 bg-emerald-100 text-[#16A34A] rounded-md font-bold text-[10px]">Selected</span>
-              </div>
-
-              <div 
-                onClick={() => { setActiveTab('stories'); setShowSearchModal(false); }}
-                className="p-3 bg-[#F8FAFC] hover:bg-slate-100 border border-[#E2E8F0] rounded-xl flex items-center justify-between cursor-pointer"
-              >
-                <div>
-                  <div className="font-bold text-[#1E293B]">Priya Ranjita Das - Beautician Senior Stylist Story</div>
-                  <div className="text-[11px] text-[#64748B]">Cuttack, Odisha • Salon Stylist</div>
-                </div>
-                <span className="px-2.5 py-0.5 bg-purple-100 text-[#7C3AED] rounded-md font-bold text-[10px]">Published Story</span>
               </div>
             </div>
           </div>

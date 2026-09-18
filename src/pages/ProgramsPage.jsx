@@ -108,7 +108,6 @@ export default function ProgramsPage({ onOpenApply, onOpenDonate }) {
       problem: 'Remote villages often lack basic health checkups, preventive medical advice, and maternal healthcare awareness.',
       solution: 'We organize free doctor consultation camps, distribute hygiene kits, and train community health aides for home caregiving.',
       points: ['Free Medical Doctor Camps', 'Maternal & Child Hygiene Drives', 'Home Health Aide Skills', 'Essential Medicine Distribution'],
-      hasApply: true,
       courseName: 'Healthcare Program'
     },
     {
@@ -307,7 +306,7 @@ export default function ProgramsPage({ onOpenApply, onOpenDonate }) {
                         onClick={() => onOpenApply(item.courseName)}
                         className="bg-gradient-to-r from-[#C52B75] to-[#6B1D52] text-white font-extrabold text-xs sm:text-sm px-6 py-3 rounded-full shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-98"
                       >
-                        <span>Apply Free</span>
+                        <span>Apply For Training</span>
                         <ArrowRight className="w-4 h-4" />
                       </button>
                     )}
