@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, ShieldCheck, Heart, CreditCard, QrCode, Building, Wallet, Download, Printer, ArrowRight, Sparkles, FileText } from 'lucide-react';
 import { db, collection, addDoc, serverTimestamp } from '../firebase';
 
-export default function RazorpayCheckoutModal({ isOpen, onClose, donorData, amount }) {
+export default function RazorpayCheckoutModal({ isOpen, onClose, onSuccess, donorData, amount }) {
   const [step, setStep] = useState('checkout'); // 'checkout' | 'payment_processing' | 'receipt'
   const [selectedMethod, setSelectedMethod] = useState('upi');
   const [upiApp, setUpiApp] = useState('gpay');
@@ -102,6 +102,7 @@ export default function RazorpayCheckoutModal({ isOpen, onClose, donorData, amou
     setDonationRecord(record);
     setIsProcessing(false);
     setStep('receipt');
+    if (onSuccess) onSuccess(record);
   };
 
   const handlePrint = () => {

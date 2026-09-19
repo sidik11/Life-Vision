@@ -8,6 +8,7 @@ export default function DonatePage({ onOpenApply }) {
   const [customAmount, setCustomAmount] = useState('');
   const [consent, setConsent] = useState(true);
   const [copiedAccount, setCopiedAccount] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -403,6 +404,7 @@ export default function DonatePage({ onOpenApply }) {
       <RazorpayCheckoutModal 
         isOpen={showRazorpay} 
         onClose={() => setShowRazorpay(false)}
+        onSuccess={() => setSubmitted(true)}
         donorData={formData}
         amount={amount}
       />

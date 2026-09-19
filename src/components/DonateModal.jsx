@@ -7,6 +7,7 @@ export default function DonateModal({ isOpen, onClose }) {
   const [amount, setAmount] = useState('2000');
   const [customAmount, setCustomAmount] = useState('');
   const [consent, setConsent] = useState(true);
+  const [submitted, setSubmitted] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -346,6 +347,7 @@ export default function DonateModal({ isOpen, onClose }) {
           setShowRazorpay(false);
           onClose();
         }}
+        onSuccess={() => setSubmitted(true)}
         donorData={formData}
         amount={amount}
       />
