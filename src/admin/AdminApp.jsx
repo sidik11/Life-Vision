@@ -136,7 +136,17 @@ export default function AdminApp() {
   const handleSetCenters = (val) => {
     setCenters(prev => {
       const next = typeof val === 'function' ? val(prev) : val;
-      try { localStorage.setItem('lvs_centers', JSON.stringify(next)); } catch (e) {}
+      (async () => {
+        try {
+          if (next.length > prev.length) {
+            const newItems = next.filter(n => !n.firestoreId && !prev.some(p => p.id === n.id));
+            for (const item of newItems) {
+              const cleanItem = JSON.parse(JSON.stringify(item));
+              await addDoc(collection(db, "training_centers"), cleanItem);
+            }
+          }
+        } catch (e) { console.warn("Firestore training_centers sync notice:", e); }
+      })();
       return next;
     });
   };
@@ -144,7 +154,17 @@ export default function AdminApp() {
   const handleSetBatches = (val) => {
     setBatches(prev => {
       const next = typeof val === 'function' ? val(prev) : val;
-      try { localStorage.setItem('lvs_batches', JSON.stringify(next)); } catch (e) {}
+      (async () => {
+        try {
+          if (next.length > prev.length) {
+            const newItems = next.filter(n => !n.firestoreId && !prev.some(p => p.id === n.id));
+            for (const item of newItems) {
+              const cleanItem = JSON.parse(JSON.stringify(item));
+              await addDoc(collection(db, "batches"), cleanItem);
+            }
+          }
+        } catch (e) { console.warn("Firestore batches sync notice:", e); }
+      })();
       return next;
     });
   };
@@ -152,7 +172,17 @@ export default function AdminApp() {
   const handleSetTrainers = (val) => {
     setTrainers(prev => {
       const next = typeof val === 'function' ? val(prev) : val;
-      try { localStorage.setItem('lvs_trainers', JSON.stringify(next)); } catch (e) {}
+      (async () => {
+        try {
+          if (next.length > prev.length) {
+            const newItems = next.filter(n => !n.firestoreId && !prev.some(p => p.id === n.id));
+            for (const item of newItems) {
+              const cleanItem = JSON.parse(JSON.stringify(item));
+              await addDoc(collection(db, "trainers"), cleanItem);
+            }
+          }
+        } catch (e) { console.warn("Firestore trainers sync notice:", e); }
+      })();
       return next;
     });
   };
@@ -160,7 +190,17 @@ export default function AdminApp() {
   const handleSetStudents = (val) => {
     setStudents(prev => {
       const next = typeof val === 'function' ? val(prev) : val;
-      try { localStorage.setItem('lvs_students', JSON.stringify(next)); } catch (e) {}
+      (async () => {
+        try {
+          if (next.length > prev.length) {
+            const newItems = next.filter(n => !n.firestoreId && !prev.some(p => p.id === n.id));
+            for (const item of newItems) {
+              const cleanItem = JSON.parse(JSON.stringify(item));
+              await addDoc(collection(db, "students"), cleanItem);
+            }
+          }
+        } catch (e) { console.warn("Firestore students sync notice:", e); }
+      })();
       return next;
     });
   };
@@ -168,7 +208,17 @@ export default function AdminApp() {
   const handleSetCertificates = (val) => {
     setCertificates(prev => {
       const next = typeof val === 'function' ? val(prev) : val;
-      try { localStorage.setItem('lvs_certificates', JSON.stringify(next)); } catch (e) {}
+      (async () => {
+        try {
+          if (next.length > prev.length) {
+            const newItems = next.filter(n => !n.firestoreId && !prev.some(p => p.id === n.id));
+            for (const item of newItems) {
+              const cleanItem = JSON.parse(JSON.stringify(item));
+              await addDoc(collection(db, "certificates"), cleanItem);
+            }
+          }
+        } catch (e) { console.warn("Firestore certificates sync notice:", e); }
+      })();
       return next;
     });
   };
@@ -307,10 +357,8 @@ export default function AdminApp() {
     try {
       const q = collection(db, "training_centers");
       const unsub = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
-          setCenters(items);
-        }
+        const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
+        setCenters(items);
       }, (error) => console.warn("Firestore training_centers sync notice:", error));
       unsubscribes.push(unsub);
     } catch (err) {}
@@ -319,34 +367,38 @@ export default function AdminApp() {
     try {
       const q = collection(db, "batches");
       const unsub = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
-          setBatches(items);
-        }
+        const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
+        setBatches(items);
       }, (error) => console.warn("Firestore batches sync notice:", error));
       unsubscribes.push(unsub);
     } catch (err) {}
 
-    // 9. Students (students)
+    // 9. Trainers (trainers)
+    try {
+      const q = collection(db, "trainers");
+      const unsub = onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
+        setTrainers(items);
+      }, (error) => console.warn("Firestore trainers sync notice:", error));
+      unsubscribes.push(unsub);
+    } catch (err) {}
+
+    // 10. Students (students)
     try {
       const q = collection(db, "students");
       const unsub = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
-          setStudents(items);
-        }
+        const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
+        setStudents(items);
       }, (error) => console.warn("Firestore students sync notice:", error));
       unsubscribes.push(unsub);
     } catch (err) {}
 
-    // 10. Certificates (certificates)
+    // 11. Certificates (certificates)
     try {
       const q = collection(db, "certificates");
       const unsub = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
-          setCertificates(items);
-        }
+        const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
+        setCertificates(items);
       }, (error) => console.warn("Firestore certificates sync notice:", error));
       unsubscribes.push(unsub);
     } catch (err) {}
@@ -743,7 +795,7 @@ export default function AdminApp() {
 
             if (targetApp) {
               if (newStatus === 'Selected' || newStatus === 'Approved' || newStatus === 'Shortlisted') {
-                setStudents(prev => {
+                handleSetStudents(prev => {
                   const alreadyStudent = prev.some(s => s.phone === targetApp.mobile || s.name === targetApp.name);
                   if (alreadyStudent) return prev;
                   const nextIdNum = String(prev.length + 1).padStart(4, '0');
@@ -795,7 +847,7 @@ export default function AdminApp() {
             setSelectedApp(prev => prev && prev.id === id ? { ...prev, preferredBatch: batch, timelineStep: 5 } : null);
 
             if (targetApp) {
-              setStudents(prev => {
+              handleSetStudents(prev => {
                 const alreadyStudent = prev.some(s => s.phone === targetApp.mobile || s.name === targetApp.name);
                 if (alreadyStudent) {
                   return prev.map(s => (s.phone === targetApp.mobile || s.name === targetApp.name) ? { ...s, batch } : s);
