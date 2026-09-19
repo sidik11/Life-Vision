@@ -75,124 +75,26 @@ export default function AdminApp() {
     setToast({ message, type });
   };
 
-  // Datasets State initialized ONLY with Real Public Website Submissions
-  const [applications, setApplications] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('lvs_submitted_applications') || '[]');
-    } catch (e) {
-      return [];
-    }
-  });
-
-  const [placements, setPlacements] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('lvs_submitted_placements') || '[]');
-    } catch (e) {
-      return [];
-    }
-  });
-
-  const [partners, setPartners] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('lvs_submitted_partners') || '[]');
-    } catch (e) {
-      return [];
-    }
-  });
-
-  const [donations, setDonations] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('lvs_submitted_donations') || '[]');
-    } catch (e) {
-      return [];
-    }
-  });
-
-  const [contacts, setContacts] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('lvs_submitted_contacts') || '[]');
-    } catch (e) {
-      return [];
-    }
-  });
-
-  const [volunteers, setVolunteers] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('lvs_submitted_volunteers') || '[]');
-    } catch (e) {
-      return [];
-    }
-  });
-
-  const [stories, setStories] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('lvs_submitted_stories') || '[]');
-    } catch (e) {
-      return [];
-    }
-  });
-
-  const [programs, setPrograms] = useState(() => {
-    try {
-      const saved = localStorage.getItem('lvs_submitted_programs');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {}
-    return initialPrograms;
-  });
+  // Datasets State fetched directly from Cloud Firestore Database
+  const [applications, setApplications] = useState([]);
+  const [placements, setPlacements] = useState([]);
+  const [partners, setPartners] = useState([]);
+  const [donations, setDonations] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [volunteers, setVolunteers] = useState([]);
+  const [stories, setStories] = useState([]);
+  const [programs, setPrograms] = useState(initialPrograms);
 
   const handleAddProgram = (newProg) => {
-    setPrograms((prev) => {
-      const updated = [newProg, ...prev];
-      try {
-        localStorage.setItem('lvs_submitted_programs', JSON.stringify(updated));
-      } catch (e) {}
-      return updated;
-    });
+    setPrograms((prev) => [newProg, ...prev]);
     showToast(`New NQR Qualification Pack (${newProg.qpCode || newProg.name}) created successfully!`, 'success');
   };
 
-  const [centers, setCenters] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('lvs_submitted_centers') || '[]');
-    } catch (e) {
-      return [];
-    }
-  });
-
-  const [batches, setBatches] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('lvs_submitted_batches') || '[]');
-    } catch (e) {
-      return [];
-    }
-  });
-
-  const [students, setStudents] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('lvs_submitted_students') || '[]');
-    } catch (e) {
-      return [];
-    }
-  });
-
-  const [certificates, setCertificates] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('lvs_submitted_certificates') || '[]');
-    } catch (e) {
-      return [];
-    }
-  });
-
-  const [documents, setDocuments] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('lvs_submitted_documents') || '[]');
-    } catch (e) {
-      return [];
-    }
-  });
+  const [centers, setCenters] = useState([]);
+  const [batches, setBatches] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [certificates, setCertificates] = useState([]);
+  const [documents, setDocuments] = useState([]);
 
   const [adminUsers, setAdminUsers] = useState(initialAdminUsers);
 
@@ -200,7 +102,7 @@ export default function AdminApp() {
   const [selectedApp, setSelectedApp] = useState(null);
   const [firestoreNotCreated, setFirestoreNotCreated] = useState(false);
 
-  // Real-time synchronization with Firebase Firestore for All Submissions (Multi-device Admin support)
+  // Real-time synchronization with Firebase Firestore Database (Direct Cloud DB -> Admin Portal)
   useEffect(() => {
     const unsubscribes = [];
 
@@ -227,15 +129,7 @@ export default function AdminApp() {
           return timeB - timeA;
         });
 
-        setApplications(prev => {
-          const firestoreIds = new Set(firestoreApps.map(a => a.firestoreId || a.id));
-          const localOnly = prev.filter(a => !firestoreIds.has(a.firestoreId || a.id));
-          const merged = [...firestoreApps, ...localOnly];
-          try {
-            localStorage.setItem('lvs_submitted_applications', JSON.stringify(merged));
-          } catch (e) {}
-          return merged;
-        });
+        setApplications(firestoreApps);
       }, (error) => handleFirestoreError(error, 'training_applications'));
       unsubscribes.push(unsub);
     } catch (err) {
@@ -255,15 +149,7 @@ export default function AdminApp() {
           const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.date || 0).getTime();
           return timeB - timeA;
         });
-        setDonations(prev => {
-          const firestoreIds = new Set(firestoreDonations.map(d => d.firestoreId || d.id));
-          const localOnly = prev.filter(d => !firestoreIds.has(d.firestoreId || d.id));
-          const merged = [...firestoreDonations, ...localOnly];
-          try {
-            localStorage.setItem('lvs_submitted_donations', JSON.stringify(merged));
-          } catch (e) {}
-          return merged;
-        });
+        setDonations(firestoreDonations);
       }, (error) => console.warn("Firestore donations sync notice:", error));
       unsubscribes.push(unsub);
     } catch (err) {}
@@ -281,15 +167,7 @@ export default function AdminApp() {
           const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.date || 0).getTime();
           return timeB - timeA;
         });
-        setContacts(prev => {
-          const firestoreIds = new Set(firestoreContacts.map(c => c.firestoreId || c.id));
-          const localOnly = prev.filter(c => !firestoreIds.has(c.firestoreId || c.id));
-          const merged = [...firestoreContacts, ...localOnly];
-          try {
-            localStorage.setItem('lvs_submitted_contacts', JSON.stringify(merged));
-          } catch (e) {}
-          return merged;
-        });
+        setContacts(firestoreContacts);
       }, (error) => console.warn("Firestore contacts sync notice:", error));
       unsubscribes.push(unsub);
     } catch (err) {}
@@ -307,15 +185,7 @@ export default function AdminApp() {
           const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.applicationDate || 0).getTime();
           return timeB - timeA;
         });
-        setVolunteers(prev => {
-          const firestoreIds = new Set(firestoreVolunteers.map(v => v.firestoreId || v.id));
-          const localOnly = prev.filter(v => !firestoreIds.has(v.firestoreId || v.id));
-          const merged = [...firestoreVolunteers, ...localOnly];
-          try {
-            localStorage.setItem('lvs_submitted_volunteers', JSON.stringify(merged));
-          } catch (e) {}
-          return merged;
-        });
+        setVolunteers(firestoreVolunteers);
       }, (error) => console.warn("Firestore volunteers sync notice:", error));
       unsubscribes.push(unsub);
     } catch (err) {}
@@ -333,15 +203,7 @@ export default function AdminApp() {
           const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.dateJoined || 0).getTime();
           return timeB - timeA;
         });
-        setPartners(prev => {
-          const firestoreIds = new Set(firestorePartners.map(p => p.firestoreId || p.id));
-          const localOnly = prev.filter(p => !firestoreIds.has(p.firestoreId || p.id));
-          const merged = [...firestorePartners, ...localOnly];
-          try {
-            localStorage.setItem('lvs_submitted_partners', JSON.stringify(merged));
-          } catch (e) {}
-          return merged;
-        });
+        setPartners(firestorePartners);
       }, (error) => console.warn("Firestore partners sync notice:", error));
       unsubscribes.push(unsub);
     } catch (err) {}
@@ -359,15 +221,7 @@ export default function AdminApp() {
           const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.joiningDate || 0).getTime();
           return timeB - timeA;
         });
-        setPlacements(prev => {
-          const firestoreIds = new Set(firestorePlacements.map(p => p.firestoreId || p.id));
-          const localOnly = prev.filter(p => !firestoreIds.has(p.firestoreId || p.id));
-          const merged = [...firestorePlacements, ...localOnly];
-          try {
-            localStorage.setItem('lvs_submitted_placements', JSON.stringify(merged));
-          } catch (e) {}
-          return merged;
-        });
+        setPlacements(firestorePlacements);
       }, (error) => console.warn("Firestore placements sync notice:", error));
       unsubscribes.push(unsub);
     } catch (err) {}

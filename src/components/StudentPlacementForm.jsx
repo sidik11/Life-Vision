@@ -53,28 +53,17 @@ export default function StudentPlacementForm() {
       createdAt: serverTimestamp()
     };
 
-    // 1. Save to local storage immediately for fast UI feedback & local sync
+    // 1. Save directly to Firebase Firestore Database (Website -> Database -> Admin)
     try {
-      const existing = JSON.parse(localStorage.getItem('lvs_submitted_applications') || '[]');
-      localStorage.setItem('lvs_submitted_applications', JSON.stringify([newApplication, ...existing]));
-      window.dispatchEvent(new CustomEvent('lvs_new_application', { detail: newApplication }));
-    } catch (err) {
-      console.error('Error saving student application:', err);
+      const docRef = await addDoc(collection(db, "training_applications"), newApplication);
+      newApplication.firestoreId = docRef.id;
+    } catch (firebaseErr) {
+      console.warn("Firebase application save notice:", firebaseErr);
     }
 
-    // Show success feedback instantly to the user
+    // Show success feedback to the user
     setIsSubmitting(false);
     setSubmitted(true);
-
-    // 2. Save to Firebase Firestore Database in background
-    (async () => {
-      try {
-        const docRef = await addDoc(collection(db, "training_applications"), newApplication);
-        newApplication.firestoreId = docRef.id;
-      } catch (firebaseErr) {
-        console.warn("Firebase application save notice:", firebaseErr);
-      }
-    })();
 
     // 3. Optional FormSubmit email notice to support.lifevision@gmail.com (Non-blocking)
     fetch('https://formsubmit.co/ajax/support.lifevision@gmail.com', {

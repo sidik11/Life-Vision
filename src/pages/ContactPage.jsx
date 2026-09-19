@@ -36,26 +36,15 @@ export default function ContactPage() {
       createdAt: serverTimestamp()
     };
 
-    // 1. Save locally immediately for fast UI feedback & local sync
+    // 1. Save directly to Firebase Firestore Database (Website -> Database -> Admin)
     try {
-      const existing = JSON.parse(localStorage.getItem('lvs_submitted_contacts') || '[]');
-      localStorage.setItem('lvs_submitted_contacts', JSON.stringify([newContact, ...existing]));
-      window.dispatchEvent(new CustomEvent('lvs_new_contact', { detail: newContact }));
-    } catch (err) {
-      console.error('Error saving contact query:', err);
+      await addDoc(collection(db, "contacts"), newContact);
+    } catch (firebaseErr) {
+      console.warn("Firebase save notice:", firebaseErr);
     }
 
     setSubmitted(true);
     setIsSubmitting(false);
-
-    // 2. Save to Firebase Firestore Database in background
-    (async () => {
-      try {
-        await addDoc(collection(db, "contacts"), newContact);
-      } catch (firebaseErr) {
-        console.warn("Firebase save notice:", firebaseErr);
-      }
-    })();
 
     // 3. Direct Email Dispatch to support.lifevision@gmail.com (Non-blocking)
     fetch('https://formsubmit.co/ajax/support.lifevision@gmail.com', {

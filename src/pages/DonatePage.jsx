@@ -48,14 +48,6 @@ export default function DonatePage({ onOpenApply }) {
       console.warn("Firebase donation save notice:", firebaseErr);
     }
 
-    try {
-      const existing = JSON.parse(localStorage.getItem('lvs_submitted_donations') || '[]');
-      localStorage.setItem('lvs_submitted_donations', JSON.stringify([newDonation, ...existing]));
-      window.dispatchEvent(new CustomEvent('lvs_new_donation', { detail: newDonation }));
-    } catch (err) {
-      console.error(err);
-    }
-
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);

@@ -54,14 +54,6 @@ export default function CollaborateModal({ isOpen, onClose }) {
       console.warn("Firebase partner save notice:", firebaseErr);
     }
 
-    try {
-      const existing = JSON.parse(localStorage.getItem('lvs_submitted_partners') || '[]');
-      localStorage.setItem('lvs_submitted_partners', JSON.stringify([newCollab, ...existing]));
-      window.dispatchEvent(new CustomEvent('lvs_new_partner', { detail: newCollab }));
-    } catch (err) {
-      console.error(err);
-    }
-
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);

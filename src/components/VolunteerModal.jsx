@@ -40,14 +40,6 @@ export default function VolunteerModal({ isOpen, onClose }) {
       console.warn("Firebase volunteer save notice:", firebaseErr);
     }
 
-    try {
-      const existing = JSON.parse(localStorage.getItem('lvs_submitted_volunteers') || '[]');
-      localStorage.setItem('lvs_submitted_volunteers', JSON.stringify([newVol, ...existing]));
-      window.dispatchEvent(new CustomEvent('lvs_new_volunteer', { detail: newVol }));
-    } catch (err) {
-      console.error(err);
-    }
-
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);

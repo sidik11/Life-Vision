@@ -77,14 +77,6 @@ export default function StudentPlacementModal({ isOpen, onClose }) {
       console.warn("Firebase placement save notice:", firebaseErr);
     }
 
-    try {
-      const existing = JSON.parse(localStorage.getItem('lvs_submitted_placements') || '[]');
-      localStorage.setItem('lvs_submitted_placements', JSON.stringify([newPlacement, ...existing]));
-      window.dispatchEvent(new CustomEvent('lvs_new_placement', { detail: newPlacement }));
-    } catch (err) {
-      console.error(err);
-    }
-
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
