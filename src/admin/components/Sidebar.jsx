@@ -404,7 +404,7 @@ export default function Sidebar({
                 {/* Collapsed mode single tooltip */}
                 {isCollapsed && hoveredTooltip === item.id && (
                   <div 
-                    className="fixed left-20 z-50 px-3 py-1.5 bg-[#1F2937] text-white text-xs font-bold rounded-xl border border-slate-700 shadow-xl pointer-events-none animate-fade-in"
+                    className="fixed left-20 z-[9999] px-3 py-1.5 bg-[#1F2937] text-white text-xs font-bold rounded-xl border border-slate-700 shadow-2xl pointer-events-none animate-fade-in"
                     style={{ top: `${tooltipTop}px` }}
                   >
                     {item.label}
@@ -481,17 +481,17 @@ export default function Sidebar({
         </button>
       </div>
 
-      {/* Floating Popover Dropdown when Sidebar is Collapsed (Strict Floating position right of sidebar) */}
+      {/* Floating Popover Dropdown when Sidebar is Collapsed (Strict Floating position right of sidebar above all dashboard elements) */}
       {isCollapsed && activePopoverItem && (
         <div 
           ref={popoverRef}
           onMouseEnter={handleMouseEnterPopover}
           onMouseLeave={handleMouseLeavePopover}
-          className="fixed left-20 z-50 w-60 bg-[#1F2937] border border-slate-700/80 rounded-2xl p-2.5 shadow-2xl animate-fade-in space-y-1.5"
+          className="fixed left-20 z-[9999] w-64 bg-[#1F2937] border border-slate-700/90 rounded-2xl p-3 shadow-2xl ring-1 ring-black/20 animate-fade-in space-y-1.5 drop-shadow-2xl"
           style={{ top: `${popoverTop}px` }}
         >
           {/* Header */}
-          <div className="px-3 py-2 text-xs font-bold text-white border-b border-slate-700/80 flex items-center justify-between bg-[#111827]/60 rounded-xl">
+          <div className="px-3 py-2 text-xs font-bold text-white border-b border-slate-700/80 flex items-center justify-between bg-[#111827]/80 rounded-xl">
             <div className="flex items-center space-x-2">
               {React.createElement(activePopoverItem.icon, { className: "w-4 h-4 text-pink-500" })}
               <span className="text-slate-100">{activePopoverItem.label}</span>
@@ -529,7 +529,7 @@ export default function Sidebar({
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className={`hidden lg:block h-screen sticky top-0 transition-all duration-300 shrink-0 ${
+      <aside className={`hidden lg:block h-screen sticky top-0 transition-all duration-300 shrink-0 z-40 ${
         isCollapsed ? 'w-20' : 'w-64'
       }`}>
         {SidebarContent}
