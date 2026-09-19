@@ -215,7 +215,7 @@ export default function TrustPartnersStories({ setActiveSection, onOpenApply, on
               onClick={handlePartnerWithUs}
               className="w-full bg-gradient-to-r from-[#C52B75] to-[#6B1D52] hover:opacity-95 text-white font-black text-xs sm:text-sm py-3.5 px-5 rounded-full shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
             >
-              <span>View All 12 Corporate Partners</span>
+              <span>View all partners</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
