@@ -81,8 +81,14 @@ export default function AdminApp() {
     setToast({ message, type });
   };
 
-  // Datasets State fetched directly from Cloud Firestore Database
-  const [applications, setApplications] = useState([]);
+  // Datasets State fetched directly from Cloud Firestore Database with instant fallback
+  const [applications, setApplications] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lvs_submitted_applications');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  });
+
   const [placements, setPlacements] = useState([]);
   const [partners, setPartners] = useState([]);
   const [donations, setDonations] = useState([]);
@@ -250,13 +256,19 @@ export default function AdminApp() {
           firestoreId: docSnap.id
         }));
 
-        firestoreApps.sort((a, b) => {
-          const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.applicationDate || 0).getTime();
-          const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.applicationDate || 0).getTime();
-          return timeB - timeA;
+        setApplications(prev => {
+          const map = new Map();
+          [...firestoreApps, ...prev].forEach(item => {
+            if (item && item.id) map.set(item.id, { ...map.get(item.id), ...item });
+          });
+          const merged = Array.from(map.values());
+          merged.sort((a, b) => {
+            const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.applicationDate || 0).getTime();
+            const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.applicationDate || 0).getTime();
+            return timeB - timeA;
+          });
+          return merged;
         });
-
-        setApplications(firestoreApps);
       }, (error) => handleFirestoreError(error, 'training_applications'));
       unsubscribes.push(unsub);
     } catch (err) {

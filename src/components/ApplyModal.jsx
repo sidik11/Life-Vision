@@ -147,19 +147,31 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
       // Sanitize JSON payload to remove any 'undefined' fields before saving to Firestore
       const newApp = JSON.parse(JSON.stringify(rawApp));
 
-      // 2. Save directly to Firebase Firestore Database (Student registers -> Website -> Database -> Admin)
+      // 2. Save locally & dispatch window event for instant Admin Portal sync
       try {
-        const firestorePayload = {
-          ...newApp,
-          createdAt: serverTimestamp()
-        };
-        const docRef = await addDoc(collection(db, "training_applications"), firestorePayload);
-        newApp.firestoreId = docRef.id;
-      } catch (firebaseErr) {
-        console.warn("Firebase training application save notice:", firebaseErr);
-      }
+        const existingApps = JSON.parse(localStorage.getItem('lvs_submitted_applications') || '[]');
+        localStorage.setItem('lvs_submitted_applications', JSON.stringify([newApp, ...existingApps]));
+      } catch (e) {}
 
-      // Show success screen to the user
+      try {
+        window.dispatchEvent(new CustomEvent('lvs_new_application', { detail: newApp }));
+      } catch (e) {}
+
+      // 3. Non-blocking Cloud Firestore Database write
+      (async () => {
+        try {
+          const firestorePayload = {
+            ...newApp,
+            createdAt: serverTimestamp()
+          };
+          const docRef = await addDoc(collection(db, "training_applications"), firestorePayload);
+          newApp.firestoreId = docRef.id;
+        } catch (firebaseErr) {
+          console.warn("Firebase training application save notice:", firebaseErr);
+        }
+      })();
+
+      // Show success screen to the user immediately
       setLastRegId(newApp.id);
       setSubmitted(true);
       setIsSubmitting(false);

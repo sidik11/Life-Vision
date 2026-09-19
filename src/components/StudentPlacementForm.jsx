@@ -53,15 +53,27 @@ export default function StudentPlacementForm() {
       createdAt: serverTimestamp()
     };
 
-    // 1. Save directly to Firebase Firestore Database (Website -> Database -> Admin)
+    // 1. Save locally & dispatch window event for instant Admin Portal sync
     try {
-      const docRef = await addDoc(collection(db, "training_applications"), newApplication);
-      newApplication.firestoreId = docRef.id;
-    } catch (firebaseErr) {
-      console.warn("Firebase application save notice:", firebaseErr);
-    }
+      const existingApps = JSON.parse(localStorage.getItem('lvs_submitted_applications') || '[]');
+      localStorage.setItem('lvs_submitted_applications', JSON.stringify([newApplication, ...existingApps]));
+    } catch (e) {}
 
-    // Show success feedback to the user
+    try {
+      window.dispatchEvent(new CustomEvent('lvs_new_application', { detail: newApplication }));
+    } catch (e) {}
+
+    // 2. Non-blocking Cloud Firestore Database write
+    (async () => {
+      try {
+        const docRef = await addDoc(collection(db, "training_applications"), newApplication);
+        newApplication.firestoreId = docRef.id;
+      } catch (firebaseErr) {
+        console.warn("Firebase application save notice:", firebaseErr);
+      }
+    })();
+
+    // Show success feedback to the user immediately
     setIsSubmitting(false);
     setSubmitted(true);
 
