@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { db, collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc } from '../firebase';
 import AdminLogin from './components/AdminLogin';
 import Sidebar from './components/Sidebar';
@@ -197,15 +198,24 @@ export default function AdminApp() {
 
   // Selected Item Modal State
   const [selectedApp, setSelectedApp] = useState(null);
+  const [firestoreNotCreated, setFirestoreNotCreated] = useState(false);
 
   // Real-time synchronization with Firebase Firestore for All Submissions (Multi-device Admin support)
   useEffect(() => {
     const unsubscribes = [];
 
+    const handleFirestoreError = (error, context) => {
+      console.warn(`Firestore ${context} sync notice:`, error);
+      if (error?.code === 'not-found' || error?.message?.includes('NOT_FOUND') || error?.message?.includes('Code: 5')) {
+        setFirestoreNotCreated(true);
+      }
+    };
+
     // 1. Applications (training_applications)
     try {
       const q = collection(db, "training_applications");
       const unsub = onSnapshot(q, (snapshot) => {
+        setFirestoreNotCreated(false);
         const firestoreApps = snapshot.docs.map(docSnap => ({
           ...docSnap.data(),
           firestoreId: docSnap.id
@@ -226,9 +236,7 @@ export default function AdminApp() {
           } catch (e) {}
           return merged;
         });
-      }, (error) => {
-        console.warn("Firestore training_applications sync notice:", error);
-      });
+      }, (error) => handleFirestoreError(error, 'training_applications'));
       unsubscribes.push(unsub);
     } catch (err) {
       console.warn("Firestore setup notice:", err);
@@ -703,6 +711,30 @@ export default function AdminApp() {
 
         {/* View Dynamic Body */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6 bg-[#F4F6F4]">
+          {firestoreNotCreated && (
+            <div className="p-4 bg-amber-50 border border-amber-300 text-amber-900 rounded-2xl flex items-start space-x-3 text-xs shadow-xs animate-fade-in">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <h4 className="font-bold text-sm text-amber-950">Action Required: Cloud Firestore Database Not Initialized</h4>
+                <p>
+                  Cloud Firestore has not been created yet in your Firebase Console project (<code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono font-bold">life-vision-society</code>).
+                  Because the database is missing in Firebase, form submissions currently fallback to local browser storage and cannot sync across different devices.
+                </p>
+                <div className="mt-2 pt-2 border-t border-amber-200">
+                  <p className="font-bold text-amber-900">How to Fix (Takes 30 Seconds):</p>
+                  <ol className="list-decimal ml-4 mt-1 space-y-1 text-amber-800">
+                    <li>Open <a href="https://console.firebase.google.com/project/life-vision-society/firestore" target="_blank" rel="noreferrer" className="underline font-bold text-amber-700 hover:text-amber-900">Firebase Console &gt; Cloud Firestore</a>.</li>
+                    <li>Click <strong>"Create database"</strong>.</li>
+                    <li>Select location (e.g. <code>asia-south1 (Mumbai)</code> or <code>us-central</code>).</li>
+                    <li>Select <strong>Start in test mode</strong> (or allow read/write in Rules tab).</li>
+                  </ol>
+                  <p className="mt-2 text-emerald-800 font-semibold">
+                    Once created, refresh this page and all forms will automatically save to the cloud database and sync across all devices!
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           {renderActiveView()}
         </main>
       </div>
