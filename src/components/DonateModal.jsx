@@ -229,13 +229,13 @@ export default function DonateModal({ isOpen, onClose }) {
 
                   <div>
                     <label className="block text-2xs font-bold text-slate-700 mb-1">
-                      PAN Number (for 80G donation records)
+                      PAN Number
                     </label>
                     <div className="relative">
                       <CreditCard className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                       <input
                         type="text"
-                        placeholder="ABCDE1234F (Optional)"
+                        placeholder="ABCDE1234F"
                         maxLength={10}
                         value={formData.panNo}
                         onChange={(e) => handleInputChange('panNo', e.target.value)}
@@ -245,7 +245,7 @@ export default function DonateModal({ isOpen, onClose }) {
                   </div>
 
                   <div>
-                    <label className="block text-2xs font-bold text-slate-700 mb-1">Donation Purpose / Category *</label>
+                    <label className="block text-2xs font-bold text-slate-700 mb-1">Donation *</label>
                     <select
                       value={formData.purpose}
                       onChange={(e) => handleInputChange('purpose', e.target.value)}

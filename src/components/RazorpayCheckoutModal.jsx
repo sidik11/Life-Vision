@@ -1,21 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, ShieldCheck, Heart, CreditCard, QrCode, Building, Wallet, Download, Printer, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
+import { X, CheckCircle2, ShieldCheck, Heart, CreditCard, Download, Printer, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
 import { db, collection, addDoc, serverTimestamp } from '../firebase';
 
 export default function RazorpayCheckoutModal({ isOpen, onClose, onSuccess, donorData, amount }) {
-  const [step, setStep] = useState('checkout'); // 'checkout' | 'processing' | 'receipt' | 'failed'
-  const [selectedMethod, setSelectedMethod] = useState('upi');
-  const [upiApp, setUpiApp] = useState('gpay');
+  const [step, setStep] = useState('processing'); // 'processing' | 'receipt' | 'failed'
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [donationRecord, setDonationRecord] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
-      setStep('checkout');
-      setIsProcessing(false);
+      setStep('processing');
       setErrorMessage('');
       setDonationRecord(null);
+      handleProceedPayment();
     }
   }, [isOpen]);
 
@@ -31,7 +29,7 @@ export default function RazorpayCheckoutModal({ isOpen, onClose, onSuccess, dono
     const rawPan = donorData?.panNo ? String(donorData.panNo).toUpperCase().trim() : '';
 
     try {
-      // 1. Send Order Creation request to Backend Server
+      // 1. Create Razorpay Order on Backend Server
       let orderData = null;
       try {
         const orderRes = await fetch('/api/donations/create-order', {
@@ -58,7 +56,7 @@ export default function RazorpayCheckoutModal({ isOpen, onClose, onSuccess, dono
       const orderId = orderData?.order_id || `order_LVS_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
       const keyId = orderData?.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_samplekeyid123';
 
-      // 2. Open Official Razorpay Checkout if SDK loaded
+      // 2. Directly open Official Razorpay Checkout Modal
       if (window.Razorpay && keyId && !keyId.includes('sample')) {
         const options = {
           key: keyId,
@@ -97,7 +95,7 @@ export default function RazorpayCheckoutModal({ isOpen, onClose, onSuccess, dono
         return;
       }
 
-      // 3. Fallback Test Mode Verification (When running locally in test mode)
+      // 3. Fallback Test Mode Payment Verification
       setTimeout(async () => {
         await verifyAndSavePayment({
           paymentId: `pay_LVSTEST_${Math.floor(100000000 + Math.random() * 900000000)}`,
@@ -158,7 +156,7 @@ export default function RazorpayCheckoutModal({ isOpen, onClose, onSuccess, dono
         rawAmount: Number(numericAmount),
         paymentId: paymentId,
         orderId: orderId,
-        paymentMethod: selectedMethod === 'upi' ? `UPI (${upiApp.toUpperCase()})` : selectedMethod.toUpperCase(),
+        paymentMethod: 'Razorpay Gateway',
         purpose: donorData?.purpose || 'Women Empowerment & Tailoring Kits',
         campaign: donorData?.purpose || 'Women Empowerment & Tailoring Kits',
         message: donorData?.message || '',
@@ -207,7 +205,7 @@ export default function RazorpayCheckoutModal({ isOpen, onClose, onSuccess, dono
             </div>
             <div>
               <h3 className="font-bold text-sm text-slate-900 leading-none">Razorpay Secure Checkout</h3>
-              <p className="text-2xs text-slate-500 mt-0.5">Official NGO Payment Gateway for Life Vision Society</p>
+              <p className="text-2xs text-slate-500 mt-0.5">Connecting with official Razorpay Payment System...</p>
             </div>
           </div>
 
@@ -219,119 +217,19 @@ export default function RazorpayCheckoutModal({ isOpen, onClose, onSuccess, dono
           </button>
         </div>
 
-        {/* STEP 1: CHECKOUT METHOD SELECTOR */}
-        {step === 'checkout' && (
-          <div className="space-y-5">
-            
-            {/* Summary Banner */}
-            <div className="bg-gradient-to-r from-[#C52B75] to-[#6B1D52] text-white p-4 rounded-2xl flex items-center justify-between shadow-md">
-              <div>
-                <span className="text-2xs font-bold text-pink-200 uppercase tracking-wider">Total Donation Amount</span>
-                <h2 className="text-2xl font-black">{displayAmount}</h2>
-              </div>
-              <div className="text-right">
-                <span className="inline-block text-2xs bg-white/20 text-white font-extrabold px-2.5 py-1 rounded-full border border-white/30">
-                  80G Exemption Eligible
-                </span>
-                <p className="text-2xs text-pink-100 mt-1">{donorData?.fullName || 'Donor'}</p>
-              </div>
-            </div>
-
-            {/* Payment Method Selector */}
-            <div className="space-y-3">
-              <label className="block text-xs font-bold text-slate-800">Select Payment Method</label>
-              
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setSelectedMethod('upi')}
-                  className={`p-3 rounded-2xl border text-left flex items-center space-x-3 transition-all cursor-pointer ${
-                    selectedMethod === 'upi' ? 'border-[#C52B75] bg-pink-50/60 ring-2 ring-[#C52B75]/20' : 'border-slate-200 bg-white hover:bg-slate-50'
-                  }`}
-                >
-                  <QrCode className="w-5 h-5 text-[#C52B75]" />
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900">UPI / QR Code</h4>
-                    <p className="text-2xs text-slate-500">GPay, PhonePe, Paytm, BHIM</p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedMethod('card')}
-                  className={`p-3 rounded-2xl border text-left flex items-center space-x-3 transition-all cursor-pointer ${
-                    selectedMethod === 'card' ? 'border-[#C52B75] bg-pink-50/60 ring-2 ring-[#C52B75]/20' : 'border-slate-200 bg-white hover:bg-slate-50'
-                  }`}
-                >
-                  <CreditCard className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900">Cards</h4>
-                    <p className="text-2xs text-slate-500">Credit / Debit Card</p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedMethod('netbanking')}
-                  className={`p-3 rounded-2xl border text-left flex items-center space-x-3 transition-all cursor-pointer ${
-                    selectedMethod === 'netbanking' ? 'border-[#C52B75] bg-pink-50/60 ring-2 ring-[#C52B75]/20' : 'border-slate-200 bg-white hover:bg-slate-50'
-                  }`}
-                >
-                  <Building className="w-5 h-5 text-emerald-600" />
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900">Net Banking</h4>
-                    <p className="text-2xs text-slate-500">All Major Indian Banks</p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedMethod('wallet')}
-                  className={`p-3 rounded-2xl border text-left flex items-center space-x-3 transition-all cursor-pointer ${
-                    selectedMethod === 'wallet' ? 'border-[#C52B75] bg-pink-50/60 ring-2 ring-[#C52B75]/20' : 'border-slate-200 bg-white hover:bg-slate-50'
-                  }`}
-                >
-                  <Wallet className="w-5 h-5 text-amber-600" />
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900">Wallets</h4>
-                    <p className="text-2xs text-slate-500">Mobikwik, Freecharge, etc.</p>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* Submit Action */}
-            <button
-              onClick={handleProceedPayment}
-              disabled={isProcessing}
-              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-black py-3.5 px-6 rounded-2xl shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer text-sm sm:text-base tracking-wide"
-            >
-              {isProcessing ? (
-                <span>Connecting with Razorpay Backend...</span>
-              ) : (
-                <>
-                  <span>Pay Now {displayAmount} via Razorpay</span>
-                  <ArrowRight className="w-5 h-5" />
-                </>
-              )}
-            </button>
-          </div>
-        )}
-
-        {/* STEP 2: PROCESSING INDICATOR */}
+        {/* STEP 1: PROCESSING / CONNECTING INDICATOR */}
         {step === 'processing' && (
           <div className="py-12 text-center space-y-4">
             <RefreshCw className="w-12 h-12 text-[#C52B75] animate-spin mx-auto" />
-            <h3 className="text-lg font-bold text-slate-900">Verifying Payment Signature...</h3>
-            <p className="text-xs text-slate-500">Authenticating HMAC signature with Razorpay backend</p>
+            <h3 className="text-lg font-bold text-slate-900">Redirecting to Razorpay Payment System...</h3>
+            <p className="text-xs text-slate-500 font-medium">Please wait while we initialize your secure payment session</p>
           </div>
         )}
 
-        {/* STEP 3: PAYMENT SUCCESS CONFIRMATION & 80G RECEIPT */}
+        {/* STEP 2: PAYMENT SUCCESS CONFIRMATION & 80G RECEIPT */}
         {step === 'receipt' && donationRecord && (
           <div className="space-y-5 animate-scale-up">
             
-            {/* Official Requirement 7 Success Banner */}
             <div className="text-center space-y-2 bg-emerald-50 border border-emerald-200 p-5 rounded-2xl">
               <div className="w-14 h-14 bg-emerald-600 text-white rounded-full flex items-center justify-center mx-auto shadow-md">
                 <CheckCircle2 className="w-9 h-9" />
@@ -342,7 +240,7 @@ export default function RazorpayCheckoutModal({ isOpen, onClose, onSuccess, dono
               </p>
             </div>
 
-            {/* Official Receipt Card */}
+            {/* Official Receipt Document */}
             <div className="border border-slate-200 rounded-2xl p-5 bg-white space-y-4 shadow-sm relative overflow-hidden" id="printable-80g-receipt">
               <div className="flex items-center space-x-3 border-b border-slate-200 pb-3">
                 <img src="/image/logo.png" alt="Life Vision Logo" className="w-12 h-12 object-contain" />
@@ -380,13 +278,11 @@ export default function RazorpayCheckoutModal({ isOpen, onClose, onSuccess, dono
                 </div>
               </div>
 
-              {/* Requirement 7 Mandatory Disclaimer */}
               <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-3xs text-slate-600 leading-relaxed font-medium">
                 80G tax benefit is subject to the eligibility of the donor, the NGO's valid 80G registration, and applicable income-tax rules.
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex items-center space-x-3 pt-2">
               <button
                 onClick={handlePrint}
@@ -407,7 +303,7 @@ export default function RazorpayCheckoutModal({ isOpen, onClose, onSuccess, dono
           </div>
         )}
 
-        {/* STEP 4: REQUIREMENT 8 FAILED / CANCELLED PAYMENT SCREEN */}
+        {/* STEP 3: FAILED / CANCELLED PAYMENT SCREEN */}
         {step === 'failed' && (
           <div className="py-8 text-center space-y-4 animate-fade-in">
             <div className="w-14 h-14 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto shadow-sm">
@@ -426,10 +322,7 @@ export default function RazorpayCheckoutModal({ isOpen, onClose, onSuccess, dono
 
             <div className="pt-3 flex items-center justify-center space-x-3">
               <button
-                onClick={() => {
-                  setStep('checkout');
-                  setIsProcessing(false);
-                }}
+                onClick={handleProceedPayment}
                 className="bg-gradient-to-r from-[#C52B75] to-[#6B1D52] text-white font-bold text-xs py-3 px-6 rounded-xl shadow-md cursor-pointer hover:opacity-95"
               >
                 Try Again
