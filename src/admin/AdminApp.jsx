@@ -40,7 +40,13 @@ import {
 } from './mockData';
 
 export default function AdminApp() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      return localStorage.getItem('lvs_admin_auth') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
   const [adminUser, setAdminUser] = useState(() => {
     try {
       const saved = localStorage.getItem('lvs_admin_profile');
@@ -306,6 +312,7 @@ export default function AdminApp() {
       } else {
         localStorage.setItem('lvs_admin_profile', JSON.stringify(user));
       }
+      localStorage.setItem('lvs_admin_auth', 'true');
     } catch (e) {}
     setAdminUser(userToUse);
     setIsAuthenticated(true);
@@ -313,6 +320,9 @@ export default function AdminApp() {
   };
 
   const handleLogout = () => {
+    try {
+      localStorage.removeItem('lvs_admin_auth');
+    } catch (e) {}
     setIsAuthenticated(false);
     showToast('Logged out successfully.', 'info');
   };

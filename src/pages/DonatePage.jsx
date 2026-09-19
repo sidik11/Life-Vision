@@ -16,6 +16,8 @@ export default function DonatePage({ onOpenApply }) {
     mobile: '',
     dob: '',
     panNo: '',
+    purpose: 'Women Empowerment & Tailoring Kits',
+    message: '',
     country: 'India',
     state: '',
     city: '',
@@ -23,15 +25,35 @@ export default function DonatePage({ onOpenApply }) {
     pincode: ''
   });
 
-  const presetAmounts = ['2000', '4000', '8000', '16000'];
+  const [formError, setFormError] = useState('');
+  const presetAmounts = ['500', '1000', '2000', '5000', '10000'];
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setFormError('');
+
+    if (!formData.fullName || !formData.email || !formData.mobile) {
+      setFormError('Please fill in all required donor details (Name, Email, Mobile).');
+      return;
+    }
+
+    if (formData.panNo && formData.panNo.trim() !== '') {
+      const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+      if (!panRegex.test(formData.panNo.trim())) {
+        setFormError('Invalid PAN format. Standard format: 5 letters, 4 numbers, 1 letter (e.g. ABCDE1234F).');
+        return;
+      }
+    }
+
     setShowRazorpay(true);
   };
 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    let finalVal = value;
+    if (field === 'panNo') {
+      finalVal = String(value).toUpperCase();
+    }
+    setFormData((prev) => ({ ...prev, [field]: finalVal }));
   };
 
   const copyToClipboard = (text) => {
@@ -266,6 +288,12 @@ export default function DonatePage({ onOpenApply }) {
                     <span>Required Donor Information</span>
                   </h3>
 
+                  {formError && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold text-rose-700 animate-fade-in">
+                      {formError}
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">Full Name *</label>
@@ -304,15 +332,43 @@ export default function DonatePage({ onOpenApply }) {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">Pan No (For 80G Benefit)</label>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        PAN Number (for 80G donation records)
+                      </label>
                       <input
                         type="text"
-                        placeholder="ABCDE1234F"
+                        placeholder="ABCDE1234F (Optional)"
+                        maxLength={10}
                         value={formData.panNo}
                         onChange={(e) => handleInputChange('panNo', e.target.value)}
-                        className="w-full px-3.5 py-2.5 text-xs border border-slate-200 bg-[#FFF7F6]/40 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none"
+                        className="w-full px-3.5 py-2.5 text-xs border border-slate-200 bg-[#FFF7F6]/40 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none uppercase tracking-wider font-mono"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Donation Purpose / Category *</label>
+                    <select
+                      value={formData.purpose}
+                      onChange={(e) => handleInputChange('purpose', e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-medium"
+                    >
+                      <option value="Women Empowerment & Tailoring Kits">Women Empowerment & Tailoring Kits</option>
+                      <option value="Student Study & Placement Aid">Student Study & Placement Aid</option>
+                      <option value="Community Healthcare Camps">Community Healthcare Camps</option>
+                      <option value="General Support & Welfare">General Support & Welfare</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Optional Message / Dedicated Note</label>
+                    <textarea
+                      rows={2}
+                      placeholder="Add an optional message or dedication note..."
+                      value={formData.message}
+                      onChange={(e) => handleInputChange('message', e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs border border-slate-200 bg-[#FFF7F6]/40 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none"
+                    />
                   </div>
 
                   <div>
