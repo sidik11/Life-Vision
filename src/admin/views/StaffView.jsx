@@ -3,19 +3,24 @@ import {
   Users, UserPlus, IdCard, Calendar, FileText, 
   Building, CheckCircle2, Clock, XCircle, Search, 
   Filter, Download, Mail, Phone, MapPin, Shield, Printer, Upload,
-  Edit, X
+  Edit, X, Trash2, Eye, RotateCw, MoreVertical
 } from 'lucide-react';
-import { db, doc, updateDoc } from '../../firebase';
+import ActionPopover from '../components/Common/ActionPopover';
+import { db, doc, updateDoc, deleteDoc } from '../../firebase';
 import { saveToFirestore } from '../../utils/firebaseSave';
 
 export default function StaffView({ staffList: propStaffList = [], setStaffList: propSetStaffList, activeSubTab = 'all-staff', showToast }) {
   const [subTab, setSubTab] = useState(activeSubTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState('All');
+  
+  // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
+  const [selectedCardStaff, setSelectedCardStaff] = useState(null);
+  const [cardFlip, setCardFlip] = useState(false);
 
-  // Staff members strictly from database / registration (no default static mock staff)
+  // Staff members strictly from database / public registration (no static fallback mock staff)
   const allStaff = propStaffList;
 
   const [newStaff, setNewStaff] = useState({
@@ -119,9 +124,29 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
     if (showToast) showToast(`Staff member ${updatedItem.name} details updated!`, "success");
   };
 
+  const handleDeleteStaff = async (staffMember) => {
+    if (window.confirm(`Are you sure you want to delete staff member "${staffMember.name}" (${staffMember.id})?`)) {
+      if (propSetStaffList) {
+        propSetStaffList(prev => prev.filter(s => s.id !== staffMember.id && s.firestoreId !== staffMember.firestoreId));
+      }
+      if (staffMember.firestoreId) {
+        try {
+          await deleteDoc(doc(db, "staff", staffMember.firestoreId));
+        } catch (err) {
+          console.warn("Firestore delete staff notice:", err);
+        }
+      }
+      if (showToast) showToast(`Staff member ${staffMember.name} deleted.`, 'info');
+    }
+  };
+
+  // Printable ID Card Pop-up with official image template overlay
   const handlePrintStaffCard = (staffMember) => {
-    const printWindow = window.open('', '_blank', 'width=650,height=750');
+    const printWindow = window.open('', '_blank', 'width=750,height=900');
     if (!printWindow) return;
+
+    const frontImgSrc = '/Team Member/id_card_front.jpg';
+    const backImgSrc = '/Team Member/id_card_back.jpg';
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -129,47 +154,46 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
         <head>
           <title>Staff ID Card - ${staffMember.name}</title>
           <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-            .id-card { width: 340px; background: linear-gradient(135deg, #021a10 0%, #053221 60%, #047857 100%); color: white; border-radius: 20px; padding: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); border: 2px solid #10b981; text-align: center; box-sizing: border-box; }
-            .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 14px; text-align: left; }
-            .logo { height: 34px; background: white; padding: 3px 6px; border-radius: 8px; }
-            .org-name { font-size: 13px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px; }
-            .sub-header { font-size: 10px; color: #6ee7b7; font-weight: 700; text-transform: uppercase; }
-            .photo { width: 90px; height: 90px; border-radius: 18px; object-fit: cover; border: 3px solid #10b981; margin: 0 auto 10px auto; display: block; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-            .name { font-size: 17px; font-weight: 900; color: #ffffff; margin: 2px 0; }
-            .role { display: inline-block; padding: 3px 12px; background: rgba(16, 185, 129, 0.25); color: #6ee7b7; border-radius: 20px; font-size: 11px; font-weight: 800; border: 1px solid #10b981; margin-bottom: 12px; }
-            .info-table { width: 100%; text-align: left; font-size: 11px; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 8px; }
-            .info-row { display: flex; justify-content: space-between; padding: 3px 0; }
-            .info-label { color: #a7f3d0; font-weight: 600; }
-            .info-val { color: #ffffff; font-weight: 700; text-align: right; }
-            .footer { margin-top: 12px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.2); font-size: 9px; color: #a7f3d0; text-align: center; }
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&display=swap');
+            body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 30px; padding: 30px; margin: 0; }
+            
+            .card-container { width: 360px; height: 550px; position: relative; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); background: #fff; }
+            .card-bg { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 1; }
+
+            /* Overlay Elements for Front Card */
+            .photo-box { position: absolute; top: 165px; left: 50%; transform: translateX(-50%); width: 122px; height: 122px; border-radius: 18px; object-fit: cover; z-index: 10; background: #fff; border: 2px solid #10b981; }
+            .staff-name { position: absolute; top: 295px; width: 100%; text-align: center; font-size: 15px; font-weight: 900; color: #021a10; z-index: 10; font-family: sans-serif; }
+            .staff-role { position: absolute; top: 315px; width: 100%; text-align: center; font-size: 11px; font-weight: 800; color: #047857; z-index: 10; text-transform: uppercase; }
+
+            .info-val-id { position: absolute; top: 342px; left: 168px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: monospace; }
+            .info-val-dept { position: absolute; top: 368px; left: 168px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; }
+            .info-val-phone { position: absolute; top: 394px; left: 168px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: monospace; }
+            .info-val-date { position: absolute; top: 420px; left: 168px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; }
+
+            @media print {
+              body { background: transparent; padding: 0; gap: 20px; }
+              .card-container { page-break-after: always; box-shadow: none; border: 1px solid #ddd; }
+            }
           </style>
         </head>
         <body>
-          <div class="id-card">
-            <div class="header">
-              <div>
-                <div class="org-name">LIFE VISION SOCIETY</div>
-                <div class="sub-header">Official Staff Identity Card</div>
-              </div>
-              <img src="/image/logo.png" class="logo" alt="Logo" />
-            </div>
-            <img src="${staffMember.avatar || '/image/logo.png'}" class="photo" alt="Staff Photo" />
-            <div class="name">${staffMember.name}</div>
-            <div class="role">${staffMember.role}</div>
-            <div class="info-table">
-              <div class="info-row"><span class="info-label">Staff ID:</span><span class="info-val">${staffMember.id}</span></div>
-              <div class="info-row"><span class="info-label">Department:</span><span class="info-val">${staffMember.department}</span></div>
-              <div class="info-row"><span class="info-label">Blood Group:</span><span class="info-val">${staffMember.bloodGroup || 'O+'}</span></div>
-              <div class="info-row"><span class="info-label">Joining Date:</span><span class="info-val">${staffMember.joinDate || '2026-01-01'}</span></div>
-              <div class="info-row"><span class="info-label">Location:</span><span class="info-val">${staffMember.location || 'Bhubaneswar HQ'}</span></div>
-              <div class="info-row"><span class="info-label">Phone:</span><span class="info-val">${staffMember.phone || '+91 9416362914'}</span></div>
-              <div class="info-row"><span class="info-label">Emergency Contact:</span><span class="info-val">${staffMember.emergencyContact || staffMember.phone || '+91 9416362914'}</span></div>
-            </div>
-            <div class="footer">
-              Property of Life Vision Society • Authorised Staff • Emergency Helpline: +91 9416362914
-            </div>
+          <!-- FRONT SIDE -->
+          <div class="card-container">
+            <img src="${frontImgSrc}" class="card-bg" alt="Front ID Template" />
+            <img src="${staffMember.avatar || '/image/logo.png'}" class="photo-box" alt="Staff Photo" />
+            <div class="staff-name">${staffMember.name}</div>
+            <div class="staff-role">${staffMember.role}</div>
+            <div class="info-val-id">${staffMember.id}</div>
+            <div class="info-val-dept">${staffMember.department}</div>
+            <div class="info-val-phone">${staffMember.phone || '+91 9416362914'}</div>
+            <div class="info-val-date">${staffMember.joinDate || '2026-01-01'}</div>
           </div>
+
+          <!-- BACK SIDE -->
+          <div class="card-container">
+            <img src="${backImgSrc}" class="card-bg" alt="Back ID Template" />
+          </div>
+
           <script>
             window.onload = function() { window.print(); }
           </script>
@@ -186,6 +210,29 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
     const matchesDept = selectedDept === 'All' || s.department === selectedDept;
     return matchesSearch && matchesDept;
   });
+
+  // Action Menu items for Three Dots
+  const getStaffActionItems = (staffMember) => [
+    {
+      label: 'View / Print Staff ID Card',
+      icon: IdCard,
+      onClick: () => setSelectedCardStaff(staffMember)
+    },
+    {
+      label: 'Edit Staff Details',
+      icon: Edit,
+      onClick: () => setEditingStaff({ ...staffMember })
+    },
+    {
+      divider: true
+    },
+    {
+      label: 'Delete Staff Member',
+      icon: Trash2,
+      danger: true,
+      onClick: () => handleDeleteStaff(staffMember)
+    }
+  ];
 
   return (
     <div className="space-y-6">
@@ -288,26 +335,31 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
               <div key={staff.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
                 <div className="h-1.5 bg-gradient-to-r from-emerald-500 to-blue-500 absolute top-0 left-0 right-0" />
                 
-                <div className="flex items-start space-x-3 pt-2">
-                  <img
-                    src={staff.avatar || '/image/logo.png'}
-                    alt={staff.name}
-                    className="w-12 h-12 rounded-xl object-cover ring-2 ring-emerald-500/30 p-0.5 bg-white shrink-0"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-sm font-bold text-slate-800 truncate">{staff.name}</h3>
-                    <p className="text-xs font-semibold text-emerald-600 truncate">{staff.role}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold">
-                        {staff.department}
-                      </span>
-                      {staff.bloodGroup && (
-                        <span className="px-1.5 py-0.5 bg-rose-100 text-rose-700 rounded-md text-[10px] font-extrabold">
-                          🩸 {staff.bloodGroup}
+                <div className="flex items-start justify-between pt-2">
+                  <div className="flex items-start space-x-3 min-w-0 flex-1">
+                    <img
+                      src={staff.avatar || '/image/logo.png'}
+                      alt={staff.name}
+                      className="w-12 h-12 rounded-xl object-cover ring-2 ring-emerald-500/30 p-0.5 bg-white shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-sm font-bold text-slate-800 truncate">{staff.name}</h3>
+                      <p className="text-xs font-semibold text-emerald-600 truncate">{staff.role}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold">
+                          {staff.department}
                         </span>
-                      )}
+                        {staff.bloodGroup && (
+                          <span className="px-1.5 py-0.5 bg-rose-100 text-rose-700 rounded-md text-[10px] font-extrabold">
+                            🩸 {staff.bloodGroup}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
+
+                  {/* THREE-DOT ACTION MENU REPLACING INLINE BUTTONS */}
+                  <ActionPopover items={getStaffActionItems(staff)} />
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-100 space-y-2 text-xs text-slate-600">
@@ -327,25 +379,13 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
 
                 <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                   <span>ID: <strong>{staff.id}</strong></span>
-                  <div className="flex items-center space-x-2">
-                    {/* EDIT STAFF BUTTON */}
-                    <button
-                      onClick={() => handleOpenEditModal(staff)}
-                      className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold rounded-lg flex items-center gap-1 border border-amber-200 transition-all cursor-pointer"
-                      title="Edit Staff Details"
-                    >
-                      <Edit className="w-3 h-3" />
-                      <span>Edit</span>
-                    </button>
-                    {/* PRINT ID CARD BUTTON */}
-                    <button
-                      onClick={() => handlePrintStaffCard(staff)}
-                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#047857] font-bold rounded-lg flex items-center gap-1 border border-emerald-200 transition-all cursor-pointer"
-                    >
-                      <Printer className="w-3 h-3" />
-                      <span>ID Card</span>
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setSelectedCardStaff(staff)}
+                    className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#047857] font-bold rounded-lg flex items-center gap-1 border border-emerald-200 transition-all cursor-pointer"
+                  >
+                    <IdCard className="w-3.5 h-3.5" />
+                    <span>View ID Card</span>
+                  </button>
                 </div>
               </div>
             ))}
@@ -359,10 +399,10 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-slate-800 font-serif">Staff Official Identity Cards</h2>
-              <p className="text-xs text-slate-500">Print or download official Staff ID cards with photo and employee details.</p>
+              <p className="text-xs text-slate-500">Print or download official Staff ID cards overlaid on official Life Vision Society template.</p>
             </div>
             <span className="px-3 py-1 bg-emerald-100 text-[#047857] text-xs font-black rounded-full">
-              {allStaff.length} Cards Generated
+              {allStaff.length} Cards Available
             </span>
           </div>
 
@@ -374,60 +414,58 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {allStaff.map((s) => (
-                <div key={s.id} className="w-full max-w-sm mx-auto bg-gradient-to-b from-[#123B5D] via-[#0E2F4A] to-[#047857] rounded-2xl p-5 text-white shadow-xl border border-emerald-500/40 relative overflow-hidden flex flex-col justify-between space-y-4">
-                  <div className="flex items-center justify-between border-b border-white/20 pb-3">
+                <div key={s.id} className="w-full max-w-[340px] mx-auto bg-white rounded-2xl p-4 shadow-xl border border-slate-200 relative overflow-hidden flex flex-col justify-between space-y-3">
+                  
+                  {/* Card Header with Three-Dot Menu */}
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                     <div className="flex items-center space-x-2">
-                      <img src="/image/logo.png" alt="Logo" className="w-7 h-7 object-contain bg-white rounded-lg p-0.5" />
+                      <img src="/image/logo.png" alt="Logo" className="w-6 h-6 object-contain" />
                       <div>
-                        <div className="text-xs font-bold">Life Vision Society</div>
-                        <div className="text-[9px] text-emerald-300">Official Staff ID Card</div>
+                        <div className="text-xs font-bold text-slate-800">{s.name}</div>
+                        <div className="text-[10px] text-emerald-600 font-bold">{s.role}</div>
                       </div>
                     </div>
-                    <Shield className="w-5 h-5 text-amber-400" />
+                    {/* THREE-DOT MENU */}
+                    <ActionPopover items={getStaffActionItems(s)} />
                   </div>
 
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    <img src={s.avatar || '/image/logo.png'} alt={s.name} className="w-20 h-20 rounded-2xl object-cover ring-4 ring-emerald-400 bg-white p-1 shadow-md" />
-                    <h3 className="text-base font-bold text-white mt-1">{s.name}</h3>
-                    <div className="px-3 py-1 bg-emerald-500/25 text-emerald-200 rounded-full text-xs font-extrabold border border-emerald-400/50">
-                      {s.role}
+                  {/* ID CARD FRONT TEMPLATE PREVIEW OVERLAY */}
+                  <div className="relative w-full h-[360px] rounded-xl overflow-hidden shadow-inner border border-emerald-300 bg-slate-100">
+                    <img
+                      src="/Team Member/id_card_front.jpg"
+                      alt="ID Card Front Template"
+                      className="w-full h-full object-cover"
+                    />
+
+                    {/* OVERLAID STAFF PHOTO */}
+                    <img
+                      src={s.avatar || '/image/logo.png'}
+                      alt={s.name}
+                      className="absolute top-[108px] left-1/2 -translate-x-1/2 w-[80px] h-[80px] rounded-2xl object-cover border-2 border-emerald-500 shadow-md bg-white z-10"
+                    />
+
+                    {/* OVERLAID NAME & ROLE */}
+                    <div className="absolute top-[194px] w-full text-center px-2 z-10">
+                      <h4 className="text-xs font-black text-slate-900 truncate">{s.name}</h4>
+                      <p className="text-[9px] font-extrabold text-[#047857] uppercase truncate">{s.role}</p>
                     </div>
-                    <div className="text-xs text-slate-300">{s.department} • {s.location}</div>
+
+                    {/* OVERLAID FIELDS NEXT TO ICONS */}
+                    <div className="absolute top-[224px] left-[110px] text-[9px] font-bold text-slate-900 font-mono z-10">{s.id}</div>
+                    <div className="absolute top-[241px] left-[110px] text-[9px] font-bold text-slate-900 z-10 max-w-[130px] truncate">{s.department}</div>
+                    <div className="absolute top-[258px] left-[110px] text-[9px] font-bold text-slate-900 font-mono z-10">{s.phone || '+91 9416362914'}</div>
+                    <div className="absolute top-[275px] left-[110px] text-[9px] font-bold text-slate-900 z-10">{s.joinDate || '2026-01-01'}</div>
                   </div>
 
-                  <div className="pt-3 border-t border-white/10 text-[11px] space-y-1 text-slate-200">
-                    <div className="flex justify-between font-mono">
-                      <span className="text-emerald-300">Staff ID:</span>
-                      <span className="font-bold">{s.id}</span>
-                    </div>
-                    <div className="flex justify-between font-mono">
-                      <span className="text-emerald-300">Blood Group:</span>
-                      <span className="font-bold">{s.bloodGroup || 'O+'}</span>
-                    </div>
-                    <div className="flex justify-between font-mono">
-                      <span className="text-emerald-300">Joined:</span>
-                      <span>{s.joinDate || '2026-01-01'}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditModal(s)}
-                      className="w-1/3 py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1 shadow-md transition-all cursor-pointer"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handlePrintStaffCard(s)}
-                      className="w-2/3 py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
-                    >
-                      <Printer className="w-4 h-4" />
-                      <span>Print ID Card</span>
-                    </button>
-                  </div>
+                  {/* ACTION BUTTON */}
+                  <button
+                    type="button"
+                    onClick={() => handlePrintStaffCard(s)}
+                    className="w-full py-2 px-3 bg-[#047857] hover:bg-[#065F46] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>Print Official ID Card</span>
+                  </button>
                 </div>
               ))}
             </div>
@@ -487,12 +525,89 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
         </div>
       )}
 
-      {/* ADD STAFF MODAL WITH CLEAR CLOSE (X) BUTTON */}
+      {/* VIEW ID CARD MODAL (FLIPPABLE FRONT & BACK TEMPLATE) */}
+      {selectedCardStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200 shadow-2xl p-6 space-y-4 relative">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-800 font-serif">Official Staff ID Card</h3>
+                <p className="text-xs text-slate-500">{selectedCardStaff.name} ({selectedCardStaff.id})</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setSelectedCardStaff(null); setCardFlip(false); }}
+                className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* TEMPLATE CONTAINER WITH OVERLAY */}
+            <div className="relative w-[340px] h-[520px] mx-auto rounded-2xl overflow-hidden shadow-2xl border-2 border-emerald-400 bg-slate-900">
+              {cardFlip ? (
+                /* BACK SIDE TEMPLATE */
+                <img
+                  src="/Team Member/id_card_back.jpg"
+                  alt="Back ID Card"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                /* FRONT SIDE TEMPLATE WITH OVERLAY */
+                <div className="relative w-full h-full">
+                  <img
+                    src="/Team Member/id_card_front.jpg"
+                    alt="Front ID Card"
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Photo Overlay */}
+                  <img
+                    src={selectedCardStaff.avatar || '/image/logo.png'}
+                    alt={selectedCardStaff.name}
+                    className="absolute top-[156px] left-1/2 -translate-x-1/2 w-[116px] h-[116px] rounded-2xl object-cover border-2 border-emerald-500 shadow-md bg-white z-10"
+                  />
+                  {/* Name & Role Overlay */}
+                  <div className="absolute top-[280px] w-full text-center px-3 z-10">
+                    <h4 className="text-sm font-black text-slate-900 truncate">{selectedCardStaff.name}</h4>
+                    <p className="text-[10px] font-black text-[#047857] uppercase truncate">{selectedCardStaff.role}</p>
+                  </div>
+                  {/* Info Table Overlay */}
+                  <div className="absolute top-[324px] left-[160px] text-[10px] font-bold text-slate-900 font-mono z-10">{selectedCardStaff.id}</div>
+                  <div className="absolute top-[349px] left-[160px] text-[10px] font-bold text-slate-900 z-10 max-w-[150px] truncate">{selectedCardStaff.department}</div>
+                  <div className="absolute top-[374px] left-[160px] text-[10px] font-bold text-slate-900 font-mono z-10">{selectedCardStaff.phone || '+91 9416362914'}</div>
+                  <div className="absolute top-[399px] left-[160px] text-[10px] font-bold text-slate-900 z-10">{selectedCardStaff.joinDate || '2026-01-01'}</div>
+                </div>
+              )}
+            </div>
+
+            {/* ACTION CONTROLS */}
+            <div className="flex items-center space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setCardFlip(!cardFlip)}
+                className="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition-all"
+              >
+                <RotateCw className="w-4 h-4 text-[#047857]" />
+                <span>{cardFlip ? 'Show Front Side' : 'Show Back Side'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handlePrintStaffCard(selectedCardStaff)}
+                className="w-1/2 py-2.5 bg-[#047857] hover:bg-[#065F46] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Print / Download</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD STAFF MODAL WITH CLOSE (X) BUTTON */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
           <div className="w-full max-w-lg bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 space-y-4 relative">
-            
-            {/* Modal Header with Close (X) Button */}
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h3 className="text-lg font-bold text-slate-800 font-serif">Add New Staff Member</h3>
               <button
@@ -500,7 +615,6 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                 onClick={() => setShowAddModal(false)}
                 className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
                 title="Close"
-                aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -619,7 +733,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                   type="file"
                   accept="image/*"
                   onChange={handlePhotoUpload}
-                  className="w-full mt-1 p-1 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  className="w-full mt-1 p-1 bg-slate-50 border border-slate-200 rounded-lg text-xs cursor-pointer"
                 />
               </div>
 
@@ -647,8 +761,6 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
       {editingStaff && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
           <div className="w-full max-w-lg bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 space-y-4 relative">
-            
-            {/* Modal Header with Close (X) Button */}
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h3 className="text-lg font-bold text-slate-800 font-serif">Edit Staff Member Details</h3>
               <button
@@ -656,7 +768,6 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                 onClick={() => setEditingStaff(null)}
                 className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
                 title="Close"
-                aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
