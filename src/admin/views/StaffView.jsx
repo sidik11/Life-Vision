@@ -2,17 +2,18 @@ import React, { useState } from 'react';
 import { 
   Users, UserPlus, IdCard, Calendar, FileText, 
   Building, CheckCircle2, Clock, XCircle, Search, 
-  Filter, Download, Mail, Phone, MapPin, Shield
+  Filter, Download, Mail, Phone, MapPin, Shield, Printer, Upload
 } from 'lucide-react';
+import { saveToFirestore } from '../../utils/firebaseSave';
 
-export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
+export default function StaffView({ staffList: propStaffList = [], setStaffList: propSetStaffList, activeSubTab = 'all-staff', showToast }) {
   const [subTab, setSubTab] = useState(activeSubTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState('All');
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // Initial Staff Dataset
-  const [staffList, setStaffList] = useState([
+  // Initial Default Staff Dataset
+  const defaultStaff = [
     {
       id: "STF-2026-001",
       name: "Dr. Sunita Sharma",
@@ -20,8 +21,10 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
       department: "Management",
       email: "sunita.sharma@lifevisionsociety.org",
       phone: "+91 98610 11223",
+      bloodGroup: "O+",
       location: "Bhubaneswar HQ",
       joinDate: "2021-04-10",
+      emergencyContact: "+91 9416362914",
       status: "Active",
       avatar: "/image/logo.png"
     },
@@ -32,8 +35,10 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
       department: "Training",
       email: "priya.das@lifevisionsociety.org",
       phone: "+91 97780 22334",
+      bloodGroup: "B+",
       location: "Cuttack Skill Hub",
       joinDate: "2022-06-15",
+      emergencyContact: "+91 97780 22334",
       status: "Active",
       avatar: "/beautician_training.jpg"
     },
@@ -44,8 +49,10 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
       department: "Placement & Livelihood",
       email: "rajesh.placement@lifevisionsociety.org",
       phone: "+91 94370 33445",
+      bloodGroup: "A+",
       location: "Bhubaneswar HQ",
       joinDate: "2023-01-20",
+      emergencyContact: "+91 94370 33445",
       status: "Active",
       avatar: "/success_story.jpg"
     },
@@ -56,8 +63,10 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
       department: "Operations",
       email: "anita.behera@lifevisionsociety.org",
       phone: "+91 91240 44556",
+      bloodGroup: "AB+",
       location: "Puri Center",
       joinDate: "2023-09-01",
+      emergencyContact: "+91 91240 44556",
       status: "Active",
       avatar: "/computer_lab.jpg"
     },
@@ -68,12 +77,21 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
       department: "Finance",
       email: "accounts@lifevisionsociety.org",
       phone: "+91 98530 55667",
+      bloodGroup: "O+",
       location: "Bhubaneswar HQ",
       joinDate: "2022-11-12",
+      emergencyContact: "+91 98530 55667",
       status: "Active",
       avatar: "/image/logo.png"
     }
-  ]);
+  ];
+
+  // Merge Firestore prop dataset with default staff (deduplicated by id / email)
+  const map = new Map();
+  [...propStaffList, ...defaultStaff].forEach(item => {
+    if (item && item.id) map.set(item.id, { ...map.get(item.id), ...item });
+  });
+  const allStaff = Array.from(map.values());
 
   const [newStaff, setNewStaff] = useState({
     name: '',
@@ -81,31 +99,124 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
     department: 'Training',
     email: '',
     phone: '',
-    location: 'Bhubaneswar HQ'
+    bloodGroup: 'O+',
+    location: 'Bhubaneswar HQ',
+    emergencyContact: ''
   });
+  const [photoPreview, setPhotoPreview] = useState(null);
 
-  const handleAddStaffSubmit = (e) => {
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddStaffSubmit = async (e) => {
     e.preventDefault();
-    if (!newStaff.name || !newStaff.email) {
-      if (showToast) showToast("Please fill in Staff Name and Email.", "error");
+    if (!newStaff.name || !newStaff.email || !newStaff.role) {
+      if (showToast) showToast("Please fill in Staff Name, Designation and Email.", "error");
       return;
     }
 
     const created = {
-      id: `STF-2026-00${staffList.length + 1}`,
+      id: `STF-2026-${Math.floor(100 + Math.random() * 900)}`,
       ...newStaff,
       joinDate: new Date().toISOString().split('T')[0],
       status: 'Active',
-      avatar: '/image/logo.png'
+      avatar: photoPreview || '/image/logo.png'
     };
 
-    setStaffList([created, ...staffList]);
+    if (propSetStaffList) {
+      propSetStaffList(prev => [created, ...prev]);
+    }
+
+    try {
+      await saveToFirestore('staff', created, 'lvs_new_staff');
+    } catch (err) {
+      console.warn("Firestore add staff notice:", err);
+    }
+
     setShowAddModal(false);
-    setNewStaff({ name: '', role: '', department: 'Training', email: '', phone: '', location: 'Bhubaneswar HQ' });
-    if (showToast) showToast(`Staff member ${created.name} added successfully!`, "success");
+    setNewStaff({
+      name: '',
+      role: '',
+      department: 'Training',
+      email: '',
+      phone: '',
+      bloodGroup: 'O+',
+      location: 'Bhubaneswar HQ',
+      emergencyContact: ''
+    });
+    setPhotoPreview(null);
+    if (showToast) showToast(`Staff member ${created.name} added & saved to database!`, "success");
   };
 
-  const filteredStaff = staffList.filter(s => {
+  const handlePrintStaffCard = (staffMember) => {
+    const printWindow = window.open('', '_blank', 'width=650,height=750');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Staff ID Card - ${staffMember.name}</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+            .id-card { width: 340px; background: linear-gradient(135deg, #021a10 0%, #053221 60%, #047857 100%); color: white; border-radius: 20px; padding: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); border: 2px solid #10b981; text-align: center; box-sizing: border-box; }
+            .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 14px; text-align: left; }
+            .logo { height: 34px; background: white; padding: 3px 6px; border-radius: 8px; }
+            .org-name { font-size: 13px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px; }
+            .sub-header { font-size: 10px; color: #6ee7b7; font-weight: 700; text-transform: uppercase; }
+            .photo { width: 90px; height: 90px; border-radius: 18px; object-fit: cover; border: 3px solid #10b981; margin: 0 auto 10px auto; display: block; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+            .name { font-size: 17px; font-weight: 900; color: #ffffff; margin: 2px 0; }
+            .role { display: inline-block; padding: 3px 12px; background: rgba(16, 185, 129, 0.25); color: #6ee7b7; border-radius: 20px; font-size: 11px; font-weight: 800; border: 1px solid #10b981; margin-bottom: 12px; }
+            .info-table { width: 100%; text-align: left; font-size: 11px; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 8px; }
+            .info-row { display: flex; justify-content: space-between; padding: 3px 0; }
+            .info-label { color: #a7f3d0; font-weight: 600; }
+            .info-val { color: #ffffff; font-weight: 700; text-align: right; }
+            .footer { margin-top: 12px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.2); font-size: 9px; color: #a7f3d0; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="id-card">
+            <div class="header">
+              <div>
+                <div class="org-name">LIFE VISION SOCIETY</div>
+                <div class="sub-header">Official Staff Identity Card</div>
+              </div>
+              <img src="/image/logo.png" class="logo" alt="Logo" />
+            </div>
+            <img src="${staffMember.avatar || '/image/logo.png'}" class="photo" alt="Staff Photo" />
+            <div class="name">${staffMember.name}</div>
+            <div class="role">${staffMember.role}</div>
+            <div class="info-table">
+              <div class="info-row"><span class="info-label">Staff ID:</span><span class="info-val">${staffMember.id}</span></div>
+              <div class="info-row"><span class="info-label">Department:</span><span class="info-val">${staffMember.department}</span></div>
+              <div class="info-row"><span class="info-label">Blood Group:</span><span class="info-val">${staffMember.bloodGroup || 'O+'}</span></div>
+              <div class="info-row"><span class="info-label">Joining Date:</span><span class="info-val">${staffMember.joinDate || '2026-01-01'}</span></div>
+              <div class="info-row"><span class="info-label">Location:</span><span class="info-val">${staffMember.location || 'Bhubaneswar HQ'}</span></div>
+              <div class="info-row"><span class="info-label">Phone:</span><span class="info-val">${staffMember.phone || '+91 9416362914'}</span></div>
+              <div class="info-row"><span class="info-label">Emergency Contact:</span><span class="info-val">${staffMember.emergencyContact || staffMember.phone || '+91 9416362914'}</span></div>
+            </div>
+            <div class="footer">
+              Property of Life Vision Society • Authorised Staff • Helpline: +91 9416362914
+            </div>
+          </div>
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const filteredStaff = allStaff.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           s.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           s.email.toLowerCase().includes(searchQuery.toLowerCase());
@@ -140,7 +251,7 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
       {/* Internal Sub-Nav Tabs */}
       <div className="flex items-center space-x-2 border-b border-slate-200 overflow-x-auto pb-2 scrollbar-none">
         {[
-          { id: 'all-staff', label: '👥 All Staff', count: staffList.length },
+          { id: 'all-staff', label: '👥 All Staff', count: allStaff.length },
           { id: 'staff-id-cards', label: '🪪 Staff ID Cards' },
           { id: 'staff-attendance', label: '📅 Attendance' },
           { id: 'leave-management', label: '🏖️ Leave Management' },
@@ -205,16 +316,23 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
                 
                 <div className="flex items-start space-x-3 pt-2">
                   <img
-                    src={staff.avatar}
+                    src={staff.avatar || '/image/logo.png'}
                     alt={staff.name}
                     className="w-12 h-12 rounded-xl object-cover ring-2 ring-emerald-500/30 p-0.5 bg-white shrink-0"
                   />
                   <div className="min-w-0 flex-1">
                     <h3 className="text-sm font-bold text-slate-800 truncate">{staff.name}</h3>
                     <p className="text-xs font-semibold text-emerald-600 truncate">{staff.role}</p>
-                    <span className="inline-block mt-1 px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold">
-                      {staff.department}
-                    </span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold">
+                        {staff.department}
+                      </span>
+                      {staff.bloodGroup && (
+                        <span className="px-1.5 py-0.5 bg-rose-100 text-rose-700 rounded-md text-[10px] font-extrabold">
+                          🩸 {staff.bloodGroup}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -235,9 +353,13 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
 
                 <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                   <span>ID: <strong>{staff.id}</strong></span>
-                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 font-bold rounded-full">
-                    {staff.status}
-                  </span>
+                  <button
+                    onClick={() => handlePrintStaffCard(staff)}
+                    className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#047857] font-bold rounded-lg flex items-center gap-1 border border-emerald-200 transition-all cursor-pointer"
+                  >
+                    <Printer className="w-3 h-3" />
+                    <span>ID Card</span>
+                  </button>
                 </div>
               </div>
             ))}
@@ -245,36 +367,65 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
         </div>
       )}
 
+      {/* STAFF ID CARDS TAB */}
       {subTab === 'staff-id-cards' && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6">
-          <h2 className="text-lg font-bold text-slate-800 font-serif">Staff Official Identity Cards</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-800 font-serif">Staff Official Identity Cards</h2>
+              <p className="text-xs text-slate-500">Print or download official Staff ID cards with photo and employee details.</p>
+            </div>
+            <span className="px-3 py-1 bg-emerald-100 text-[#047857] text-xs font-black rounded-full">
+              {allStaff.length} Cards Generated
+            </span>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {staffList.map((s) => (
-              <div key={s.id} className="w-full max-w-sm mx-auto bg-gradient-to-b from-[#123B5D] to-[#0E2F4A] rounded-2xl p-5 text-white shadow-xl border border-emerald-500/30 relative overflow-hidden">
-                <div className="flex items-center justify-between border-b border-white/20 pb-3 mb-4">
+            {allStaff.map((s) => (
+              <div key={s.id} className="w-full max-w-sm mx-auto bg-gradient-to-b from-[#123B5D] via-[#0E2F4A] to-[#047857] rounded-2xl p-5 text-white shadow-xl border border-emerald-500/40 relative overflow-hidden flex flex-col justify-between space-y-4">
+                <div className="flex items-center justify-between border-b border-white/20 pb-3">
                   <div className="flex items-center space-x-2">
                     <img src="/image/logo.png" alt="Logo" className="w-7 h-7 object-contain bg-white rounded-lg p-0.5" />
                     <div>
                       <div className="text-xs font-bold">Life Vision Society</div>
-                      <div className="text-[9px] text-emerald-300">Staff ID Card</div>
+                      <div className="text-[9px] text-emerald-300">Official Staff ID Card</div>
                     </div>
                   </div>
                   <Shield className="w-5 h-5 text-amber-400" />
                 </div>
 
                 <div className="flex flex-col items-center text-center space-y-2">
-                  <img src={s.avatar} alt={s.name} className="w-20 h-20 rounded-2xl object-cover ring-4 ring-emerald-500/50 bg-white p-1" />
+                  <img src={s.avatar || '/image/logo.png'} alt={s.name} className="w-20 h-20 rounded-2xl object-cover ring-4 ring-emerald-400 bg-white p-1 shadow-md" />
                   <h3 className="text-base font-bold text-white mt-1">{s.name}</h3>
-                  <div className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-extrabold border border-emerald-500/40">
+                  <div className="px-3 py-1 bg-emerald-500/25 text-emerald-200 rounded-full text-xs font-extrabold border border-emerald-400/50">
                     {s.role}
                   </div>
                   <div className="text-xs text-slate-300">{s.department} • {s.location}</div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-300 font-mono">
-                  <span>ID: {s.id}</span>
-                  <span>Joined: {s.joinDate}</span>
+                <div className="pt-3 border-t border-white/10 text-[11px] space-y-1 text-slate-200">
+                  <div className="flex justify-between font-mono">
+                    <span className="text-emerald-300">Staff ID:</span>
+                    <span className="font-bold">{s.id}</span>
+                  </div>
+                  <div className="flex justify-between font-mono">
+                    <span className="text-emerald-300">Blood Group:</span>
+                    <span className="font-bold">{s.bloodGroup || 'O+'}</span>
+                  </div>
+                  <div className="flex justify-between font-mono">
+                    <span className="text-emerald-300">Joined:</span>
+                    <span>{s.joinDate || '2026-01-01'}</span>
+                  </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => handlePrintStaffCard(s)}
+                  className="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Print / Download ID Card</span>
+                </button>
               </div>
             ))}
           </div>
@@ -302,7 +453,7 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 font-medium">
-                {staffList.map((s, idx) => (
+                {allStaff.map((s) => (
                   <tr key={s.id} className="hover:bg-slate-50">
                     <td className="p-3 font-bold text-slate-800">{s.name}</td>
                     <td className="p-3">{s.role}</td>
@@ -340,7 +491,7 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
             <h3 className="text-lg font-bold text-slate-800 font-serif">Add New Staff Member</h3>
             <form onSubmit={handleAddStaffSubmit} className="space-y-3">
               <div>
-                <label className="text-xs font-bold text-slate-700">Full Name</label>
+                <label className="text-xs font-bold text-slate-700">Full Name *</label>
                 <input
                   type="text"
                   required
@@ -353,7 +504,7 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700">Role / Designation</label>
+                  <label className="text-xs font-bold text-slate-700">Role / Designation *</label>
                   <input
                     type="text"
                     required
@@ -364,7 +515,7 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700">Department</label>
+                  <label className="text-xs font-bold text-slate-700">Department *</label>
                   <select
                     value={newStaff.department}
                     onChange={(e) => setNewStaff({ ...newStaff, department: e.target.value })}
@@ -381,7 +532,7 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700">Email Address</label>
+                  <label className="text-xs font-bold text-slate-700">Email Address *</label>
                   <input
                     type="email"
                     required
@@ -392,9 +543,10 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700">Phone Number</label>
+                  <label className="text-xs font-bold text-slate-700">Phone Number *</label>
                   <input
                     type="text"
+                    required
                     value={newStaff.phone}
                     onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
                     placeholder="+91 98610 xxxxx"
@@ -403,14 +555,43 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700">Blood Group</label>
+                  <select
+                    value={newStaff.bloodGroup}
+                    onChange={(e) => setNewStaff({ ...newStaff, bloodGroup: e.target.value })}
+                    className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold"
+                  >
+                    <option value="O+">O+</option>
+                    <option value="A+">A+</option>
+                    <option value="B+">B+</option>
+                    <option value="AB+">AB+</option>
+                    <option value="O-">O-</option>
+                    <option value="A-">A-</option>
+                    <option value="B-">B-</option>
+                    <option value="AB-">AB-</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700">Center / Location</label>
+                  <input
+                    type="text"
+                    value={newStaff.location}
+                    onChange={(e) => setNewStaff({ ...newStaff, location: e.target.value })}
+                    placeholder="e.g. Bhubaneswar HQ"
+                    className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="text-xs font-bold text-slate-700">Center / Location</label>
+                <label className="text-xs font-bold text-slate-700">Photo Upload</label>
                 <input
-                  type="text"
-                  value={newStaff.location}
-                  onChange={(e) => setNewStaff({ ...newStaff, location: e.target.value })}
-                  placeholder="e.g. Bhubaneswar HQ / Cuttack Skill Hub"
-                  className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  className="w-full mt-1 p-1 bg-slate-50 border border-slate-200 rounded-lg text-xs"
                 />
               </div>
 
@@ -418,13 +599,13 @@ export default function StaffView({ activeSubTab = 'all-staff', showToast }) {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#123B5D] hover:bg-[#0E2F4A] text-white rounded-xl text-xs font-bold shadow-md"
+                  className="px-4 py-2 bg-[#123B5D] hover:bg-[#0E2F4A] text-white rounded-xl text-xs font-bold shadow-md cursor-pointer"
                 >
                   Save Staff Member
                 </button>

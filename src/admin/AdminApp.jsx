@@ -102,6 +102,7 @@ export default function AdminApp() {
   const [students, setStudents] = useState([]);
   const [certificates, setCertificates] = useState([]);
   const [attendance, setAttendance] = useState([]);
+  const [staff, setStaff] = useState([]);
   const [documents, setDocuments] = useState(initialDocuments);
 
   // Firestore Direct CRUD Handlers
@@ -278,6 +279,29 @@ export default function AdminApp() {
     } catch (e) {
       console.warn("Firestore attendance save notice:", e);
     }
+  };
+
+  const handleSetStaff = (val) => {
+    setStaff(prev => {
+      const next = typeof val === 'function' ? val(prev) : val;
+      (async () => {
+        try {
+          if (next.length < prev.length) {
+            const deleted = prev.filter(p => !next.some(n => n.id === p.id));
+            for (const item of deleted) {
+              if (item.firestoreId) await deleteDoc(doc(db, "staff", item.firestoreId));
+            }
+          } else if (next.length > prev.length) {
+            const added = next.filter(n => !n.firestoreId && !prev.some(p => p.id === n.id));
+            for (const item of added) {
+              const cleanItem = JSON.parse(JSON.stringify(item));
+              await addDoc(collection(db, "staff"), cleanItem);
+            }
+          }
+        } catch (e) { console.warn("Firestore staff sync notice:", e); }
+      })();
+      return next;
+    });
   };
 
   const [adminUsers, setAdminUsers] = useState(initialAdminUsers);
@@ -476,6 +500,16 @@ export default function AdminApp() {
       unsubscribes.push(unsub);
     } catch (err) { }
 
+    // 13. Staff (staff)
+    try {
+      const q = collection(db, "staff");
+      const unsub = onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
+        setStaff(items);
+      }, (error) => console.warn("Firestore staff sync notice:", error));
+      unsubscribes.push(unsub);
+    } catch (err) { }
+
     return () => {
       unsubscribes.forEach(unsub => unsub && unsub());
     };
@@ -549,12 +583,24 @@ export default function AdminApp() {
       }
     };
 
+    const handleNewStaff = (e) => {
+      if (e.detail) {
+        setStaff((prev) => {
+          const exists = prev.some(item => (item.id && item.id === e.detail.id) || (item.firestoreId && item.firestoreId === e.detail.firestoreId));
+          if (exists) return prev;
+          return [e.detail, ...prev];
+        });
+        showToast(`New Staff Member registered: ${e.detail.name} (${e.detail.role || 'Staff'})!`, 'success');
+      }
+    };
+
     window.addEventListener('lvs_new_application', handleNewApplication);
     window.addEventListener('lvs_new_contact', handleNewContact);
     window.addEventListener('lvs_new_donation', handleNewDonation);
     window.addEventListener('lvs_new_partner', handleNewPartner);
     window.addEventListener('lvs_new_placement', handleNewPlacement);
     window.addEventListener('lvs_new_volunteer', handleNewVolunteer);
+    window.addEventListener('lvs_new_staff', handleNewStaff);
 
     return () => {
       window.removeEventListener('lvs_new_application', handleNewApplication);
@@ -563,6 +609,7 @@ export default function AdminApp() {
       window.removeEventListener('lvs_new_partner', handleNewPartner);
       window.removeEventListener('lvs_new_placement', handleNewPlacement);
       window.removeEventListener('lvs_new_volunteer', handleNewVolunteer);
+      window.removeEventListener('lvs_new_staff', handleNewStaff);
     };
   }, []);
 
@@ -724,7 +771,7 @@ export default function AdminApp() {
       case 'staff-documents':
       case 'staff-departments':
       case 'staff-reports':
-        return <StaffView activeSubTab={activeTab} showToast={showToast} />;
+        return <StaffView staffList={staff} setStaffList={handleSetStaff} activeSubTab={activeTab} showToast={showToast} />;
 
       // 🙋 VOLUNTEERS
       case 'volunteers':
