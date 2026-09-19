@@ -227,10 +227,48 @@ Skill Development & Training Team`;
         })
       }).catch(emailErr => console.warn("Admin notification email notice:", emailErr));
 
-      setTimeout(() => {
+      const resetForm = () => {
         setSubmitted(false);
+        setIsSubmitting(false);
+        setFormData({
+          course: selectedCourse || 'Tailoring & Stitching Training',
+          fullName: '',
+          dob: '',
+          gender: 'Female',
+          guardianName: '',
+          phone: '',
+          email: '',
+          state: 'Odisha',
+          district: '',
+          block: '',
+          villageCity: '',
+          pincode: '',
+          fullAddress: '',
+          qualification: '10th',
+          passingYear: '',
+          boardUniversity: '',
+          employmentStatus: 'Unemployed',
+          hearAboutUs: 'Social Media',
+        });
+        setDocuments({
+          photo: null,
+          photoName: '',
+          aadhaar: null,
+          aadhaarName: '',
+          marksheet: null,
+          marksheetName: ''
+        });
+        setDocErrors({
+          photo: '',
+          aadhaar: '',
+          marksheet: ''
+        });
+      };
+
+      setTimeout(() => {
+        resetForm();
         onClose();
-      }, 4000);
+      }, 3500);
 
     } catch (err) {
       console.error("Form submission error:", err);

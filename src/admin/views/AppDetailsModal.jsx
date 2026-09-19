@@ -230,50 +230,84 @@ export default function AppDetailsModal({ application, onClose, onUpdateStatus, 
           {/* Uploaded Documents */}
           <div className="p-5 rounded-2xl bg-[#FAF6EE] border border-[#E5DDD0] space-y-3">
             <h4 className="text-xs font-bold text-[#C52B75] uppercase tracking-wider flex items-center gap-2">
-              <FileCheck className="w-4 h-4" /> Uploaded Verification Documents
+              <FileCheck className="w-4 h-4" /> Submitted Candidate Verification Documents
             </h4>
 
-            {uploadedDocEntries.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {uploadedDocEntries.map(([key, val]) => {
-                  const isVerified = verifiedDocs[key] || String(val).toLowerCase().includes('verified');
-                  return (
-                    <div key={key} className="p-3 bg-[#FFFDF9] border border-[#E5DDD0] rounded-xl space-y-1 shadow-xs flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="text-[10px] uppercase font-bold text-[#8C756B]">{key}</span>
-                          {isVerified ? (
-                            <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
-                              <span>Verified</span>
-                            </span>
-                          ) : (
-                            <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-md">
-                              Review Pending
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs font-semibold text-[#2C221E] truncate mt-1">{val}</p>
-                      </div>
-                      
-                      <button 
-                        onClick={() => handlePreviewDoc(key, val)}
-                        className="text-[10px] text-[#C52B75] font-bold hover:underline cursor-pointer flex items-center space-x-1 pt-1 mt-1 border-t border-[#F3EBE0]"
-                      >
-                        <span>Preview & Verify</span>
-                        <ArrowRight className="w-3 h-3 text-[#C52B75]" />
-                      </button>
-                    </div>
-                  );
-                })}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* 1. Student Photo */}
+              <div className="p-3.5 bg-[#FFFDF9] border border-[#E5DDD0] rounded-2xl space-y-2 shadow-xs flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[11px] font-extrabold text-[#8C756B] uppercase tracking-wider">1. Candidate Photo</span>
+                    <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      <span>Submitted</span>
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-[#2C221E] truncate mt-1">
+                    {application.uploadedPhotoName || 'Applicant Photo (Passport Size)'}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => handlePreviewDoc('photo', application.uploadedPhotoName || 'Candidate Photo')}
+                  className="w-full text-xs text-[#C52B75] font-bold hover:bg-pink-50 py-1.5 px-3 rounded-xl border border-pink-200 transition-all cursor-pointer flex items-center justify-center space-x-1 mt-2"
+                >
+                  <span>View Student Photo</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#C52B75]" />
+                </button>
               </div>
-            ) : (
-              <div className="p-4 bg-[#FFFDF9] border border-dashed border-[#E5DDD0] rounded-xl text-center">
-                <p className="text-xs text-[#8C756B] font-semibold">
-                  No additional verification documents uploaded by candidate (Document uploads were optional during registration).
-                </p>
+
+              {/* 2. Aadhaar Card */}
+              <div className="p-3.5 bg-[#FFFDF9] border border-[#E5DDD0] rounded-2xl space-y-2 shadow-xs flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[11px] font-extrabold text-[#8C756B] uppercase tracking-wider">2. Aadhaar Card / ID</span>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                      application.uploadedAadhaarName || application.uploadedAadhaar ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>{application.uploadedAadhaarName || application.uploadedAadhaar ? 'Uploaded' : 'Optional / Self-Attested'}</span>
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-[#2C221E] truncate mt-1">
+                    {application.uploadedAadhaarName || (application.documents?.idProof ? String(application.documents.idProof) : 'Aadhaar Card Copy')}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => handlePreviewDoc('idProof', application.uploadedAadhaarName || 'Aadhaar Card')}
+                  className="w-full text-xs text-[#C52B75] font-bold hover:bg-pink-50 py-1.5 px-3 rounded-xl border border-pink-200 transition-all cursor-pointer flex items-center justify-center space-x-1 mt-2"
+                >
+                  <span>View Aadhaar Card</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#C52B75]" />
+                </button>
               </div>
-            )}
+
+              {/* 3. Marksheet / Education Certificate */}
+              <div className="p-3.5 bg-[#FFFDF9] border border-[#E5DDD0] rounded-2xl space-y-2 shadow-xs flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[11px] font-extrabold text-[#8C756B] uppercase tracking-wider">3. Qualification Marksheet</span>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                      application.uploadedMarksheetName || application.uploadedMarksheet ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>{application.uploadedMarksheetName || application.uploadedMarksheet ? 'Uploaded' : 'Optional / Self-Attested'}</span>
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-[#2C221E] truncate mt-1">
+                    {application.uploadedMarksheetName || (application.documents?.educationCertificate ? String(application.documents.educationCertificate) : '10th / 12th Marksheet')}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => handlePreviewDoc('educationCertificate', application.uploadedMarksheetName || 'Educational Certificate')}
+                  className="w-full text-xs text-[#C52B75] font-bold hover:bg-pink-50 py-1.5 px-3 rounded-xl border border-pink-200 transition-all cursor-pointer flex items-center justify-center space-x-1 mt-2"
+                >
+                  <span>View Marksheet</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#C52B75]" />
+                </button>
+              </div>
+
+            </div>
           </div>
 
         </div>

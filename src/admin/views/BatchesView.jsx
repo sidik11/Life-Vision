@@ -52,6 +52,24 @@ export default function BatchesView({
     status: 'Upcoming'
   });
 
+  // Auto-fill course details when selecting course name
+  const handleCourseSelect = (courseName) => {
+    const matchedProg = (programs || []).find(p => p.name === courseName || p.id === courseName || p.title === courseName);
+    if (matchedProg) {
+      setFormData(prev => ({
+        ...prev,
+        course: courseName,
+        qualification: matchedProg.qpCode ? `${matchedProg.nsqfLevel || 'Level 4'} (${matchedProg.qpCode})` : (matchedProg.nsqfLevel || prev.qualification),
+        duration: matchedProg.durationHours ? `${matchedProg.durationHours} Hours` : prev.duration,
+        theoryHours: matchedProg.theoryHours || Math.round((matchedProg.durationHours || 300) * 0.3),
+        practicalHours: matchedProg.practicalHours || Math.round((matchedProg.durationHours || 300) * 0.5),
+        ojtHours: matchedProg.ojtHours || Math.round((matchedProg.durationHours || 300) * 0.2)
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, course: courseName }));
+    }
+  };
+
   // Calculate Total Hours automatically: Theory + Practical + OJT
   const totalHours = Number(formData.theoryHours || 0) + Number(formData.practicalHours || 0) + Number(formData.ojtHours || 0);
 
@@ -274,18 +292,17 @@ export default function BatchesView({
                     <td className="p-4 text-right">
                       <ActionPopover
                         items={[
-                          { label: 'View Batch Details', icon: Eye, onClick: () => { setSelectedBatch(b); setActiveBatchTab('overview'); } },
-                          { label: 'Edit Batch', icon: Edit, onClick: () => setEditBatch(b) },
+                          { label: 'View Batch & Enrolled Students', icon: Eye, onClick: () => { setSelectedBatch(b); setActiveBatchTab('students'); } },
+                          { label: 'Enroll Students', icon: Users, onClick: () => onNavigate && onNavigate('students', { batchId: b.id }) },
+                          { label: 'Take Attendance', icon: Calendar, onClick: () => onNavigate && onNavigate('attendance', { batchId: b.id }) },
+                          { label: 'Conduct Assessment', icon: Award, onClick: () => onNavigate && onNavigate('assessments', { batchId: b.id }) },
+                          { label: 'View Certificates', icon: FileText, onClick: () => onNavigate && onNavigate('certificates', { batchId: b.id }) },
                           { divider: true },
+                          { label: 'Edit Batch Details', icon: Edit, onClick: () => setEditBatch(b) },
                           { label: 'Start Batch', icon: Play, onClick: () => updateBatchStatus(b, 'Active'), disabled: b.status === 'Active' },
                           { label: 'Close Batch', icon: CheckCircle2, onClick: () => updateBatchStatus(b, 'Completed'), disabled: b.status === 'Completed' },
                           { label: 'Put On Hold', icon: Pause, onClick: () => updateBatchStatus(b, 'On Hold') },
-                          { label: 'Cancel Batch', icon: X, onClick: () => updateBatchStatus(b, 'Cancelled') },
                           { divider: true },
-                          { label: 'View Students', icon: Users, onClick: () => onNavigate && onNavigate('students', { batchId: b.id }) },
-                          { label: 'View Attendance', icon: Calendar, onClick: () => onNavigate && onNavigate('attendance', { batchId: b.id }) },
-                          { label: 'View Assessment', icon: Award, onClick: () => onNavigate && onNavigate('assessments', { batchId: b.id }) },
-                          { label: 'View Certificates', icon: FileText, onClick: () => onNavigate && onNavigate('certificates', { batchId: b.id }) },
                           { label: 'Delete Batch', icon: Trash2, danger: true, onClick: () => handleDelete(b) }
                         ]}
                       />
@@ -340,15 +357,23 @@ export default function BatchesView({
                   <label className="block text-2xs font-bold text-slate-700 mb-1">Course / Training Program *</label>
                   <select
                     value={formData.course}
-                    onChange={(e) => setFormData(p => ({ ...p, course: e.target.value }))}
+                    onChange={(e) => handleCourseSelect(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-bold"
                   >
-                    <option value="Tailoring & Stitching">Tailoring & Stitching</option>
-                    <option value="Beautician & Wellness">Beautician & Wellness</option>
-                    <option value="Agriculture & Farming">Agriculture & Farming</option>
-                    <option value="Healthcare & Caregiving">Healthcare & Caregiving</option>
-                    <option value="Tourism & Hospitality">Tourism & Hospitality</option>
-                    <option value="Food & Beverages">Food & Beverages</option>
+                    {programs && programs.length > 0 ? (
+                      programs.map(p => (
+                        <option key={p.id || p.name} value={p.name}>{p.name}</option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="Tailoring & Stitching">Tailoring & Stitching</option>
+                        <option value="Beautician & Wellness">Beautician & Wellness</option>
+                        <option value="Agriculture & Farming">Agriculture & Farming</option>
+                        <option value="Healthcare & Caregiving">Healthcare & Caregiving</option>
+                        <option value="Tourism & Hospitality">Tourism & Hospitality</option>
+                        <option value="Food & Beverages">Food & Beverages</option>
+                      </>
+                    )}
                   </select>
                 </div>
 

@@ -1,18 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MoreVertical } from 'lucide-react';
 
-export default function ActionPopover({ items = [] }) {
+export default function ActionPopover({ items = [], actions = [] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const buttonRef = useRef(null);
   const popoverRef = useRef(null);
+
+  const menuItems = items && items.length > 0 ? items : actions;
 
   const toggleOpen = (e) => {
     e.stopPropagation();
     if (!isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
-      const popoverHeight = Math.min(items.length * 36 + 16, 320);
+      const popoverHeight = Math.min(menuItems.length * 36 + 16, 320);
       const openUpward = rect.bottom + popoverHeight > viewportHeight;
 
       setCoords({
@@ -64,7 +66,7 @@ export default function ActionPopover({ items = [] }) {
             left: `${coords.left}px`
           }}
         >
-          {items.map((item, idx) => {
+          {menuItems.map((item, idx) => {
             if (item.divider) {
               return <div key={idx} className="my-1 border-t border-slate-100" />;
             }

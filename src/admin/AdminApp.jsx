@@ -31,12 +31,12 @@ import TrainersView from './views/TrainersView';
 import ReportsView from './views/ReportsView';
 
 // Real Data fetched directly from Public Website
-import { 
-  initialApplications, initialPrograms, initialCenters, 
-  initialBatches, initialStudents, initialCertificates, 
-  initialPlacements, initialPartners, initialVolunteers, 
-  initialDonations, initialStories, initialDocuments, 
-  initialAdminUsers 
+import {
+  initialApplications, initialPrograms, initialCenters,
+  initialBatches, initialStudents, initialCertificates,
+  initialPlacements, initialPartners, initialVolunteers,
+  initialDonations, initialStories, initialDocuments,
+  initialAdminUsers
 } from './mockData';
 
 export default function AdminApp() {
@@ -51,12 +51,12 @@ export default function AdminApp() {
     try {
       const saved = localStorage.getItem('lvs_admin_profile');
       if (saved) return JSON.parse(saved);
-    } catch (e) {}
+    } catch (e) { }
     return {
       name: 'Life Vision Society',
       email: 'support.lifevision@gmail.com',
-      role: 'Super Admin',
-      phone: '+91 98610 12345',
+      role: 'Admin',
+      phone: '+91 9416362914',
       avatar: '/image/logo.png'
     };
   });
@@ -66,7 +66,7 @@ export default function AdminApp() {
       const nextUser = typeof updatedData === 'function' ? updatedData(prev) : { ...prev, ...updatedData };
       try {
         localStorage.setItem('lvs_admin_profile', JSON.stringify(nextUser));
-      } catch (e) {}
+      } catch (e) { }
       return nextUser;
     });
   };
@@ -342,7 +342,7 @@ export default function AdminApp() {
         setDonations(firestoreDonations);
       }, (error) => console.warn("Firestore donations sync notice:", error));
       unsubscribes.push(unsub);
-    } catch (err) {}
+    } catch (err) { }
 
     // 3. Contacts (contacts)
     try {
@@ -360,7 +360,7 @@ export default function AdminApp() {
         setContacts(firestoreContacts);
       }, (error) => console.warn("Firestore contacts sync notice:", error));
       unsubscribes.push(unsub);
-    } catch (err) {}
+    } catch (err) { }
 
     // 4. Volunteers (volunteers)
     try {
@@ -378,7 +378,7 @@ export default function AdminApp() {
         setVolunteers(firestoreVolunteers);
       }, (error) => console.warn("Firestore volunteers sync notice:", error));
       unsubscribes.push(unsub);
-    } catch (err) {}
+    } catch (err) { }
 
     // 5. Partners (partners)
     try {
@@ -396,7 +396,7 @@ export default function AdminApp() {
         setPartners(firestorePartners);
       }, (error) => console.warn("Firestore partners sync notice:", error));
       unsubscribes.push(unsub);
-    } catch (err) {}
+    } catch (err) { }
 
     // 6. Placements (placements)
     try {
@@ -414,7 +414,7 @@ export default function AdminApp() {
         setPlacements(firestorePlacements);
       }, (error) => console.warn("Firestore placements sync notice:", error));
       unsubscribes.push(unsub);
-    } catch (err) {}
+    } catch (err) { }
 
     // 7. Training Centers (training_centers)
     try {
@@ -424,7 +424,7 @@ export default function AdminApp() {
         setCenters(items);
       }, (error) => console.warn("Firestore training_centers sync notice:", error));
       unsubscribes.push(unsub);
-    } catch (err) {}
+    } catch (err) { }
 
     // 8. Batches (batches)
     try {
@@ -434,7 +434,7 @@ export default function AdminApp() {
         setBatches(items);
       }, (error) => console.warn("Firestore batches sync notice:", error));
       unsubscribes.push(unsub);
-    } catch (err) {}
+    } catch (err) { }
 
     // 9. Trainers (trainers)
     try {
@@ -444,7 +444,7 @@ export default function AdminApp() {
         setTrainers(items);
       }, (error) => console.warn("Firestore trainers sync notice:", error));
       unsubscribes.push(unsub);
-    } catch (err) {}
+    } catch (err) { }
 
     // 10. Students (students)
     try {
@@ -454,7 +454,7 @@ export default function AdminApp() {
         setStudents(items);
       }, (error) => console.warn("Firestore students sync notice:", error));
       unsubscribes.push(unsub);
-    } catch (err) {}
+    } catch (err) { }
 
     // 11. Certificates (certificates)
     try {
@@ -464,7 +464,7 @@ export default function AdminApp() {
         setCertificates(items);
       }, (error) => console.warn("Firestore certificates sync notice:", error));
       unsubscribes.push(unsub);
-    } catch (err) {}
+    } catch (err) { }
 
     // 12. Attendance (attendance)
     try {
@@ -474,7 +474,7 @@ export default function AdminApp() {
         setAttendance(items);
       }, (error) => console.warn("Firestore attendance sync notice:", error));
       unsubscribes.push(unsub);
-    } catch (err) {}
+    } catch (err) { }
 
     return () => {
       unsubscribes.forEach(unsub => unsub && unsub());
@@ -577,7 +577,7 @@ export default function AdminApp() {
         localStorage.setItem('lvs_admin_profile', JSON.stringify(user));
       }
       localStorage.setItem('lvs_admin_auth', 'true');
-    } catch (e) {}
+    } catch (e) { }
     setAdminUser(userToUse);
     setIsAuthenticated(true);
     showToast(`Welcome back, ${userToUse.name}! Connected to Life Vision Society Admin.`, 'success');
@@ -586,7 +586,7 @@ export default function AdminApp() {
   const handleLogout = () => {
     try {
       localStorage.removeItem('lvs_admin_auth');
-    } catch (e) {}
+    } catch (e) { }
     setIsAuthenticated(false);
     showToast('Logged out successfully.', 'info');
   };
@@ -599,8 +599,8 @@ export default function AdminApp() {
     switch (activeTab) {
       case 'dashboard':
         return (
-          <DashboardView 
-            applications={applications} 
+          <DashboardView
+            applications={applications}
             placements={placements}
             partners={partners}
             donations={donations}
@@ -617,41 +617,43 @@ export default function AdminApp() {
       // 📚 TRAINING
       case 'programs':
         return (
-          <TrainingProgramsView 
-            programs={programs} 
-            setPrograms={setPrograms} 
-            onAddProgram={handleAddProgram} 
+          <TrainingProgramsView
+            programs={programs}
+            setPrograms={setPrograms}
+            onAddProgram={handleAddProgram}
             applications={applications}
             setApplications={setApplications}
             onViewApp={(app) => setSelectedApp(app)}
-            showToast={showToast} 
+            showToast={showToast}
           />
         );
       case 'centers':
         return (
-          <TrainingCentersView 
-            centers={centers} 
+          <TrainingCentersView
+            centers={centers}
             batches={batches}
             students={students}
-            onAddCenter={handleAddCenter} 
+            onAddCenter={handleAddCenter}
             onUpdateCenter={handleUpdateCenter}
             onDeleteCenter={handleDeleteCenter}
-            showToast={showToast} 
+            showToast={showToast}
           />
         );
       case 'batches':
         return (
-          <BatchesView 
-            batches={batches} 
-            centers={centers} 
-            trainers={trainers} 
-            students={students} 
+          <BatchesView
+            batches={batches}
+            centers={centers}
+            programs={programs}
+            trainers={trainers}
+            students={students}
             attendance={attendance}
             certificates={certificates}
             onAddBatch={handleAddBatch}
             onUpdateBatch={handleUpdateBatch}
             onDeleteBatch={handleDeleteBatch}
-            showToast={showToast} 
+            showToast={showToast}
+            onNavigate={(tab) => setActiveTab(tab)}
           />
         );
       case 'trainers':
@@ -740,8 +742,8 @@ export default function AdminApp() {
       case 'app-volunteer':
       case 'app-contact':
         return (
-          <TrainingAppsView 
-            applications={applications} 
+          <TrainingAppsView
+            applications={applications}
             setApplications={setApplications}
             onViewApp={(app) => setSelectedApp(app)}
             onDeleteApp={async (appId) => {
@@ -751,10 +753,10 @@ export default function AdminApp() {
                   const updated = prev.filter(a => a.id !== appId);
                   try {
                     localStorage.setItem('lvs_submitted_applications', JSON.stringify(updated));
-                  } catch (e) {}
+                  } catch (e) { }
                   return updated;
                 });
-                
+
                 if (targetApp && targetApp.firestoreId) {
                   try {
                     await deleteDoc(doc(db, "training_applications", targetApp.firestoreId));
@@ -806,8 +808,8 @@ export default function AdminApp() {
 
       default:
         return (
-          <DashboardView 
-            applications={applications} 
+          <DashboardView
+            applications={applications}
             placements={placements}
             partners={partners}
             donations={donations}
@@ -825,21 +827,21 @@ export default function AdminApp() {
 
   return (
     <div className="flex h-screen bg-[#F4F6F4] text-slate-800 font-sans overflow-hidden select-none">
-      
+
       {/* Toast Notification */}
       {toast && (
-        <Toast 
-          message={toast.message} 
-          type={toast.type} 
-          onClose={() => setToast(null)} 
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
         />
       )}
 
       {/* Admin Sidebar */}
-      <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        isCollapsed={isCollapsed} 
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
@@ -848,15 +850,15 @@ export default function AdminApp() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        
+
         {/* Top Header */}
-        <TopHeader 
+        <TopHeader
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           isCollapsed={isCollapsed}
           setIsCollapsed={setIsCollapsed}
           setMobileOpen={setMobileOpen}
-          user={adminUser} 
+          user={adminUser}
           onLogout={handleLogout}
           unreadCount={applications.filter(a => a.status === 'Pending' || a.status === 'Unread' || a.status === 'New').length}
         />
@@ -893,9 +895,9 @@ export default function AdminApp() {
 
       {/* Modal Application Viewer */}
       {selectedApp && (
-        <AppDetailsModal 
-          application={selectedApp} 
-          onClose={() => setSelectedApp(null)} 
+        <AppDetailsModal
+          application={selectedApp}
+          onClose={() => setSelectedApp(null)}
           onUpdateStatus={async (id, newStatus, step) => {
             const targetApp = applications.find(a => a.id === id);
             const updatedStep = step !== undefined ? step : (targetApp?.timelineStep || 1);
