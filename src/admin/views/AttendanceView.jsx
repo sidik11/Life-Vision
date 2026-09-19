@@ -2,42 +2,28 @@ import React, { useState, useMemo } from 'react';
 import { Calendar, CheckCircle2, Save, Download, UserCheck, UserX, Clock, ShieldAlert, History, Lock } from 'lucide-react';
 import ActionPopover from '../components/Common/ActionPopover';
 
-export default function AttendanceView({ batches = [], students = [], showToast }) {
-  const [selectedCenter, setSelectedCenter] = useState('Bhubaneswar LVS Skill Center');
-  const [selectedBatch, setSelectedBatch] = useState('BATCH-2026-T1');
-  const [selectedDate, setSelectedDate] = useState('2026-08-30');
+export default function AttendanceView({ batches = [], centers = [], students = [], attendance = [], onSaveAttendance, showToast }) {
+  const [selectedCenter, setSelectedCenter] = useState(centers[0]?.name || 'Bhubaneswar LVS Skill Center');
+  const [selectedBatch, setSelectedBatch] = useState(batches[0]?.id || 'BATCH-2026-T1');
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [sessionType, setSessionType] = useState('Practical Lab'); // Theory, Practical Lab, OJT
   const [viewMode, setViewMode] = useState('mark'); // 'mark' or 'history'
 
   // Saved Attendance Records Cache (Prevent duplicates)
   const [savedRecords, setSavedRecords] = useState({});
 
-  // Student list for selected batch
-  const [attendanceData, setAttendanceData] = useState({
-    'LVS-OD-101': 'Present',
-    'LVS-OD-102': 'Present',
-    'LVS-OD-103': 'Leave',
-    'LVS-OD-104': 'Present',
-    'LVS-OD-105': 'Present',
-    'LVS-OD-106': 'Absent'
-  });
-
-  const recordKey = `${selectedBatch}_${selectedDate}`;
-  const isAlreadySaved = Boolean(savedRecords[recordKey]);
-
   const studentList = useMemo(() => {
     if (students && students.length > 0) {
-      return students;
+      return students.filter(s => !selectedBatch || s.batch === selectedBatch || s.batchId === selectedBatch);
     }
-    return [
-      { id: 'LVS-OD-101', name: 'Sunita Sahu', phone: '+91 98610 12345' },
-      { id: 'LVS-OD-102', name: 'Priya Ranjita Das', phone: '+91 97780 54321' },
-      { id: 'LVS-OD-103', name: 'Minati Nayak', phone: '+91 94370 88990' },
-      { id: 'LVS-OD-104', name: 'Rasmita Behera', phone: '+91 91240 66778' },
-      { id: 'LVS-OD-105', name: 'Kalyani Swain', phone: '+91 99370 11223' },
-      { id: 'LVS-OD-106', name: 'Kavita Kumari', phone: '+91 98530 00112' }
-    ];
-  }, [students]);
+    return [];
+  }, [students, selectedBatch]);
+
+  // Student list for selected batch
+  const [attendanceData, setAttendanceData] = useState({});
+
+  const recordKey = `${selectedBatch}_${selectedDate}`;
+  const isAlreadySaved = Boolean(savedRecords[recordKey] || (attendance && attendance.some(a => a.batch === selectedBatch && a.date === selectedDate)));
 
   const handleStatusChange = (id, status) => {
     setAttendanceData(prev => ({ ...prev, [id]: status }));
@@ -63,15 +49,22 @@ export default function AttendanceView({ batches = [], students = [], showToast 
       return;
     }
 
+    const payload = {
+      batch: selectedBatch,
+      center: selectedCenter,
+      date: selectedDate,
+      sessionType,
+      records: { ...attendanceData },
+      timestamp: new Date().toISOString()
+    };
+
+    if (onSaveAttendance) {
+      onSaveAttendance(payload);
+    }
+
     setSavedRecords(prev => ({
       ...prev,
-      [recordKey]: {
-        batch: selectedBatch,
-        date: selectedDate,
-        sessionType,
-        records: { ...attendanceData },
-        timestamp: new Date().toISOString()
-      }
+      [recordKey]: payload
     }));
 
     if (showToast) showToast(`Attendance for ${selectedBatch} on ${selectedDate} saved successfully!`, 'success');

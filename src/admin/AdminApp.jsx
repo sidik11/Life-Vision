@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { db, collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc } from '../firebase';
+import { db, collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, addDoc } from '../firebase';
 import AdminLogin from './components/AdminLogin';
 import Sidebar from './components/Sidebar';
 import TopHeader from './components/TopHeader';
@@ -81,14 +81,8 @@ export default function AdminApp() {
     setToast({ message, type });
   };
 
-  // Datasets State fetched directly from Cloud Firestore Database with instant fallback
-  const [applications, setApplications] = useState(() => {
-    try {
-      const saved = localStorage.getItem('lvs_submitted_applications');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
-
+  // Datasets State fetched directly from Cloud Firebase Firestore Database
+  const [applications, setApplications] = useState([]);
   const [placements, setPlacements] = useState([]);
   const [partners, setPartners] = useState([]);
   const [donations, setDonations] = useState([]);
@@ -102,77 +96,93 @@ export default function AdminApp() {
     showToast(`New NQR Qualification Pack (${newProg.qpCode || newProg.name}) created successfully!`, 'success');
   };
 
-  const [centers, setCenters] = useState(() => {
-    try {
-      const saved = localStorage.getItem('lvs_centers');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
-
-  const [batches, setBatches] = useState(() => {
-    try {
-      const saved = localStorage.getItem('lvs_batches');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
-
-  const [trainers, setTrainers] = useState(() => {
-    try {
-      const saved = localStorage.getItem('lvs_trainers');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
-
-  const [students, setStudents] = useState(() => {
-    try {
-      const saved = localStorage.getItem('lvs_students');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
-
-  const [certificates, setCertificates] = useState(() => {
-    try {
-      const saved = localStorage.getItem('lvs_certificates');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
-
+  const [centers, setCenters] = useState([]);
+  const [batches, setBatches] = useState([]);
+  const [trainers, setTrainers] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [certificates, setCertificates] = useState([]);
+  const [attendance, setAttendance] = useState([]);
   const [documents, setDocuments] = useState(initialDocuments);
 
-  const handleSetCenters = (val) => {
-    setCenters(prev => {
-      const next = typeof val === 'function' ? val(prev) : val;
-      (async () => {
-        try {
-          if (next.length > prev.length) {
-            const newItems = next.filter(n => !n.firestoreId && !prev.some(p => p.id === n.id));
-            for (const item of newItems) {
-              const cleanItem = JSON.parse(JSON.stringify(item));
-              await addDoc(collection(db, "training_centers"), cleanItem);
-            }
-          }
-        } catch (e) { console.warn("Firestore training_centers sync notice:", e); }
-      })();
-      return next;
-    });
+  // Firestore Direct CRUD Handlers
+  const handleAddCenter = async (newCenter) => {
+    try {
+      const cleanItem = JSON.parse(JSON.stringify(newCenter));
+      await addDoc(collection(db, "training_centers"), cleanItem);
+      showToast(`Training Centre ${newCenter.name} saved to Firebase!`, 'success');
+    } catch (e) {
+      console.warn("Firestore add center error:", e);
+      setCenters(prev => [newCenter, ...prev]);
+    }
   };
 
-  const handleSetBatches = (val) => {
-    setBatches(prev => {
-      const next = typeof val === 'function' ? val(prev) : val;
-      (async () => {
-        try {
-          if (next.length > prev.length) {
-            const newItems = next.filter(n => !n.firestoreId && !prev.some(p => p.id === n.id));
-            for (const item of newItems) {
-              const cleanItem = JSON.parse(JSON.stringify(item));
-              await addDoc(collection(db, "batches"), cleanItem);
-            }
-          }
-        } catch (e) { console.warn("Firestore batches sync notice:", e); }
-      })();
-      return next;
-    });
+  const handleUpdateCenter = async (updatedCenter) => {
+    try {
+      const cleanItem = JSON.parse(JSON.stringify(updatedCenter));
+      const target = centers.find(c => c.id === updatedCenter.id || c.firestoreId === updatedCenter.firestoreId);
+      if (target && target.firestoreId) {
+        await updateDoc(doc(db, "training_centers", target.firestoreId), cleanItem);
+      } else {
+        await addDoc(collection(db, "training_centers"), cleanItem);
+      }
+      showToast(`Training Centre ${updatedCenter.name} updated!`, 'success');
+    } catch (e) {
+      console.warn("Firestore update center error:", e);
+    }
+  };
+
+  const handleDeleteCenter = async (centerId) => {
+    try {
+      const target = centers.find(c => c.id === centerId || c.firestoreId === centerId);
+      if (target && target.firestoreId) {
+        await deleteDoc(doc(db, "training_centers", target.firestoreId));
+        showToast(`Training Centre deleted.`, 'info');
+      } else {
+        setCenters(prev => prev.filter(c => c.id !== centerId));
+      }
+    } catch (e) {
+      console.warn("Firestore delete center error:", e);
+    }
+  };
+
+  const handleAddBatch = async (newBatch) => {
+    try {
+      const cleanItem = JSON.parse(JSON.stringify(newBatch));
+      await addDoc(collection(db, "batches"), cleanItem);
+      showToast(`Batch ${newBatch.id} created successfully!`, 'success');
+    } catch (e) {
+      console.warn("Firestore add batch error:", e);
+      setBatches(prev => [newBatch, ...prev]);
+    }
+  };
+
+  const handleUpdateBatch = async (updatedBatch) => {
+    try {
+      const cleanItem = JSON.parse(JSON.stringify(updatedBatch));
+      const target = batches.find(b => b.id === updatedBatch.id || b.firestoreId === updatedBatch.firestoreId);
+      if (target && target.firestoreId) {
+        await updateDoc(doc(db, "batches", target.firestoreId), cleanItem);
+      } else {
+        await addDoc(collection(db, "batches"), cleanItem);
+      }
+      showToast(`Batch ${updatedBatch.id} updated!`, 'success');
+    } catch (e) {
+      console.warn("Firestore update batch error:", e);
+    }
+  };
+
+  const handleDeleteBatch = async (batchId) => {
+    try {
+      const target = batches.find(b => b.id === batchId || b.firestoreId === batchId);
+      if (target && target.firestoreId) {
+        await deleteDoc(doc(db, "batches", target.firestoreId));
+        showToast(`Batch deleted.`, 'info');
+      } else {
+        setBatches(prev => prev.filter(b => b.id !== batchId));
+      }
+    } catch (e) {
+      console.warn("Firestore delete batch error:", e);
+    }
   };
 
   const handleSetTrainers = (val) => {
@@ -180,11 +190,24 @@ export default function AdminApp() {
       const next = typeof val === 'function' ? val(prev) : val;
       (async () => {
         try {
-          if (next.length > prev.length) {
-            const newItems = next.filter(n => !n.firestoreId && !prev.some(p => p.id === n.id));
-            for (const item of newItems) {
+          if (next.length < prev.length) {
+            const deleted = prev.filter(p => !next.some(n => n.id === p.id));
+            for (const item of deleted) {
+              if (item.firestoreId) await deleteDoc(doc(db, "trainers", item.firestoreId));
+            }
+          } else if (next.length > prev.length) {
+            const added = next.filter(n => !n.firestoreId && !prev.some(p => p.id === n.id));
+            for (const item of added) {
               const cleanItem = JSON.parse(JSON.stringify(item));
               await addDoc(collection(db, "trainers"), cleanItem);
+            }
+          } else {
+            for (const item of next) {
+              const prevItem = prev.find(p => p.id === item.id);
+              if (prevItem && JSON.stringify(prevItem) !== JSON.stringify(item) && item.firestoreId) {
+                const cleanItem = JSON.parse(JSON.stringify(item));
+                await updateDoc(doc(db, "trainers", item.firestoreId), cleanItem);
+              }
             }
           }
         } catch (e) { console.warn("Firestore trainers sync notice:", e); }
@@ -198,11 +221,24 @@ export default function AdminApp() {
       const next = typeof val === 'function' ? val(prev) : val;
       (async () => {
         try {
-          if (next.length > prev.length) {
-            const newItems = next.filter(n => !n.firestoreId && !prev.some(p => p.id === n.id));
-            for (const item of newItems) {
+          if (next.length < prev.length) {
+            const deleted = prev.filter(p => !next.some(n => n.id === p.id));
+            for (const item of deleted) {
+              if (item.firestoreId) await deleteDoc(doc(db, "students", item.firestoreId));
+            }
+          } else if (next.length > prev.length) {
+            const added = next.filter(n => !n.firestoreId && !prev.some(p => p.id === n.id));
+            for (const item of added) {
               const cleanItem = JSON.parse(JSON.stringify(item));
               await addDoc(collection(db, "students"), cleanItem);
+            }
+          } else {
+            for (const item of next) {
+              const prevItem = prev.find(p => p.id === item.id);
+              if (prevItem && JSON.stringify(prevItem) !== JSON.stringify(item) && item.firestoreId) {
+                const cleanItem = JSON.parse(JSON.stringify(item));
+                await updateDoc(doc(db, "students", item.firestoreId), cleanItem);
+              }
             }
           }
         } catch (e) { console.warn("Firestore students sync notice:", e); }
@@ -217,16 +253,31 @@ export default function AdminApp() {
       (async () => {
         try {
           if (next.length > prev.length) {
-            const newItems = next.filter(n => !n.firestoreId && !prev.some(p => p.id === n.id));
-            for (const item of newItems) {
+            const added = next.filter(n => !n.firestoreId && !prev.some(p => (p.certNo && p.certNo === n.certNo) || p.id === n.id));
+            for (const item of added) {
               const cleanItem = JSON.parse(JSON.stringify(item));
               await addDoc(collection(db, "certificates"), cleanItem);
+            }
+          } else if (next.length < prev.length) {
+            const deleted = prev.filter(p => !next.some(n => n.certNo === p.certNo || n.id === p.id));
+            for (const item of deleted) {
+              if (item.firestoreId) await deleteDoc(doc(db, "certificates", item.firestoreId));
             }
           }
         } catch (e) { console.warn("Firestore certificates sync notice:", e); }
       })();
       return next;
     });
+  };
+
+  const handleSaveAttendance = async (attendanceRecord) => {
+    try {
+      const cleanItem = JSON.parse(JSON.stringify(attendanceRecord));
+      await addDoc(collection(db, "attendance"), cleanItem);
+      showToast(`Attendance for batch ${attendanceRecord.batch} saved to database!`, 'success');
+    } catch (e) {
+      console.warn("Firestore attendance save notice:", e);
+    }
   };
 
   const [adminUsers, setAdminUsers] = useState(initialAdminUsers);
@@ -415,6 +466,16 @@ export default function AdminApp() {
       unsubscribes.push(unsub);
     } catch (err) {}
 
+    // 12. Attendance (attendance)
+    try {
+      const q = collection(db, "attendance");
+      const unsub = onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
+        setAttendance(items);
+      }, (error) => console.warn("Firestore attendance sync notice:", error));
+      unsubscribes.push(unsub);
+    } catch (err) {}
+
     return () => {
       unsubscribes.forEach(unsub => unsub && unsub());
     };
@@ -547,15 +608,38 @@ export default function AdminApp() {
           />
         );
       case 'centers':
-        return <TrainingCentersView centers={centers} setCenters={handleSetCenters} showToast={showToast} />;
+        return (
+          <TrainingCentersView 
+            centers={centers} 
+            batches={batches}
+            students={students}
+            onAddCenter={handleAddCenter} 
+            onUpdateCenter={handleUpdateCenter}
+            onDeleteCenter={handleDeleteCenter}
+            showToast={showToast} 
+          />
+        );
       case 'batches':
-        return <BatchesView batches={batches} setBatches={handleSetBatches} centers={centers} trainers={trainers} students={students} showToast={showToast} />;
+        return (
+          <BatchesView 
+            batches={batches} 
+            centers={centers} 
+            trainers={trainers} 
+            students={students} 
+            attendance={attendance}
+            certificates={certificates}
+            onAddBatch={handleAddBatch}
+            onUpdateBatch={handleUpdateBatch}
+            onDeleteBatch={handleDeleteBatch}
+            showToast={showToast} 
+          />
+        );
       case 'trainers':
         return <TrainersView trainers={trainers} setTrainers={handleSetTrainers} centers={centers} batches={batches} showToast={showToast} />;
       case 'students':
         return <StudentsView students={students} setStudents={handleSetStudents} centers={centers} batches={batches} showToast={showToast} filter={activeTab} />;
       case 'attendance':
-        return <AttendanceView batches={batches} centers={centers} students={students} setStudents={handleSetStudents} showToast={showToast} />;
+        return <AttendanceView batches={batches} centers={centers} students={students} setStudents={handleSetStudents} attendance={attendance} onSaveAttendance={handleSaveAttendance} showToast={showToast} />;
       case 'assessments':
         return <AssessmentView batches={batches} centers={centers} students={students} setStudents={handleSetStudents} showToast={showToast} />;
       case 'certificates':
@@ -796,13 +880,7 @@ export default function AdminApp() {
             const targetApp = applications.find(a => a.id === id);
             const updatedStep = step !== undefined ? step : (targetApp?.timelineStep || 1);
 
-            setApplications(prev => {
-              const updated = prev.map(a => a.id === id ? { ...a, status: newStatus, timelineStep: updatedStep } : a);
-              try {
-                localStorage.setItem('lvs_submitted_applications', JSON.stringify(updated));
-              } catch (e) {}
-              return updated;
-            });
+            setApplications(prev => prev.map(a => a.id === id ? { ...a, status: newStatus, timelineStep: updatedStep } : a));
             setSelectedApp(prev => prev && prev.id === id ? { ...prev, status: newStatus, timelineStep: updatedStep } : null);
 
             if (targetApp) {
@@ -849,13 +927,7 @@ export default function AdminApp() {
           }}
           onAssignBatch={async (id, batch) => {
             const targetApp = applications.find(a => a.id === id);
-            setApplications(prev => {
-              const updated = prev.map(a => a.id === id ? { ...a, preferredBatch: batch, timelineStep: 5 } : a);
-              try {
-                localStorage.setItem('lvs_submitted_applications', JSON.stringify(updated));
-              } catch (e) {}
-              return updated;
-            });
+            setApplications(prev => prev.map(a => a.id === id ? { ...a, preferredBatch: batch, timelineStep: 5 } : a));
             setSelectedApp(prev => prev && prev.id === id ? { ...prev, preferredBatch: batch, timelineStep: 5 } : null);
 
             if (targetApp) {

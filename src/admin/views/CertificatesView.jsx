@@ -87,26 +87,7 @@ export default function CertificatesView({ certificates = [], setCertificates, s
     if (showToast) showToast(`Redirecting to Public Registry Verification for ${certNo}...`, 'info');
   };
 
-  const currentCerts = (certificates && certificates.length > 0) ? certificates : [
-    {
-      certNo: 'LVS-CERT-2026-0001',
-      student: 'Sunita Sahu',
-      course: 'Tailoring & Stitching',
-      batch: 'BATCH-2026-T1',
-      issueDate: '2026-08-30',
-      grade: 'A+',
-      status: 'Issued'
-    },
-    {
-      certNo: 'LVS-CERT-2026-0002',
-      student: 'Priya Ranjita Das',
-      course: 'Beautician & Wellness',
-      batch: 'BATCH-2026-B1',
-      issueDate: '2026-08-30',
-      grade: 'A+',
-      status: 'Issued'
-    }
-  ];
+  const currentCerts = certificates || [];
 
   const currentEligibility = checkEligibility(selectedStudentForCert);
 

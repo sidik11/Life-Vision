@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Award, ShieldCheck, CheckCircle2, AlertCircle, Search, ArrowLeft, Calendar, User, BookOpen, MapPin, Download, Printer } from 'lucide-react';
-import { initialCertificates, initialStudents } from '../admin/mockData';
+import { db, collection, getDocs } from '../firebase';
+import { initialCertificates } from '../admin/mockData';
 
 export default function VerifyCertificatePage({ certCodeFromUrl, onBackToHome }) {
   const [searchCode, setSearchCode] = useState(certCodeFromUrl || '');
@@ -11,13 +12,10 @@ export default function VerifyCertificatePage({ certCodeFromUrl, onBackToHome })
   useEffect(() => {
     if (certCodeFromUrl) {
       handleSearchCode(certCodeFromUrl);
-    } else {
-      // Default sample search for preview
-      handleSearchCode('LVS-CERT-2026-0001');
     }
   }, [certCodeFromUrl]);
 
-  const handleSearchCode = (codeToSearch) => {
+  const handleSearchCode = async (codeToSearch) => {
     const code = (codeToSearch || searchCode).trim().toUpperCase();
     setSearched(true);
     if (!code) {
@@ -25,15 +23,17 @@ export default function VerifyCertificatePage({ certCodeFromUrl, onBackToHome })
       return;
     }
 
-    // Match in initialCertificates or localStorage saved certificates
-    let allCerts = [...initialCertificates];
+    let allCerts = [];
     try {
-      const saved = localStorage.getItem('lvs_certificates');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        allCerts = [...parsed, ...allCerts];
-      }
-    } catch (e) {}
+      const snap = await getDocs(collection(db, "certificates"));
+      allCerts = snap.docs.map(doc => ({ ...doc.data(), firestoreId: doc.id }));
+    } catch (e) {
+      console.warn("Firestore certificate query notice:", e);
+    }
+
+    if (allCerts.length === 0) {
+      allCerts = initialCertificates;
+    }
 
     const match = allCerts.find(
       c => String(c.certNo || c.id || '').toUpperCase() === code ||
@@ -41,24 +41,9 @@ export default function VerifyCertificatePage({ certCodeFromUrl, onBackToHome })
     );
 
     if (match) {
-      setFoundCert(match);
+      setFoundCert({ ...match, verified: true });
     } else {
-      // Fallback matching sample for demo/verification
-      if (code.startsWith('LVS-CERT') || code.includes('2026')) {
-        setFoundCert({
-          certNo: code,
-          student: "Sunita Sahu",
-          course: "Tailoring & Stitching Training",
-          batch: "BATCH-2026-T1 (Morning)",
-          center: "Bhubaneswar LVS Skill Center",
-          issueDate: "2026-08-30",
-          grade: "A+",
-          status: "Issued",
-          verified: true
-        });
-      } else {
-        setFoundCert(null);
-      }
+      setFoundCert(null);
     }
   };
 
