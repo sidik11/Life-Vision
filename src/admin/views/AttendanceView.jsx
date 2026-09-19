@@ -132,9 +132,11 @@ export default function AttendanceView({ batches = [], students = [], showToast 
                 onChange={(e) => setSelectedCenter(e.target.value)}
                 className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none"
               >
-                <option value="Bhubaneswar LVS Skill Center">Bhubaneswar LVS Skill Center</option>
-                <option value="Cuttack Main Skill Hub">Cuttack Main Skill Hub</option>
-                <option value="Puri Rural Skill Hub">Puri Rural Skill Hub</option>
+                {centers.length > 0 ? (
+                  centers.map(c => <option key={c.id || c.name} value={c.name}>{c.name}</option>)
+                ) : (
+                  <option value="All">No Centres Registered Yet</option>
+                )}
               </select>
             </div>
 
@@ -145,9 +147,11 @@ export default function AttendanceView({ batches = [], students = [], showToast 
                 onChange={(e) => setSelectedBatch(e.target.value)}
                 className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none"
               >
-                <option value="BATCH-2026-T1">BATCH-2026-T1 (Tailoring)</option>
-                <option value="BATCH-2026-B1">BATCH-2026-B1 (Beautician)</option>
-                <option value="BATCH-2026-A1">BATCH-2026-A1 (Agriculture)</option>
+                {batches.length > 0 ? (
+                  batches.map(b => <option key={b.id} value={b.id}>{b.id} ({b.course || b.name})</option>)
+                ) : (
+                  <option value="All">No Batches Created Yet</option>
+                )}
               </select>
             </div>
 

@@ -354,26 +354,49 @@ export default function BatchesView({
 
                 <div>
                   <label className="block text-2xs font-bold text-slate-700 mb-1">Training Centre *</label>
-                  <select
-                    value={formData.center}
-                    onChange={(e) => setFormData(p => ({ ...p, center: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-bold"
-                  >
-                    {centers.map(c => (
-                      <option key={c.id} value={c.name}>{c.name} ({c.location})</option>
-                    ))}
-                  </select>
+                  {centers.length > 0 ? (
+                    <select
+                      value={formData.center}
+                      onChange={(e) => setFormData(p => ({ ...p, center: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-bold"
+                    >
+                      {centers.map(c => (
+                        <option key={c.id || c.name} value={c.name}>{c.name} ({c.location || 'Odisha'})</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      placeholder="Enter Training Centre Name (or add in Centres view)"
+                      value={formData.center}
+                      onChange={(e) => setFormData(p => ({ ...p, center: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-bold"
+                    />
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-2xs font-bold text-slate-700 mb-1">Assigned Trainer</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Sunita Sahu"
-                    value={formData.trainer}
-                    onChange={(e) => setFormData(p => ({ ...p, trainer: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none"
-                  />
+                  {trainers.length > 0 ? (
+                    <select
+                      value={formData.trainer}
+                      onChange={(e) => setFormData(p => ({ ...p, trainer: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-bold"
+                    >
+                      {trainers.map(t => (
+                        <option key={t.id} value={t.name}>{t.name} ({t.id})</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      placeholder="e.g. Dr. Sunita Sharma"
+                      value={formData.trainer}
+                      onChange={(e) => setFormData(p => ({ ...p, trainer: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none"
+                    />
+                  )}
                 </div>
 
                 <div>

@@ -26,8 +26,8 @@ import ContentCmsView from './views/ContentCmsView';
 import DocumentsView from './views/DocumentsView';
 import NotificationsView from './views/NotificationsView';
 import UsersRolesView from './views/UsersRolesView';
-import SettingsView from './views/SettingsView';
 import StaffView from './views/StaffView';
+import TrainersView from './views/TrainersView';
 import ReportsView from './views/ReportsView';
 
 // Real Data fetched directly from Public Website
@@ -96,11 +96,82 @@ export default function AdminApp() {
     showToast(`New NQR Qualification Pack (${newProg.qpCode || newProg.name}) created successfully!`, 'success');
   };
 
-  const [centers, setCenters] = useState(initialCenters);
-  const [batches, setBatches] = useState(initialBatches);
-  const [students, setStudents] = useState(initialStudents);
-  const [certificates, setCertificates] = useState(initialCertificates);
+  const [centers, setCenters] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lvs_centers');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  });
+
+  const [batches, setBatches] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lvs_batches');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  });
+
+  const [trainers, setTrainers] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lvs_trainers');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  });
+
+  const [students, setStudents] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lvs_students');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  });
+
+  const [certificates, setCertificates] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lvs_certificates');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  });
+
   const [documents, setDocuments] = useState(initialDocuments);
+
+  const handleSetCenters = (val) => {
+    setCenters(prev => {
+      const next = typeof val === 'function' ? val(prev) : val;
+      try { localStorage.setItem('lvs_centers', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  };
+
+  const handleSetBatches = (val) => {
+    setBatches(prev => {
+      const next = typeof val === 'function' ? val(prev) : val;
+      try { localStorage.setItem('lvs_batches', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  };
+
+  const handleSetTrainers = (val) => {
+    setTrainers(prev => {
+      const next = typeof val === 'function' ? val(prev) : val;
+      try { localStorage.setItem('lvs_trainers', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  };
+
+  const handleSetStudents = (val) => {
+    setStudents(prev => {
+      const next = typeof val === 'function' ? val(prev) : val;
+      try { localStorage.setItem('lvs_students', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  };
+
+  const handleSetCertificates = (val) => {
+    setCertificates(prev => {
+      const next = typeof val === 'function' ? val(prev) : val;
+      try { localStorage.setItem('lvs_certificates', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  };
 
   const [adminUsers, setAdminUsers] = useState(initialAdminUsers);
 
@@ -412,20 +483,21 @@ export default function AdminApp() {
           />
         );
       case 'centers':
-        return <TrainingCentersView centers={centers} setCenters={setCenters} showToast={showToast} />;
+        return <TrainingCentersView centers={centers} setCenters={handleSetCenters} showToast={showToast} />;
       case 'batches':
-        return <BatchesView batches={batches} setBatches={setBatches} showToast={showToast} />;
-      case 'students':
+        return <BatchesView batches={batches} setBatches={handleSetBatches} centers={centers} trainers={trainers} students={students} showToast={showToast} />;
       case 'trainers':
-        return <StudentsView students={students} setStudents={setStudents} showToast={showToast} filter={activeTab} />;
+        return <TrainersView trainers={trainers} setTrainers={handleSetTrainers} centers={centers} batches={batches} showToast={showToast} />;
+      case 'students':
+        return <StudentsView students={students} setStudents={handleSetStudents} centers={centers} batches={batches} showToast={showToast} filter={activeTab} />;
       case 'attendance':
-        return <AttendanceView batches={batches} students={students} showToast={showToast} />;
+        return <AttendanceView batches={batches} centers={centers} students={students} setStudents={handleSetStudents} showToast={showToast} />;
       case 'assessments':
-        return <AssessmentView students={students} showToast={showToast} />;
+        return <AssessmentView batches={batches} centers={centers} students={students} setStudents={handleSetStudents} showToast={showToast} />;
       case 'certificates':
-        return <CertificatesView certificates={certificates} setCertificates={setCertificates} students={students} showToast={showToast} />;
+        return <CertificatesView certificates={certificates} setCertificates={handleSetCertificates} students={students} showToast={showToast} />;
       case 'training-reports':
-        return <ReportsView activeSubTab="report-training" showToast={showToast} />;
+        return <ReportsView centers={centers} batches={batches} students={students} trainers={trainers} certificates={certificates} activeSubTab="report-training" showToast={showToast} />;
 
       // 💼 PLACEMENT
       case 'placement':

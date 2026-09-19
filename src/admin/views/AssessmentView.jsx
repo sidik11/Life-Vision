@@ -1,75 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import StatusBadge from '../components/Common/StatusBadge';
 import ActionPopover from '../components/Common/ActionPopover';
-import { Award, Edit, Save, CheckCircle2, Download, Printer, Plus, X, Eye } from 'lucide-react';
+import { Award, Edit, Save, CheckCircle2, Download, Printer, Plus, X, Eye, Filter } from 'lucide-react';
 
-export default function AssessmentView({ students = [], showToast }) {
-  const [assessments, setAssessments] = useState([
-    {
-      id: 'ASM-101',
-      studentId: 'LVS-OD-101',
-      student: 'Sunita Sahu',
-      course: 'Tailoring & Stitching',
-      batch: 'BATCH-2026-T1',
-      theoryMarks: 46,
-      practicalMarks: 48,
-      maxMarks: 100,
-      total: 94,
-      percentage: 94,
-      result: 'Pass',
-      grade: 'A+',
-      remarks: 'Top scorer in boutique garment drafting'
-    },
-    {
-      id: 'ASM-102',
-      studentId: 'LVS-OD-102',
-      student: 'Priya Ranjita Das',
-      course: 'Beautician & Wellness',
-      batch: 'BATCH-2026-B1',
-      theoryMarks: 48,
-      practicalMarks: 48,
-      maxMarks: 100,
-      total: 96,
-      percentage: 96,
-      result: 'Pass',
-      grade: 'A+',
-      remarks: 'Excellent bridal makeup & styling practicals'
-    },
-    {
-      id: 'ASM-103',
-      studentId: 'LVS-OD-103',
-      student: 'Minati Nayak',
-      course: 'Tailoring & Stitching',
-      batch: 'BATCH-2026-T2',
-      theoryMarks: 42,
-      practicalMarks: 46,
-      maxMarks: 100,
-      total: 88,
-      percentage: 88,
-      result: 'Pass',
-      grade: 'A',
-      remarks: 'Mastered commercial sewing machine operation'
-    },
-    {
-      id: 'ASM-104',
-      studentId: 'LVS-OD-104',
-      student: 'Rasmita Behera',
-      course: 'Tailoring & Stitching',
-      batch: 'BATCH-2026-T3',
-      theoryMarks: 38,
-      practicalMarks: 42,
-      maxMarks: 100,
-      total: 80,
-      percentage: 80,
-      result: 'Pass',
-      grade: 'B',
-      remarks: 'Good stitching speed and accuracy'
-    }
-  ]);
-
-  const [editingId, setEditingId] = useState(null);
-  const [editTheory, setEditTheory] = useState(0);
-  const [editPractical, setEditPractical] = useState(0);
+export default function AssessmentView({ 
+  students = [], 
+  setStudents, 
+  centers = [], 
+  batches = [], 
+  showToast 
+}) {
+  const [selectedCenter, setSelectedCenter] = useState('All');
+  const [selectedBatch, setSelectedBatch] = useState('All');
+  const [editingStudentId, setEditingStudentId] = useState(null);
+  const [editTheory, setEditTheory] = useState(40);
+  const [editPractical, setEditPractical] = useState(45);
   const [selectedMarksheet, setSelectedMarksheet] = useState(null);
 
   const calculateGrade = (pct) => {
@@ -80,35 +25,50 @@ export default function AssessmentView({ students = [], showToast }) {
     return 'F';
   };
 
-  const startEdit = (item) => {
-    setEditingId(item.id);
-    setEditTheory(item.theoryMarks);
-    setEditPractical(item.practicalMarks);
+  // Filtered Students for Assessment
+  const filteredStudents = useMemo(() => {
+    return (students || []).filter(stu => {
+      const matchesCenter = selectedCenter === 'All' || !stu.center || stu.center === selectedCenter;
+      const matchesBatch = selectedBatch === 'All' || !stu.batch || stu.batch === selectedBatch;
+      return matchesCenter && matchesBatch;
+    });
+  }, [students, selectedCenter, selectedBatch]);
+
+  const startEditMarks = (stu) => {
+    setEditingStudentId(stu.id);
+    const existingTotal = parseInt(stu.assessmentScore || '0', 10) || 80;
+    setEditTheory(Math.min(50, Math.floor(existingTotal / 2)));
+    setEditPractical(Math.min(50, Math.ceil(existingTotal / 2)));
   };
 
-  const saveEdit = (id) => {
-    const total = Number(editTheory) + Number(editPractical);
+  const saveMarks = (stuId) => {
+    const theory = Number(editTheory);
+    const practical = Number(editPractical);
+    const total = theory + practical;
     const percentage = total;
     const result = total >= 50 ? 'Pass' : 'Fail';
     const grade = calculateGrade(percentage);
+    const scoreString = `${total}/100 (${result})`;
 
-    setAssessments(prev => prev.map(a => {
-      if (a.id === id) {
-        return {
-          ...a,
-          theoryMarks: Number(editTheory),
-          practicalMarks: Number(editPractical),
-          total,
-          percentage,
-          result,
-          grade
-        };
-      }
-      return a;
-    }));
+    if (setStudents) {
+      setStudents(prev => prev.map(s => {
+        if (s.id === stuId) {
+          return {
+            ...s,
+            assessmentScore: scoreString,
+            theoryMarks: theory,
+            practicalMarks: practical,
+            totalMarks: total,
+            grade: grade,
+            status: result === 'Pass' ? 'Passed' : 'Failed'
+          };
+        }
+        return s;
+      }));
+    }
 
-    setEditingId(null);
-    if (showToast) showToast('Assessment marks updated successfully!', 'success');
+    setEditingStudentId(null);
+    if (showToast) showToast(`Saved exam marks for student ${stuId}! Grade: ${grade}`, 'success');
   };
 
   const handleExportCSV = () => {
@@ -136,6 +96,33 @@ export default function AssessmentView({ students = [], showToast }) {
         </div>
       </div>
 
+      {/* Selectors Bar */}
+      <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <div>
+          <label className="font-bold text-slate-700">Filter Training Centre</label>
+          <select
+            value={selectedCenter}
+            onChange={(e) => setSelectedCenter(e.target.value)}
+            className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none"
+          >
+            <option value="All">All Centres</option>
+            {centers.map(c => <option key={c.id || c.name} value={c.name}>{c.name}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <label className="font-bold text-slate-700">Filter Batch</label>
+          <select
+            value={selectedBatch}
+            onChange={(e) => setSelectedBatch(e.target.value)}
+            className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none"
+          >
+            <option value="All">All Batches</option>
+            {batches.map(b => <option key={b.id} value={b.id}>{b.id} ({b.course || b.name})</option>)}
+          </select>
+        </div>
+      </div>
+
       {/* Assessment Table */}
       <div className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -154,78 +141,102 @@ export default function AssessmentView({ students = [], showToast }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {assessments.map((asm) => (
-                <tr key={asm.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="p-4 font-mono font-bold text-pink-700">{asm.studentId}</td>
-                  <td className="p-4 font-bold text-slate-900">{asm.student}</td>
-                  <td className="p-4 text-slate-700">
-                    <div>{asm.course}</div>
-                    <div className="text-[10px] text-slate-500 font-mono">{asm.batch}</div>
-                  </td>
+              {filteredStudents.length > 0 ? (
+                filteredStudents.map((stu) => {
+                  const theory = stu.theoryMarks !== undefined ? stu.theoryMarks : 44;
+                  const practical = stu.practicalMarks !== undefined ? stu.practicalMarks : 46;
+                  const total = theory + practical;
+                  const grade = stu.grade || calculateGrade(total);
+                  const result = stu.status === 'Failed' ? 'Fail' : (total >= 50 ? 'Pass' : 'Pending');
 
-                  <td className="p-4 text-center font-bold">
-                    {editingId === asm.id ? (
-                      <input
-                        type="number"
-                        max="50"
-                        min="0"
-                        value={editTheory}
-                        onChange={(e) => setEditTheory(e.target.value)}
-                        className="w-16 p-1 border border-slate-300 rounded text-center text-xs font-bold"
-                      />
-                    ) : (
-                      <span>{asm.theoryMarks} / 50</span>
-                    )}
-                  </td>
+                  return (
+                    <tr key={stu.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="p-4 font-mono font-bold text-pink-700">{stu.id}</td>
+                      <td className="p-4 font-bold text-slate-900">{stu.name}</td>
+                      <td className="p-4 text-slate-700">
+                        <div>{stu.course}</div>
+                        <div className="text-[10px] text-slate-500 font-mono">{stu.batch}</div>
+                      </td>
 
-                  <td className="p-4 text-center font-bold">
-                    {editingId === asm.id ? (
-                      <input
-                        type="number"
-                        max="50"
-                        min="0"
-                        value={editPractical}
-                        onChange={(e) => setEditPractical(e.target.value)}
-                        className="w-16 p-1 border border-slate-300 rounded text-center text-xs font-bold"
-                      />
-                    ) : (
-                      <span>{asm.practicalMarks} / 50</span>
-                    )}
-                  </td>
+                      <td className="p-4 text-center font-bold">
+                        {editingStudentId === stu.id ? (
+                          <input
+                            type="number"
+                            max="50"
+                            min="0"
+                            value={editTheory}
+                            onChange={(e) => setEditTheory(e.target.value)}
+                            className="w-16 p-1 border border-slate-300 rounded text-center text-xs font-bold"
+                          />
+                        ) : (
+                          <span>{theory} / 50</span>
+                        )}
+                      </td>
 
-                  <td className="p-4 text-center font-extrabold text-pink-700">{asm.percentage}%</td>
-                  <td className="p-4 text-center font-black text-emerald-700">{asm.grade}</td>
-                  <td className="p-4">
-                    <StatusBadge status={asm.result} />
-                  </td>
+                      <td className="p-4 text-center font-bold">
+                        {editingStudentId === stu.id ? (
+                          <input
+                            type="number"
+                            max="50"
+                            min="0"
+                            value={editPractical}
+                            onChange={(e) => setEditPractical(e.target.value)}
+                            className="w-16 p-1 border border-slate-300 rounded text-center text-xs font-bold"
+                          />
+                        ) : (
+                          <span>{practical} / 50</span>
+                        )}
+                      </td>
 
-                  <td className="p-4 text-center">
-                    {editingId === asm.id ? (
-                      <button
-                        onClick={() => saveEdit(asm.id)}
-                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs"
-                      >
-                        Save
-                      </button>
-                    ) : (
-                      <ActionPopover 
-                        actions={[
-                          {
-                            label: 'Edit Marks',
-                            icon: Edit,
-                            onClick: () => startEdit(asm)
-                          },
-                          {
-                            label: 'View Marksheet',
-                            icon: Eye,
-                            onClick: () => setSelectedMarksheet(asm)
-                          }
-                        ]}
-                      />
-                    )}
+                      <td className="p-4 text-center font-extrabold text-pink-700">{total}%</td>
+                      <td className="p-4 text-center font-black text-emerald-700">{grade}</td>
+                      <td className="p-4">
+                        <StatusBadge status={result} />
+                      </td>
+
+                      <td className="p-4 text-center">
+                        {editingStudentId === stu.id ? (
+                          <button
+                            onClick={() => saveMarks(stu.id)}
+                            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs"
+                          >
+                            Save
+                          </button>
+                        ) : (
+                          <ActionPopover 
+                            actions={[
+                              {
+                                label: 'Enter / Edit Marks',
+                                icon: Edit,
+                                onClick: () => startEditMarks(stu)
+                              },
+                              {
+                                label: 'View Marksheet',
+                                icon: Eye,
+                                onClick: () => setSelectedMarksheet({
+                                  studentId: stu.id,
+                                  student: stu.name,
+                                  course: stu.course,
+                                  batch: stu.batch,
+                                  percentage: total,
+                                  grade: grade,
+                                  result: result
+                                })
+                              }
+                            ]}
+                          />
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="9" className="p-8 text-center text-slate-500 text-xs">
+                    No enrolled students found in system. Enroll candidates from Candidate Applications or Student Management to record assessment marks.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
