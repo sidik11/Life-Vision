@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { 
   Users, UserPlus, IdCard, Calendar, FileText, 
   Building, CheckCircle2, Clock, XCircle, Search, 
-  Filter, Download, Mail, Phone, MapPin, Shield, Printer, Upload
+  Filter, Download, Mail, Phone, MapPin, Shield, Printer, Upload,
+  Edit, X
 } from 'lucide-react';
+import { db, doc, updateDoc } from '../../firebase';
 import { saveToFirestore } from '../../utils/firebaseSave';
 
 export default function StaffView({ staffList: propStaffList = [], setStaffList: propSetStaffList, activeSubTab = 'all-staff', showToast }) {
@@ -11,91 +13,14 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState('All');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingStaff, setEditingStaff] = useState(null);
 
-  // Initial Default Staff Dataset
-  const defaultStaff = [
-    {
-      id: "STF-2026-001",
-      name: "Dr. Sunita Sharma",
-      role: "Executive Director",
-      department: "Management",
-      email: "sunita.sharma@lifevisionsociety.org",
-      phone: "+91 98610 11223",
-      bloodGroup: "O+",
-      location: "Bhubaneswar HQ",
-      joinDate: "2021-04-10",
-      emergencyContact: "+91 9416362914",
-      status: "Active",
-      avatar: "/image/logo.png"
-    },
-    {
-      id: "STF-2026-002",
-      name: "Priya Ranjita Das",
-      role: "Senior Master Trainer",
-      department: "Training",
-      email: "priya.das@lifevisionsociety.org",
-      phone: "+91 97780 22334",
-      bloodGroup: "B+",
-      location: "Cuttack Skill Hub",
-      joinDate: "2022-06-15",
-      emergencyContact: "+91 97780 22334",
-      status: "Active",
-      avatar: "/beautician_training.jpg"
-    },
-    {
-      id: "STF-2026-003",
-      name: "Rajesh Kumar Mohanty",
-      role: "Placement Officer",
-      department: "Placement & Livelihood",
-      email: "rajesh.placement@lifevisionsociety.org",
-      phone: "+91 94370 33445",
-      bloodGroup: "A+",
-      location: "Bhubaneswar HQ",
-      joinDate: "2023-01-20",
-      emergencyContact: "+91 94370 33445",
-      status: "Active",
-      avatar: "/success_story.jpg"
-    },
-    {
-      id: "STF-2026-004",
-      name: "Anita Behera",
-      role: "Center Coordinator",
-      department: "Operations",
-      email: "anita.behera@lifevisionsociety.org",
-      phone: "+91 91240 44556",
-      bloodGroup: "AB+",
-      location: "Puri Center",
-      joinDate: "2023-09-01",
-      emergencyContact: "+91 91240 44556",
-      status: "Active",
-      avatar: "/computer_lab.jpg"
-    },
-    {
-      id: "STF-2026-005",
-      name: "Sanjay Kumar Swain",
-      role: "Finance & Accounts Lead",
-      department: "Finance",
-      email: "accounts@lifevisionsociety.org",
-      phone: "+91 98530 55667",
-      bloodGroup: "O+",
-      location: "Bhubaneswar HQ",
-      joinDate: "2022-11-12",
-      emergencyContact: "+91 98530 55667",
-      status: "Active",
-      avatar: "/image/logo.png"
-    }
-  ];
-
-  // Merge Firestore prop dataset with default staff (deduplicated by id / email)
-  const map = new Map();
-  [...propStaffList, ...defaultStaff].forEach(item => {
-    if (item && item.id) map.set(item.id, { ...map.get(item.id), ...item });
-  });
-  const allStaff = Array.from(map.values());
+  // Staff members strictly from database / registration (no default static mock staff)
+  const allStaff = propStaffList;
 
   const [newStaff, setNewStaff] = useState({
     name: '',
-    role: '',
+    role: 'Master Trainer',
     department: 'Training',
     email: '',
     phone: '',
@@ -111,6 +36,17 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
       const reader = new FileReader();
       reader.onloadend = () => {
         setPhotoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleEditPhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file && editingStaff) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditingStaff({ ...editingStaff, avatar: reader.result });
       };
       reader.readAsDataURL(file);
     }
@@ -144,7 +80,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
     setShowAddModal(false);
     setNewStaff({
       name: '',
-      role: '',
+      role: 'Master Trainer',
       department: 'Training',
       email: '',
       phone: '',
@@ -154,6 +90,33 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
     });
     setPhotoPreview(null);
     if (showToast) showToast(`Staff member ${created.name} added & saved to database!`, "success");
+  };
+
+  const handleEditStaffSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingStaff || !editingStaff.name || !editingStaff.email) {
+      if (showToast) showToast("Please fill in Staff Name and Email.", "error");
+      return;
+    }
+
+    const updatedItem = { ...editingStaff };
+
+    if (propSetStaffList) {
+      propSetStaffList(prev => prev.map(s => (s.id === updatedItem.id || (s.firestoreId && s.firestoreId === updatedItem.firestoreId)) ? updatedItem : s));
+    }
+
+    if (updatedItem.firestoreId) {
+      try {
+        const cleanItem = JSON.parse(JSON.stringify(updatedItem));
+        delete cleanItem.firestoreId;
+        await updateDoc(doc(db, "staff", updatedItem.firestoreId), cleanItem);
+      } catch (err) {
+        console.warn("Firestore update staff notice:", err);
+      }
+    }
+
+    setEditingStaff(null);
+    if (showToast) showToast(`Staff member ${updatedItem.name} details updated!`, "success");
   };
 
   const handlePrintStaffCard = (staffMember) => {
@@ -204,7 +167,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
               <div class="info-row"><span class="info-label">Emergency Contact:</span><span class="info-val">${staffMember.emergencyContact || staffMember.phone || '+91 9416362914'}</span></div>
             </div>
             <div class="footer">
-              Property of Life Vision Society • Authorised Staff • Helpline: +91 9416362914
+              Property of Life Vision Society • Authorised Staff • Emergency Helpline: +91 9416362914
             </div>
           </div>
           <script>
@@ -217,9 +180,9 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
   };
 
   const filteredStaff = allStaff.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          s.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          s.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (s.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (s.role || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (s.email || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesDept = selectedDept === 'All' || s.department === selectedDept;
     return matchesSearch && matchesDept;
   });
@@ -308,6 +271,17 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
             </div>
           </div>
 
+          {/* Empty State */}
+          {filteredStaff.length === 0 && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">
+              <Users className="w-12 h-12 text-slate-300 mx-auto" />
+              <h3 className="text-base font-bold text-slate-700 font-serif">No Staff Members Found</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                No staff members registered yet. Add a new staff member using the button above or register via the portal login page.
+              </p>
+            </div>
+          )}
+
           {/* Staff Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredStaff.map((staff) => (
@@ -353,13 +327,25 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
 
                 <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                   <span>ID: <strong>{staff.id}</strong></span>
-                  <button
-                    onClick={() => handlePrintStaffCard(staff)}
-                    className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#047857] font-bold rounded-lg flex items-center gap-1 border border-emerald-200 transition-all cursor-pointer"
-                  >
-                    <Printer className="w-3 h-3" />
-                    <span>ID Card</span>
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    {/* EDIT STAFF BUTTON */}
+                    <button
+                      onClick={() => handleOpenEditModal(staff)}
+                      className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold rounded-lg flex items-center gap-1 border border-amber-200 transition-all cursor-pointer"
+                      title="Edit Staff Details"
+                    >
+                      <Edit className="w-3 h-3" />
+                      <span>Edit</span>
+                    </button>
+                    {/* PRINT ID CARD BUTTON */}
+                    <button
+                      onClick={() => handlePrintStaffCard(staff)}
+                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#047857] font-bold rounded-lg flex items-center gap-1 border border-emerald-200 transition-all cursor-pointer"
+                    >
+                      <Printer className="w-3 h-3" />
+                      <span>ID Card</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -380,55 +366,72 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {allStaff.map((s) => (
-              <div key={s.id} className="w-full max-w-sm mx-auto bg-gradient-to-b from-[#123B5D] via-[#0E2F4A] to-[#047857] rounded-2xl p-5 text-white shadow-xl border border-emerald-500/40 relative overflow-hidden flex flex-col justify-between space-y-4">
-                <div className="flex items-center justify-between border-b border-white/20 pb-3">
-                  <div className="flex items-center space-x-2">
-                    <img src="/image/logo.png" alt="Logo" className="w-7 h-7 object-contain bg-white rounded-lg p-0.5" />
-                    <div>
-                      <div className="text-xs font-bold">Life Vision Society</div>
-                      <div className="text-[9px] text-emerald-300">Official Staff ID Card</div>
+          {allStaff.length === 0 ? (
+            <div className="bg-slate-50 rounded-2xl border border-slate-200 p-10 text-center space-y-2">
+              <IdCard className="w-10 h-10 text-slate-300 mx-auto" />
+              <p className="text-xs text-slate-500 font-medium">No staff ID cards available. Add staff to view ID cards.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {allStaff.map((s) => (
+                <div key={s.id} className="w-full max-w-sm mx-auto bg-gradient-to-b from-[#123B5D] via-[#0E2F4A] to-[#047857] rounded-2xl p-5 text-white shadow-xl border border-emerald-500/40 relative overflow-hidden flex flex-col justify-between space-y-4">
+                  <div className="flex items-center justify-between border-b border-white/20 pb-3">
+                    <div className="flex items-center space-x-2">
+                      <img src="/image/logo.png" alt="Logo" className="w-7 h-7 object-contain bg-white rounded-lg p-0.5" />
+                      <div>
+                        <div className="text-xs font-bold">Life Vision Society</div>
+                        <div className="text-[9px] text-emerald-300">Official Staff ID Card</div>
+                      </div>
+                    </div>
+                    <Shield className="w-5 h-5 text-amber-400" />
+                  </div>
+
+                  <div className="flex flex-col items-center text-center space-y-2">
+                    <img src={s.avatar || '/image/logo.png'} alt={s.name} className="w-20 h-20 rounded-2xl object-cover ring-4 ring-emerald-400 bg-white p-1 shadow-md" />
+                    <h3 className="text-base font-bold text-white mt-1">{s.name}</h3>
+                    <div className="px-3 py-1 bg-emerald-500/25 text-emerald-200 rounded-full text-xs font-extrabold border border-emerald-400/50">
+                      {s.role}
+                    </div>
+                    <div className="text-xs text-slate-300">{s.department} • {s.location}</div>
+                  </div>
+
+                  <div className="pt-3 border-t border-white/10 text-[11px] space-y-1 text-slate-200">
+                    <div className="flex justify-between font-mono">
+                      <span className="text-emerald-300">Staff ID:</span>
+                      <span className="font-bold">{s.id}</span>
+                    </div>
+                    <div className="flex justify-between font-mono">
+                      <span className="text-emerald-300">Blood Group:</span>
+                      <span className="font-bold">{s.bloodGroup || 'O+'}</span>
+                    </div>
+                    <div className="flex justify-between font-mono">
+                      <span className="text-emerald-300">Joined:</span>
+                      <span>{s.joinDate || '2026-01-01'}</span>
                     </div>
                   </div>
-                  <Shield className="w-5 h-5 text-amber-400" />
-                </div>
 
-                <div className="flex flex-col items-center text-center space-y-2">
-                  <img src={s.avatar || '/image/logo.png'} alt={s.name} className="w-20 h-20 rounded-2xl object-cover ring-4 ring-emerald-400 bg-white p-1 shadow-md" />
-                  <h3 className="text-base font-bold text-white mt-1">{s.name}</h3>
-                  <div className="px-3 py-1 bg-emerald-500/25 text-emerald-200 rounded-full text-xs font-extrabold border border-emerald-400/50">
-                    {s.role}
-                  </div>
-                  <div className="text-xs text-slate-300">{s.department} • {s.location}</div>
-                </div>
-
-                <div className="pt-3 border-t border-white/10 text-[11px] space-y-1 text-slate-200">
-                  <div className="flex justify-between font-mono">
-                    <span className="text-emerald-300">Staff ID:</span>
-                    <span className="font-bold">{s.id}</span>
-                  </div>
-                  <div className="flex justify-between font-mono">
-                    <span className="text-emerald-300">Blood Group:</span>
-                    <span className="font-bold">{s.bloodGroup || 'O+'}</span>
-                  </div>
-                  <div className="flex justify-between font-mono">
-                    <span className="text-emerald-300">Joined:</span>
-                    <span>{s.joinDate || '2026-01-01'}</span>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditModal(s)}
+                      className="w-1/3 py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1 shadow-md transition-all cursor-pointer"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePrintStaffCard(s)}
+                      className="w-2/3 py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                    >
+                      <Printer className="w-4 h-4" />
+                      <span>Print ID Card</span>
+                    </button>
                   </div>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => handlePrintStaffCard(s)}
-                  className="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
-                >
-                  <Printer className="w-4 h-4" />
-                  <span>Print / Download ID Card</span>
-                </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -484,11 +487,25 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
         </div>
       )}
 
-      {/* Add Staff Modal */}
+      {/* ADD STAFF MODAL WITH CLEAR CLOSE (X) BUTTON */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="w-full max-w-lg bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 space-y-4">
-            <h3 className="text-lg font-bold text-slate-800 font-serif">Add New Staff Member</h3>
+          <div className="w-full max-w-lg bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 space-y-4 relative">
+            
+            {/* Modal Header with Close (X) Button */}
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="text-lg font-bold text-slate-800 font-serif">Add New Staff Member</h3>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
+                title="Close"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
             <form onSubmit={handleAddStaffSubmit} className="space-y-3">
               <div>
                 <label className="text-xs font-bold text-slate-700">Full Name *</label>
@@ -586,6 +603,17 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
               </div>
 
               <div>
+                <label className="text-xs font-bold text-slate-700">Emergency Contact</label>
+                <input
+                  type="text"
+                  value={newStaff.emergencyContact}
+                  onChange={(e) => setNewStaff({ ...newStaff, emergencyContact: e.target.value })}
+                  placeholder="+91 9416362914"
+                  className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                />
+              </div>
+
+              <div>
                 <label className="text-xs font-bold text-slate-700">Photo Upload</label>
                 <input
                   type="file"
@@ -608,6 +636,164 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                   className="px-4 py-2 bg-[#123B5D] hover:bg-[#0E2F4A] text-white rounded-xl text-xs font-bold shadow-md cursor-pointer"
                 >
                   Save Staff Member
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT STAFF MODAL FOR ADMIN */}
+      {editingStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="w-full max-w-lg bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 space-y-4 relative">
+            
+            {/* Modal Header with Close (X) Button */}
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="text-lg font-bold text-slate-800 font-serif">Edit Staff Member Details</h3>
+              <button
+                type="button"
+                onClick={() => setEditingStaff(null)}
+                className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
+                title="Close"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditStaffSubmit} className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700">Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingStaff.name || ''}
+                  onChange={(e) => setEditingStaff({ ...editingStaff, name: e.target.value })}
+                  className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700">Role / Designation *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingStaff.role || ''}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, role: e.target.value })}
+                    className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700">Department *</label>
+                  <select
+                    value={editingStaff.department || 'Training'}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, department: e.target.value })}
+                    className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold"
+                  >
+                    <option value="Training">Training</option>
+                    <option value="Placement & Livelihood">Placement</option>
+                    <option value="Operations">Operations</option>
+                    <option value="Management">Management</option>
+                    <option value="Finance">Finance</option>
+                    <option value="IT & Support">IT & Support</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700">Email Address *</label>
+                  <input
+                    type="email"
+                    required
+                    value={editingStaff.email || ''}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, email: e.target.value })}
+                    className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700">Phone Number *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingStaff.phone || ''}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, phone: e.target.value })}
+                    className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700">Blood Group</label>
+                  <select
+                    value={editingStaff.bloodGroup || 'O+'}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, bloodGroup: e.target.value })}
+                    className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold"
+                  >
+                    <option value="O+">O+</option>
+                    <option value="A+">A+</option>
+                    <option value="B+">B+</option>
+                    <option value="AB+">AB+</option>
+                    <option value="O-">O-</option>
+                    <option value="A-">A-</option>
+                    <option value="B-">B-</option>
+                    <option value="AB-">AB-</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700">Center / Location</label>
+                  <input
+                    type="text"
+                    value={editingStaff.location || ''}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, location: e.target.value })}
+                    className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700">Emergency Contact</label>
+                <input
+                  type="text"
+                  value={editingStaff.emergencyContact || ''}
+                  onChange={(e) => setEditingStaff({ ...editingStaff, emergencyContact: e.target.value })}
+                  className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700">Update Staff Photo</label>
+                <div className="flex items-center gap-3 mt-1">
+                  <img
+                    src={editingStaff.avatar || '/image/logo.png'}
+                    alt="Current"
+                    className="w-10 h-10 rounded-lg object-cover ring-2 ring-emerald-500 shrink-0 bg-white"
+                  />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEditPhotoUpload}
+                    className="w-full p-1 bg-slate-50 border border-slate-200 rounded-lg text-xs cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setEditingStaff(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer"
+                >
+                  Update Staff Member
                 </button>
               </div>
             </form>
