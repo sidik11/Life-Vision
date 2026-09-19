@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Heart, ShieldCheck, CheckCircle2, User, Mail, Phone, Calendar, CreditCard, MapPin, Globe, Building, Hash, PhoneCall, IndianRupee, QrCode, Copy, Sparkles, Award, Users, BookOpen, ChevronLeft, ChevronRight, Scissors } from 'lucide-react';
-import { db, collection, addDoc, serverTimestamp } from '../firebase';
+import RazorpayCheckoutModal from '../components/RazorpayCheckoutModal';
 
 export default function DonatePage({ onOpenApply }) {
-  const [submitted, setSubmitted] = useState(false);
+  const [showRazorpay, setShowRazorpay] = useState(false);
   const [amount, setAmount] = useState('2000');
   const [customAmount, setCustomAmount] = useState('');
   const [consent, setConsent] = useState(true);
@@ -24,46 +24,9 @@ export default function DonatePage({ onOpenApply }) {
 
   const presetAmounts = ['2000', '4000', '8000', '16000'];
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-
-    const newDonation = {
-      id: `DON-2026-OD-${Math.floor(900 + Math.random() * 99)}`,
-      donor: formData.fullName || 'Generous Donor',
-      amount: `₹${amount || '2,000'}`,
-      campaign: 'Empower Rural Women & Skill Trainees',
-      status: 'Success',
-      date: new Date().toISOString().split('T')[0],
-      receiptNo: `RCP-80G-2026-${Math.floor(100 + Math.random() * 900)}`,
-      email: formData.email,
-      mobile: formData.mobile,
-      pan: formData.panNo,
-      createdAt: serverTimestamp()
-    };
-
-    try {
-      const docRef = await addDoc(collection(db, "donations"), newDonation);
-      newDonation.firestoreId = docRef.id;
-    } catch (firebaseErr) {
-      console.warn("Firebase donation save notice:", firebaseErr);
-    }
-
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setFormData({
-        fullName: '',
-        email: '',
-        mobile: '',
-        dob: '',
-        panNo: '',
-        country: 'India',
-        state: '',
-        city: '',
-        address: '',
-        pincode: ''
-      });
-    }, 4000);
+    setShowRazorpay(true);
   };
 
   const handleInputChange = (field, value) => {
@@ -435,6 +398,14 @@ export default function DonatePage({ onOpenApply }) {
           </div>
         </div>
       </div>
+
+      {/* Razorpay Checkout & 80G Receipt Modal */}
+      <RazorpayCheckoutModal 
+        isOpen={showRazorpay} 
+        onClose={() => setShowRazorpay(false)}
+        donorData={formData}
+        amount={amount}
+      />
     </div>
   );
 }
