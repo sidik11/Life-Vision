@@ -77,6 +77,10 @@ export default function App() {
     setIsApplyOpen(true);
   };
 
+  const handleOpenDonate = () => {
+    setIsDonateOpen(true);
+  };
+
   const handleOpenStudentPlacement = () => {
     setIsStudentPlacementOpen(true);
   };
@@ -126,7 +130,7 @@ export default function App() {
       <Navbar 
         activeSection={activeSection}
         setActiveSection={handleSectionChange}
-        onOpenDonate={() => handleSectionChange('donate')}
+        onOpenDonate={handleOpenDonate}
         onOpenVolunteer={() => setIsVolunteerOpen(true)}
         onOpenCsr={() => setIsCsrOpen(true)}
         onOpenApply={() => handleOpenApply('Tailoring & Stitching Training')}
@@ -138,7 +142,7 @@ export default function App() {
         {activeSection === 'home' && (
           <>
             <Hero 
-              onOpenDonate={() => handleSectionChange('donate')}
+              onOpenDonate={handleOpenDonate}
               onOpenVolunteer={() => setIsVolunteerOpen(true)}
               onOpenStudentPlacement={handleOpenStudentPlacement}
               onOpenApply={() => handleOpenApply('Tailoring & Stitching Training')}
@@ -146,7 +150,7 @@ export default function App() {
             />
 
             <GetInvolvedSection 
-              onOpenDonate={() => handleSectionChange('donate')}
+              onOpenDonate={handleOpenDonate}
               onOpenVolunteer={() => setIsVolunteerOpen(true)}
               onOpenCsr={() => setIsCsrOpen(true)}
               onOpenStudentPlacement={handleOpenStudentPlacement}
@@ -157,7 +161,7 @@ export default function App() {
             <TrainingPrograms 
               limit={3}
               onOpenApply={handleOpenApply}
-              onOpenDonate={() => handleSectionChange('donate')}
+              onOpenDonate={handleOpenDonate}
               onOpenStudentPlacement={handleOpenStudentPlacement}
               setActiveSection={handleSectionChange}
             />
@@ -168,7 +172,7 @@ export default function App() {
             />
 
             <ImpactStats 
-              onOpenDonate={() => handleSectionChange('donate')}
+              onOpenDonate={handleOpenDonate}
             />
 
             <TrustPartnersStories 
@@ -183,7 +187,7 @@ export default function App() {
         {activeSection === 'about' && (
           <AboutPage 
             onOpenApply={handleOpenApply}
-            onOpenDonate={() => handleSectionChange('donate')}
+            onOpenDonate={handleOpenDonate}
             onOpenCsr={() => setIsCsrOpen(true)}
             onOpenCollab={() => setIsCollabOpen(true)}
             navigateTo={handleSectionChange}
@@ -193,7 +197,7 @@ export default function App() {
         {activeSection === 'programs' && (
           <ProgramsPage 
             onOpenApply={handleOpenApply}
-            onOpenDonate={() => handleSectionChange('donate')}
+            onOpenDonate={handleOpenDonate}
           />
         )}
 
