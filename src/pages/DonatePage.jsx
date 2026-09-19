@@ -4,6 +4,7 @@ import { initiateRazorpayPayment } from '../utils/razorpayHandler';
 import DonationReceiptModal from '../components/DonationReceiptModal';
 
 export default function DonatePage({ onOpenApply }) {
+  const [submitted, setSubmitted] = useState(false);
   const [amount, setAmount] = useState('2000');
   const [customAmount, setCustomAmount] = useState('');
   const [consent, setConsent] = useState(true);
@@ -53,6 +54,7 @@ export default function DonatePage({ onOpenApply }) {
       onStart: () => setIsSubmitting(true),
       onSuccess: (record) => {
         setIsSubmitting(false);
+        setSubmitted(true);
         setCompletedRecord(record);
       },
       onError: (msg) => {
