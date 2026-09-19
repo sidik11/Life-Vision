@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Heart, ShieldCheck, CheckCircle2, User, Mail, Phone, Calendar, CreditCard, MapPin, Globe, Building, Hash, PhoneCall, IndianRupee, QrCode, Copy, Sparkles, Award, Users, BookOpen, ChevronLeft, ChevronRight, Scissors } from 'lucide-react';
-import RazorpayCheckoutModal from '../components/RazorpayCheckoutModal';
+import { initiateRazorpayPayment } from '../utils/razorpayHandler';
+import DonationReceiptModal from '../components/DonationReceiptModal';
 
 export default function DonatePage({ onOpenApply }) {
-  const [showRazorpay, setShowRazorpay] = useState(false);
   const [amount, setAmount] = useState('2000');
   const [customAmount, setCustomAmount] = useState('');
   const [consent, setConsent] = useState(true);
   const [copiedAccount, setCopiedAccount] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [completedRecord, setCompletedRecord] = useState(null);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -45,7 +46,23 @@ export default function DonatePage({ onOpenApply }) {
       }
     }
 
-    setShowRazorpay(true);
+    // Direct Launch of Razorpay System without intermediate modal
+    initiateRazorpayPayment({
+      donorData: formData,
+      amount: amount,
+      onStart: () => setIsSubmitting(true),
+      onSuccess: (record) => {
+        setIsSubmitting(false);
+        setCompletedRecord(record);
+      },
+      onError: (msg) => {
+        setIsSubmitting(false);
+        setFormError(msg || 'Payment failed. Please try again.');
+      },
+      onCancel: () => {
+        setIsSubmitting(false);
+      }
+    });
   };
 
   const handleInputChange = (field, value) => {
@@ -456,13 +473,11 @@ export default function DonatePage({ onOpenApply }) {
         </div>
       </div>
 
-      {/* Razorpay Checkout & 80G Receipt Modal */}
-      <RazorpayCheckoutModal 
-        isOpen={showRazorpay} 
-        onClose={() => setShowRazorpay(false)}
-        onSuccess={() => setSubmitted(true)}
-        donorData={formData}
-        amount={amount}
+      {/* Official 80G Receipt Modal on Success */}
+      <DonationReceiptModal 
+        isOpen={Boolean(completedRecord)} 
+        onClose={() => setCompletedRecord(null)}
+        donationRecord={completedRecord}
       />
     </div>
   );

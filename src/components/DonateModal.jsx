@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { X, Heart, ShieldCheck, CheckCircle2, User, Mail, Phone, Calendar, CreditCard, MapPin, Globe, Building, Hash, PhoneCall } from 'lucide-react';
-import RazorpayCheckoutModal from './RazorpayCheckoutModal';
+import { initiateRazorpayPayment } from '../utils/razorpayHandler';
+import DonationReceiptModal from './DonationReceiptModal';
 
 export default function DonateModal({ isOpen, onClose }) {
-  const [showRazorpay, setShowRazorpay] = useState(false);
   const [amount, setAmount] = useState('2000');
   const [customAmount, setCustomAmount] = useState('');
   const [consent, setConsent] = useState(true);
-  const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [completedRecord, setCompletedRecord] = useState(null);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -58,7 +59,23 @@ export default function DonateModal({ isOpen, onClose }) {
       }
     }
 
-    setShowRazorpay(true);
+    // Direct Launch of Razorpay System without intermediate modal
+    initiateRazorpayPayment({
+      donorData: formData,
+      amount: amount,
+      onStart: () => setIsSubmitting(true),
+      onSuccess: (record) => {
+        setIsSubmitting(false);
+        setCompletedRecord(record);
+      },
+      onError: (msg) => {
+        setIsSubmitting(false);
+        setFormError(msg || 'Payment failed. Please try again.');
+      },
+      onCancel: () => {
+        setIsSubmitting(false);
+      }
+    });
   };
 
   const handleInputChange = (field, value) => {
@@ -380,16 +397,14 @@ export default function DonateModal({ isOpen, onClose }) {
 
       </div>
 
-      {/* Razorpay Checkout & 80G Receipt Modal */}
-      <RazorpayCheckoutModal 
-        isOpen={showRazorpay} 
+      {/* Official 80G Receipt Modal on Success */}
+      <DonationReceiptModal 
+        isOpen={Boolean(completedRecord)} 
         onClose={() => {
-          setShowRazorpay(false);
+          setCompletedRecord(null);
           onClose();
         }}
-        onSuccess={() => setSubmitted(true)}
-        donorData={formData}
-        amount={amount}
+        donationRecord={completedRecord}
       />
     </div>
   );
