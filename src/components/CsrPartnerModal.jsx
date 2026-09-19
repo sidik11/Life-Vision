@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, Send, Building2, User, Phone, Mail, Briefcase, DollarSign, CheckSquare } from 'lucide-react';
-import { db, collection, addDoc, serverTimestamp } from '../firebase';
+import { X, CheckCircle2, Send, Building2, User, Phone, Mail, Briefcase, DollarSign, CheckSquare, Loader2 } from 'lucide-react';
+import { saveToFirestore } from '../utils/firebaseSave';
 
 export default function CsrPartnerModal({ isOpen, onClose }) {
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     companyName: '',
     contactPerson: '',
@@ -41,6 +42,7 @@ export default function CsrPartnerModal({ isOpen, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
     const newPartner = {
       id: `PRT-OD-${Math.floor(10 + Math.random() * 90)}`,
@@ -55,17 +57,12 @@ export default function CsrPartnerModal({ isOpen, onClose }) {
       status: 'Pending',
       programsSupported: 1,
       budget: formData.budget || '₹5 Lakhs - ₹15 Lakhs',
-      interests: formData.interests.join(', ') || 'Women Empowerment',
-      createdAt: serverTimestamp()
+      interests: formData.interests.join(', ') || 'Women Empowerment'
     };
 
-    try {
-      const docRef = await addDoc(collection(db, "partners"), newPartner);
-      newPartner.firestoreId = docRef.id;
-    } catch (firebaseErr) {
-      console.warn("Firebase partner save notice:", firebaseErr);
-    }
+    await saveToFirestore('partners', newPartner, 'lvs_new_partner');
 
+    setIsSubmitting(false);
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
@@ -273,10 +270,20 @@ export default function CsrPartnerModal({ isOpen, onClose }) {
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-[#C52B75] to-[#6B1D52] hover:opacity-95 text-white font-bold py-3.5 px-6 rounded-full shadow-md transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer text-sm active:scale-98"
+                disabled={isSubmitting}
+                className="w-full bg-gradient-to-r from-[#C52B75] to-[#6B1D52] hover:opacity-95 text-white font-bold py-3.5 px-6 rounded-full shadow-md transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer text-sm active:scale-98 disabled:opacity-60"
               >
-                <span>Submit Partnership Request</span>
-                <Send className="w-4 h-4" />
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Submitting Request...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Submit Partnership Request</span>
+                    <Send className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </form>
           </div>

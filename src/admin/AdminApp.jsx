@@ -496,35 +496,55 @@ export default function AdminApp() {
 
     const handleNewContact = (e) => {
       if (e.detail) {
-        setContacts((prev) => [e.detail, ...prev]);
+        setContacts((prev) => {
+          const exists = prev.some(item => (item.id && item.id === e.detail.id) || (item.firestoreId && item.firestoreId === e.detail.firestoreId));
+          if (exists) return prev;
+          return [e.detail, ...prev];
+        });
         showToast(`New Contact Inquiry from ${e.detail.name || 'Visitor'}!`, 'info');
       }
     };
 
     const handleNewDonation = (e) => {
       if (e.detail) {
-        setDonations((prev) => [e.detail, ...prev]);
+        setDonations((prev) => {
+          const exists = prev.some(item => (item.id && item.id === e.detail.id) || (item.firestoreId && item.firestoreId === e.detail.firestoreId));
+          if (exists) return prev;
+          return [e.detail, ...prev];
+        });
         showToast(`New Donation received from ${e.detail.donor || 'Donor'} (${e.detail.amount})!`, 'success');
       }
     };
 
     const handleNewPartner = (e) => {
       if (e.detail) {
-        setPartners((prev) => [e.detail, ...prev]);
+        setPartners((prev) => {
+          const exists = prev.some(item => (item.id && item.id === e.detail.id) || (item.firestoreId && item.firestoreId === e.detail.firestoreId));
+          if (exists) return prev;
+          return [e.detail, ...prev];
+        });
         showToast(`New Partner Application from ${e.detail.orgName || 'Organization'}!`, 'info');
       }
     };
 
     const handleNewPlacement = (e) => {
       if (e.detail) {
-        setPlacements((prev) => [e.detail, ...prev]);
+        setPlacements((prev) => {
+          const exists = prev.some(item => (item.id && item.id === e.detail.id) || (item.firestoreId && item.firestoreId === e.detail.firestoreId));
+          if (exists) return prev;
+          return [e.detail, ...prev];
+        });
         showToast(`New Placement Request for ${e.detail.student || 'Trainee'}!`, 'info');
       }
     };
 
     const handleNewVolunteer = (e) => {
       if (e.detail) {
-        setVolunteers((prev) => [e.detail, ...prev]);
+        setVolunteers((prev) => {
+          const exists = prev.some(item => (item.id && item.id === e.detail.id) || (item.firestoreId && item.firestoreId === e.detail.firestoreId));
+          if (exists) return prev;
+          return [e.detail, ...prev];
+        });
         showToast(`New Volunteer Application from ${e.detail.name || 'Volunteer'}!`, 'info');
       }
     };

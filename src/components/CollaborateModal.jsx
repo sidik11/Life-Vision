@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, Send, Handshake, User, Phone, Mail, MapPin, Building, Target } from 'lucide-react';
-import { db, collection, addDoc, serverTimestamp } from '../firebase';
+import { X, CheckCircle2, Send, Handshake, User, Phone, Mail, MapPin, Building, Target, Loader2 } from 'lucide-react';
+import { saveToFirestore } from '../utils/firebaseSave';
 
 export default function CollaborateModal({ isOpen, onClose }) {
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     orgName: '',
     contactPerson: '',
@@ -30,6 +31,7 @@ export default function CollaborateModal({ isOpen, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
     const newCollab = {
       id: `PRT-OD-${Math.floor(10 + Math.random() * 90)}`,
@@ -39,21 +41,16 @@ export default function CollaborateModal({ isOpen, onClose }) {
       phone: formData.phone || '+91 98000 00000',
       partnerType: formData.collabType || 'Institutional Partner',
       logo: '/company/Privir Healthcare.jpg',
-      location: 'Odisha',
+      location: formData.location || 'Odisha',
       dateJoined: new Date().toISOString().split('T')[0],
       status: 'Pending',
       programsSupported: 1,
-      notes: formData.proposal || 'Collaboration Proposal',
-      createdAt: serverTimestamp()
+      notes: formData.message || 'Collaboration Proposal'
     };
 
-    try {
-      const docRef = await addDoc(collection(db, "partners"), newCollab);
-      newCollab.firestoreId = docRef.id;
-    } catch (firebaseErr) {
-      console.warn("Firebase partner save notice:", firebaseErr);
-    }
+    await saveToFirestore('partners', newCollab, 'lvs_new_partner');
 
+    setIsSubmitting(false);
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
@@ -246,10 +243,20 @@ export default function CollaborateModal({ isOpen, onClose }) {
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-[#6B1D52] to-[#4A1039] hover:opacity-95 text-white font-bold py-3.5 px-6 rounded-full shadow-md transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer text-sm active:scale-98"
+                disabled={isSubmitting}
+                className="w-full bg-gradient-to-r from-[#6B1D52] to-[#4A1039] hover:opacity-95 text-white font-bold py-3.5 px-6 rounded-full shadow-md transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer text-sm active:scale-98 disabled:opacity-60"
               >
-                <span>Submit Collaboration Request</span>
-                <Send className="w-4 h-4" />
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>Submitting Request...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Submit Collaboration Request</span>
+                    <Send className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </form>
           </div>

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { X, Heart, User, Mail, Phone, MapPin, CheckCircle2, Award, Sparkles, Briefcase } from 'lucide-react';
-import { db, collection, addDoc, serverTimestamp } from '../firebase';
+import { X, Heart, User, Mail, Phone, MapPin, CheckCircle2, Award, Sparkles, Briefcase, Loader2 } from 'lucide-react';
+import { saveToFirestore } from '../utils/firebaseSave';
 
 export default function VolunteerModal({ isOpen, onClose }) {
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -19,6 +20,8 @@ export default function VolunteerModal({ isOpen, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+
     const newVol = {
       id: `VOL-LVS-${Date.now().toString().slice(-4)}`,
       name: formData.fullName,
@@ -29,17 +32,12 @@ export default function VolunteerModal({ isOpen, onClose }) {
       interest: formData.roleInterest,
       availability: formData.availability,
       applicationDate: new Date().toISOString().split('T')[0],
-      status: 'Pending',
-      createdAt: serverTimestamp()
+      status: 'Pending'
     };
 
-    try {
-      const docRef = await addDoc(collection(db, "volunteers"), newVol);
-      newVol.firestoreId = docRef.id;
-    } catch (firebaseErr) {
-      console.warn("Firebase volunteer save notice:", firebaseErr);
-    }
+    await saveToFirestore('volunteers', newVol, 'lvs_new_volunteer');
 
+    setIsSubmitting(false);
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
@@ -189,10 +187,20 @@ export default function VolunteerModal({ isOpen, onClose }) {
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-[#C52B75] via-[#A82260] to-[#6B1D52] text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2 active:scale-98"
+                disabled={isSubmitting}
+                className="w-full bg-gradient-to-r from-[#C52B75] via-[#A82260] to-[#6B1D52] text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2 active:scale-98 disabled:opacity-60"
               >
-                <span>Submit Volunteer Application</span>
-                <Heart className="w-4 h-4 fill-white" />
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>Submitting Application...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Submit Volunteer Application</span>
+                    <Heart className="w-4 h-4 fill-white" />
+                  </>
+                )}
               </button>
             </form>
           </div>

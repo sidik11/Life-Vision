@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { GraduationCap, User, Phone, Mail, MapPin, CheckCircle2, Send, BookOpen, Award, Briefcase, Share2, Loader2 } from 'lucide-react';
-import { db, collection, addDoc, serverTimestamp } from '../firebase';
+import { saveToFirestore } from '../utils/firebaseSave';
 
 export default function StudentPlacementForm() {
   const [submitted, setSubmitted] = useState(false);
@@ -49,21 +49,25 @@ export default function StudentPlacementForm() {
       id: `APP-2026-${Math.floor(1000 + Math.random() * 9000)}`,
       ...formData,
       status: 'Pending',
-      appliedAt: new Date().toISOString().split('T')[0],
-      createdAt: serverTimestamp()
+      appliedAt: new Date().toISOString().split('T')[0]
     };
 
-    // 1. Save directly to Firebase Firestore Database (Student Placement -> Website -> Database -> Admin)
-    try {
-      const docRef = await addDoc(collection(db, "training_applications"), newApplication);
-      newApplication.firestoreId = docRef.id;
-    } catch (firebaseErr) {
-      console.warn("Firebase application save notice:", firebaseErr);
-    }
+    const newPlacement = {
+      id: `PLC-OD-${Math.floor(100 + Math.random() * 900)}`,
+      student: formData.fullName || 'Scholarship Applicant',
+      course: formData.higherCourse || 'Higher Education Scholarship',
+      trainingCompleted: 'Scholarship Requested',
+      placementStatus: 'Applied',
+      employer: formData.collegeName || 'Tuition Fee Sponsorship',
+      jobRole: formData.supportType || 'Higher Education Placement',
+      location: `${formData.district || 'Bhubaneswar'}, ${formData.state || 'Odisha'}`,
+      joiningDate: new Date().toISOString().split('T')[0],
+      salary: 'Scholarship Requested'
+    };
 
-    try {
-      window.dispatchEvent(new CustomEvent('lvs_new_application', { detail: newApplication }));
-    } catch (e) {}
+    // 1. Save to Firestore Collections with fast timeout & Admin Events
+    await saveToFirestore('training_applications', newApplication, 'lvs_new_application');
+    await saveToFirestore('placements', newPlacement, 'lvs_new_placement');
 
     // Show success feedback to the user
     setIsSubmitting(false);

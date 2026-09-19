@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, Send, GraduationCap, User, Phone, Mail, BookOpen, MapPin, Award, Briefcase, Share2 } from 'lucide-react';
-import { db, collection, addDoc, serverTimestamp } from '../firebase';
+import { X, CheckCircle2, Send, GraduationCap, User, Phone, Mail, BookOpen, MapPin, Award, Briefcase, Share2, Loader2 } from 'lucide-react';
+import { saveToFirestore } from '../utils/firebaseSave';
 
 export default function StudentPlacementModal({ isOpen, onClose }) {
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     // Support Type
     supportType: 'NGO Tuition Fee Sponsorship + Job Placement Support',
@@ -19,13 +20,10 @@ export default function StudentPlacementModal({ isOpen, onClose }) {
     // Address Details
     state: 'Odisha',
     district: '',
-    block: '',
-    villageCity: '',
-    pincode: '',
     fullAddress: '',
 
-    // Higher Education Details
-    higherCourse: 'B.Tech / B.E. Engineering',
+    // Education
+    higherCourse: 'B.Tech (Computer Science / IT)',
     collegeName: '',
     passingYear: '',
     boardUniversity: '',
@@ -55,6 +53,7 @@ export default function StudentPlacementModal({ isOpen, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
     const newPlacement = {
       id: `PLC-OD-${Math.floor(100 + Math.random() * 900)}`,
@@ -66,17 +65,12 @@ export default function StudentPlacementModal({ isOpen, onClose }) {
       jobRole: formData.supportType || 'Higher Education Placement',
       location: `${formData.district || 'Bhubaneswar'}, ${formData.state || 'Odisha'}`,
       joiningDate: new Date().toISOString().split('T')[0],
-      salary: 'Scholarship Requested',
-      createdAt: serverTimestamp()
+      salary: 'Scholarship Requested'
     };
 
-    try {
-      const docRef = await addDoc(collection(db, "placements"), newPlacement);
-      newPlacement.firestoreId = docRef.id;
-    } catch (firebaseErr) {
-      console.warn("Firebase placement save notice:", firebaseErr);
-    }
+    await saveToFirestore('placements', newPlacement, 'lvs_new_placement');
 
+    setIsSubmitting(false);
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
@@ -519,10 +513,20 @@ export default function StudentPlacementModal({ isOpen, onClose }) {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-[#C52B75] to-[#A82260] hover:from-[#A82260] hover:to-[#8C1B4E] text-white font-bold py-4 px-6 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer text-sm active:scale-98 mt-6"
+                disabled={isSubmitting}
+                className="w-full bg-gradient-to-r from-[#C52B75] to-[#A82260] hover:from-[#A82260] hover:to-[#8C1B4E] text-white font-bold py-4 px-6 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer text-sm active:scale-98 mt-6 disabled:opacity-60"
               >
-                <span>Submit Scholarship & Placement Application</span>
-                <Send className="w-4 h-4" />
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>Submitting Application...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Submit Scholarship & Placement Application</span>
+                    <Send className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </form>
           </div>

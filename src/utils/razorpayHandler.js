@@ -1,4 +1,4 @@
-import { db, collection, addDoc, serverTimestamp } from '../firebase';
+import { saveToFirestore } from './firebaseSave';
 
 export async function initiateRazorpayPayment({ donorData, amount, onStart, onSuccess, onError, onCancel }) {
   if (onStart) onStart();
@@ -81,15 +81,12 @@ export async function initiateRazorpayPayment({ donorData, amount, onStart, onSu
         paymentStatus: 'Successful',
         receiptStatus: 'Generated',
         date: formattedDate,
-        receiptNo: receiptNo,
-        createdAt: serverTimestamp()
+        receiptNo: receiptNo
       };
 
-      try {
-        const docRef = await addDoc(collection(db, "donations"), finalRecord);
-        finalRecord.firestoreId = docRef.id;
-      } catch (dbErr) {
-        console.warn('Firebase save notice:', dbErr);
+      const savedRecord = await saveToFirestore('donations', finalRecord, 'lvs_new_donation');
+      if (savedRecord.firestoreId) {
+        finalRecord.firestoreId = savedRecord.firestoreId;
       }
 
       if (onSuccess) onSuccess(finalRecord);

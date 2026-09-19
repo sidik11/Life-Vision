@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Phone, Mail, MapPin, Send, CheckCircle2, Clock, MessageSquare, ShieldCheck, HeartHandshake, ChevronDown, HelpCircle, Sparkles, X, Loader2 } from 'lucide-react';
-import { db, collection, addDoc, serverTimestamp } from '../firebase';
+import { saveToFirestore } from '../utils/firebaseSave';
 
 export default function ContactPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -32,18 +32,12 @@ export default function ContactPage() {
       message: messageContent,
       date: new Date().toISOString().split('T')[0],
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: 'Unread',
-      createdAt: serverTimestamp()
+      status: 'Unread'
     };
 
-    // 1. Save directly to Firebase Firestore Database (Website -> Database -> Admin)
-    try {
-      await addDoc(collection(db, "contacts"), newContact);
-    } catch (firebaseErr) {
-      console.warn("Firebase save notice:", firebaseErr);
-    }
+    // 1. Save directly to Firebase Firestore Database with fast timeout & Admin Portal event
+    await saveToFirestore('contacts', newContact, 'lvs_new_contact');
 
-    setSubmitted(true);
     setIsSubmitting(false);
 
     // 3. Direct Email Dispatch to support.lifevision@gmail.com (Non-blocking)

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, ShieldCheck, Heart, CreditCard, Download, Printer, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
-import { db, collection, addDoc, serverTimestamp } from '../firebase';
+import { saveToFirestore } from '../utils/firebaseSave';
 
 export default function RazorpayCheckoutModal({ isOpen, onClose, onSuccess, donorData, amount }) {
   const [step, setStep] = useState('processing'); // 'processing' | 'receipt' | 'failed'
@@ -164,16 +164,13 @@ export default function RazorpayCheckoutModal({ isOpen, onClose, onSuccess, dono
         paymentStatus: 'Successful',
         receiptStatus: 'Generated',
         date: formattedDate,
-        receiptNo: receiptNo,
-        createdAt: serverTimestamp()
+        receiptNo: receiptNo
       };
 
       // Save to Firebase Firestore Database
-      try {
-        const docRef = await addDoc(collection(db, "donations"), finalRecord);
-        finalRecord.firestoreId = docRef.id;
-      } catch (dbErr) {
-        console.warn('Firebase save notice:', dbErr);
+      const savedRecord = await saveToFirestore('donations', finalRecord, 'lvs_new_donation');
+      if (savedRecord.firestoreId) {
+        finalRecord.firestoreId = savedRecord.firestoreId;
       }
 
       setDonationRecord(finalRecord);

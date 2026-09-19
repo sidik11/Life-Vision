@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, Send, GraduationCap, User, Phone, Mail, BookOpen, MapPin, Calendar, Briefcase, Award, Share2, FileCheck, Upload, Loader2 } from 'lucide-react';
-import { db, collection, addDoc, serverTimestamp } from '../firebase';
+import { saveToFirestore } from '../utils/firebaseSave';
 
 export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
   const [submitted, setSubmitted] = useState(false);
@@ -148,20 +148,10 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
       const newApp = JSON.parse(JSON.stringify(rawApp));
 
       // 2. Save directly to Firebase Firestore Database (Student registers -> Website -> Database -> Admin)
-      try {
-        const firestorePayload = {
-          ...newApp,
-          createdAt: serverTimestamp()
-        };
-        const docRef = await addDoc(collection(db, "training_applications"), firestorePayload);
-        newApp.firestoreId = docRef.id;
-      } catch (firebaseErr) {
-        console.warn("Firebase training application save notice:", firebaseErr);
+      const savedRecord = await saveToFirestore('training_applications', newApp, 'lvs_new_application');
+      if (savedRecord.firestoreId) {
+        newApp.firestoreId = savedRecord.firestoreId;
       }
-
-      try {
-        window.dispatchEvent(new CustomEvent('lvs_new_application', { detail: newApp }));
-      } catch (e) {}
 
       // Show success screen to the user
       setLastRegId(newApp.id);
