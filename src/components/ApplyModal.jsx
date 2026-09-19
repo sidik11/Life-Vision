@@ -147,19 +147,7 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
       // Sanitize JSON payload to remove any 'undefined' fields before saving to Firestore
       const newApp = JSON.parse(JSON.stringify(rawApp));
 
-      // 2. Save directly to Firebase Firestore Database
-      try {
-        const firestorePayload = {
-          ...newApp,
-          createdAt: serverTimestamp()
-        };
-        const docRef = await addDoc(collection(db, "training_applications"), firestorePayload);
-        newApp.firestoreId = docRef.id;
-      } catch (firebaseErr) {
-        console.warn("Firebase training application save notice:", firebaseErr);
-      }
-
-      // 3. Save locally for fallback/Admin Panel
+      // 2. Save locally immediately for fast UI feedback & local sync
       try {
         const existing = JSON.parse(localStorage.getItem('lvs_submitted_applications') || '[]');
         localStorage.setItem('lvs_submitted_applications', JSON.stringify([newApp, ...existing]));
@@ -168,9 +156,24 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
         console.warn("Local storage save notice:", err);
       }
 
+      // Show success screen instantly to the user
       setLastRegId(newApp.id);
       setSubmitted(true);
       setIsSubmitting(false);
+
+      // 3. Save directly to Firebase Firestore Database in background
+      (async () => {
+        try {
+          const firestorePayload = {
+            ...newApp,
+            createdAt: serverTimestamp()
+          };
+          const docRef = await addDoc(collection(db, "training_applications"), firestorePayload);
+          newApp.firestoreId = docRef.id;
+        } catch (firebaseErr) {
+          console.warn("Firebase training application save notice:", firebaseErr);
+        }
+      })();
 
       // 3. Automated Confirmation Email Dispatch (Non-blocking)
       const studentName = formData.fullName || 'Student';

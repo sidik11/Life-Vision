@@ -53,15 +53,7 @@ export default function StudentPlacementForm() {
       createdAt: serverTimestamp()
     };
 
-    // 1. Save to Firebase Firestore Database
-    try {
-      const docRef = await addDoc(collection(db, "training_applications"), newApplication);
-      newApplication.firestoreId = docRef.id;
-    } catch (firebaseErr) {
-      console.warn("Firebase application save notice:", firebaseErr);
-    }
-
-    // 2. Save to local storage for Admin Panel fallback
+    // 1. Save to local storage immediately for fast UI feedback & local sync
     try {
       const existing = JSON.parse(localStorage.getItem('lvs_submitted_applications') || '[]');
       localStorage.setItem('lvs_submitted_applications', JSON.stringify([newApplication, ...existing]));
@@ -70,34 +62,42 @@ export default function StudentPlacementForm() {
       console.error('Error saving student application:', err);
     }
 
-    // 3. Optional FormSubmit email notice to support.lifevision@gmail.com
-    try {
-      await fetch('https://formsubmit.co/ajax/support.lifevision@gmail.com', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          _subject: `[LVS Student Application] ${formData.fullName} - ${formData.higherCourse}`,
-          _replyto: formData.email,
-          _captcha: 'false',
-          _template: 'table',
-          "Student Name": formData.fullName,
-          "Phone": formData.phone,
-          "Email": formData.email,
-          "Course": formData.higherCourse,
-          "College": formData.collegeName,
-          "District": formData.district,
-          "Support Required": formData.supportType
-        })
-      });
-    } catch (err) {
-      console.warn("Email alert status:", err);
-    }
-
+    // Show success feedback instantly to the user
     setIsSubmitting(false);
     setSubmitted(true);
+
+    // 2. Save to Firebase Firestore Database in background
+    (async () => {
+      try {
+        const docRef = await addDoc(collection(db, "training_applications"), newApplication);
+        newApplication.firestoreId = docRef.id;
+      } catch (firebaseErr) {
+        console.warn("Firebase application save notice:", firebaseErr);
+      }
+    })();
+
+    // 3. Optional FormSubmit email notice to support.lifevision@gmail.com (Non-blocking)
+    fetch('https://formsubmit.co/ajax/support.lifevision@gmail.com', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        _subject: `[LVS Student Application] ${formData.fullName} - ${formData.higherCourse}`,
+        _replyto: formData.email,
+        _captcha: 'false',
+        _template: 'table',
+        "Student Name": formData.fullName,
+        "Phone": formData.phone,
+        "Email": formData.email,
+        "Course": formData.higherCourse,
+        "College": formData.collegeName,
+        "District": formData.district,
+        "Support Required": formData.supportType
+      })
+    }).catch(err => console.warn("Email alert status:", err));
+
     setTimeout(() => {
       setSubmitted(false);
       setFormData({

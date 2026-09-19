@@ -36,14 +36,7 @@ export default function ContactPage() {
       createdAt: serverTimestamp()
     };
 
-    // 1. Save to Firebase Firestore Database
-    try {
-      await addDoc(collection(db, "contacts"), newContact);
-    } catch (firebaseErr) {
-      console.warn("Firebase save notice:", firebaseErr);
-    }
-
-    // 2. Save locally for fallback/Admin Panel (/admin)
+    // 1. Save locally immediately for fast UI feedback & local sync
     try {
       const existing = JSON.parse(localStorage.getItem('lvs_submitted_contacts') || '[]');
       localStorage.setItem('lvs_submitted_contacts', JSON.stringify([newContact, ...existing]));
@@ -52,32 +45,39 @@ export default function ContactPage() {
       console.error('Error saving contact query:', err);
     }
 
-    // 3. Direct Email Dispatch to support.lifevision@gmail.com
-    try {
-      await fetch('https://formsubmit.co/ajax/support.lifevision@gmail.com', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          _subject: `[Life Vision Society Website] New Inquiry from ${senderName}`,
-          _replyto: senderEmail,
-          _captcha: 'false',
-          _template: 'table',
-          _autoresponse: 'Thank you for contacting Life Vision Society. We have received your inquiry and our team will respond to you shortly.',
-          "Sender Name": senderName,
-          "Sender Email": senderEmail,
-          "Sender Phone": senderPhone,
-          "Subject": messageSubject,
-          "Message": messageContent
-        })
-      });
-    } catch (err) {
-      console.warn('FormSubmit dispatch status:', err);
-    }
-
+    setSubmitted(true);
     setIsSubmitting(false);
+
+    // 2. Save to Firebase Firestore Database in background
+    (async () => {
+      try {
+        await addDoc(collection(db, "contacts"), newContact);
+      } catch (firebaseErr) {
+        console.warn("Firebase save notice:", firebaseErr);
+      }
+    })();
+
+    // 3. Direct Email Dispatch to support.lifevision@gmail.com (Non-blocking)
+    fetch('https://formsubmit.co/ajax/support.lifevision@gmail.com', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        _subject: `[Life Vision Society Website] New Inquiry from ${senderName}`,
+        _replyto: senderEmail,
+        _captcha: 'false',
+        _template: 'table',
+        _autoresponse: 'Thank you for contacting Life Vision Society. We have received your inquiry and our team will respond to you shortly.',
+        "Sender Name": senderName,
+        "Sender Email": senderEmail,
+        "Sender Phone": senderPhone,
+        "Subject": messageSubject,
+        "Message": messageContent
+      })
+    }).catch(err => console.warn('FormSubmit dispatch status:', err));
+
     setShowSuccessModal(true);
     setFormData({ name: '', phone: '', email: '', subject: '', message: '' });
   };
