@@ -78,7 +78,7 @@ export default function App() {
   };
 
   const handleOpenDonate = () => {
-    setIsDonateOpen(true);
+    handleSectionChange('donate');
   };
 
   const handleOpenStudentPlacement = () => {
