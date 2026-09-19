@@ -669,6 +669,36 @@ export default function AdminApp() {
             });
             setSelectedApp(prev => prev && prev.id === id ? { ...prev, status: newStatus, timelineStep: updatedStep } : null);
 
+            if (targetApp) {
+              if (newStatus === 'Selected' || newStatus === 'Approved' || newStatus === 'Shortlisted') {
+                setStudents(prev => {
+                  const alreadyStudent = prev.some(s => s.phone === targetApp.mobile || s.name === targetApp.name);
+                  if (alreadyStudent) return prev;
+                  const nextIdNum = String(prev.length + 1).padStart(4, '0');
+                  const newStudentObj = {
+                    id: `LVS-STUDENT-2026-${nextIdNum}`,
+                    name: targetApp.name || 'Student Candidate',
+                    photo: targetApp.photo || '/success_story.jpg',
+                    gender: targetApp.gender || 'Female',
+                    dob: targetApp.dob || '',
+                    phone: targetApp.mobile || targetApp.phone || '',
+                    email: targetApp.email || '',
+                    address: targetApp.address || targetApp.district || 'Odisha',
+                    course: targetApp.course || 'Tailoring & Stitching',
+                    center: targetApp.preferredCenter || 'Bhubaneswar LVS Skill Center',
+                    batch: targetApp.preferredBatch || 'BATCH-2026-T1',
+                    attendance: '100%',
+                    status: 'Enrolled',
+                    assessmentScore: 'Pending',
+                    certificateStatus: 'In Progress',
+                    placementStatus: 'Enrolled',
+                    enrollmentDate: new Date().toISOString().split('T')[0]
+                  };
+                  return [newStudentObj, ...prev];
+                });
+              }
+            }
+
             if (targetApp && targetApp.firestoreId) {
               try {
                 await updateDoc(doc(db, "training_applications", targetApp.firestoreId), {
@@ -691,6 +721,34 @@ export default function AdminApp() {
               return updated;
             });
             setSelectedApp(prev => prev && prev.id === id ? { ...prev, preferredBatch: batch, timelineStep: 5 } : null);
+
+            if (targetApp) {
+              setStudents(prev => {
+                const alreadyStudent = prev.some(s => s.phone === targetApp.mobile || s.name === targetApp.name);
+                if (alreadyStudent) {
+                  return prev.map(s => (s.phone === targetApp.mobile || s.name === targetApp.name) ? { ...s, batch } : s);
+                }
+                const nextIdNum = String(prev.length + 1).padStart(4, '0');
+                const newStudentObj = {
+                  id: `LVS-STUDENT-2026-${nextIdNum}`,
+                  name: targetApp.name || 'Student Candidate',
+                  photo: targetApp.photo || '/success_story.jpg',
+                  gender: targetApp.gender || 'Female',
+                  phone: targetApp.mobile || targetApp.phone || '',
+                  email: targetApp.email || '',
+                  course: targetApp.course || 'Tailoring & Stitching',
+                  center: targetApp.preferredCenter || 'Bhubaneswar LVS Skill Center',
+                  batch: batch,
+                  attendance: '100%',
+                  status: 'Enrolled',
+                  assessmentScore: 'Pending',
+                  certificateStatus: 'In Progress',
+                  placementStatus: 'Enrolled',
+                  enrollmentDate: new Date().toISOString().split('T')[0]
+                };
+                return [newStudentObj, ...prev];
+              });
+            }
 
             if (targetApp && targetApp.firestoreId) {
               try {
