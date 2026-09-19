@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Award, CheckCircle2, Download, Printer, ShieldCheck } from 'lucide-react';
+import { X, Award, CheckCircle2, Download, Printer, ShieldCheck, QrCode } from 'lucide-react';
 
 export default function CertificateModal({ certificate, onClose, onShowToast }) {
   if (!certificate) return null;
@@ -9,12 +9,14 @@ export default function CertificateModal({ certificate, onClose, onShowToast }) 
   };
 
   const handleDownload = () => {
-    onShowToast(`Downloaded Official Certificate ${certificate.certNo} (PDF)`, 'success');
+    if (onShowToast) onShowToast(`Downloaded Official Certificate ${certificate.certNo} (PDF)`, 'success');
   };
+
+  const verifyUrl = `${window.location.origin}/#/verify-certificate/${certificate.certNo}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-md overflow-y-auto">
-      <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-auto space-y-0 text-slate-900">
+      <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-auto space-y-0 text-slate-900 font-sans">
         
         {/* Modal Bar */}
         <div className="p-4 sm:p-6 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
@@ -23,7 +25,7 @@ export default function CertificateModal({ certificate, onClose, onShowToast }) 
               <Award className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900">Official Certificate Preview</h3>
+              <h3 className="text-base font-bold text-slate-900 font-serif">Official Certificate Preview</h3>
               <p className="text-xs text-slate-500 font-mono">Certificate No: {certificate.certNo}</p>
             </div>
           </div>
@@ -43,7 +45,7 @@ export default function CertificateModal({ certificate, onClose, onShowToast }) 
               <Download className="w-4 h-4 text-pink-400" />
               <span>Download PDF</span>
             </button>
-            <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-900 rounded-xl">
+            <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-900 rounded-xl cursor-pointer">
               <X className="w-6 h-6" />
             </button>
           </div>
@@ -87,11 +89,11 @@ export default function CertificateModal({ certificate, onClose, onShowToast }) 
               <p className="max-w-xl mx-auto leading-relaxed">
                 for successfully completing the intensive professional vocational course in <br />
                 <strong className="text-slate-900 font-bold text-sm sm:text-base">{certificate.course}</strong> <br />
-                with a final assessment grade of <strong className="text-emerald-700 font-extrabold">{certificate.grade}</strong>.
+                with a final assessment grade of <strong className="text-emerald-700 font-extrabold">{certificate.grade || 'A+'}</strong>.
               </p>
             </div>
 
-            {/* Footer Signatures */}
+            {/* Footer Signatures & QR Code */}
             <div className="pt-8 grid grid-cols-3 gap-4 items-end border-t border-slate-200 text-xs">
               <div className="text-center space-y-1">
                 <div className="h-10 flex items-center justify-center italic text-pink-700 font-serif font-bold text-sm">
@@ -103,10 +105,19 @@ export default function CertificateModal({ certificate, onClose, onShowToast }) 
               </div>
 
               <div className="flex flex-col items-center justify-center space-y-1">
-                <div className="w-16 h-16 rounded-full border-2 border-amber-500 flex items-center justify-center bg-amber-50 text-amber-900 font-mono text-[9px] font-bold text-center shadow-xs">
-                  SEAL OF NGO<br />VERIFIED
+                {/* QR Code Container */}
+                <div className="p-2 bg-white border border-slate-300 rounded-xl shadow-xs flex flex-col items-center">
+                  <QrCode className="w-10 h-10 text-slate-900" />
+                  <span className="text-[8px] font-mono text-slate-500 mt-1">SCAN TO VERIFY</span>
                 </div>
-                <span className="text-[9px] font-mono text-slate-500">{certificate.verifyCode}</span>
+                <a
+                  href={`/#/verify-certificate/${certificate.certNo}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[9px] font-mono text-pink-700 hover:underline font-bold"
+                >
+                  Verify Online
+                </a>
               </div>
 
               <div className="text-center space-y-1">

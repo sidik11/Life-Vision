@@ -96,11 +96,11 @@ export default function AdminApp() {
     showToast(`New NQR Qualification Pack (${newProg.qpCode || newProg.name}) created successfully!`, 'success');
   };
 
-  const [centers, setCenters] = useState([]);
-  const [batches, setBatches] = useState([]);
-  const [students, setStudents] = useState([]);
-  const [certificates, setCertificates] = useState([]);
-  const [documents, setDocuments] = useState([]);
+  const [centers, setCenters] = useState(initialCenters);
+  const [batches, setBatches] = useState(initialBatches);
+  const [students, setStudents] = useState(initialStudents);
+  const [certificates, setCertificates] = useState(initialCertificates);
+  const [documents, setDocuments] = useState(initialDocuments);
 
   const [adminUsers, setAdminUsers] = useState(initialAdminUsers);
 
@@ -229,6 +229,54 @@ export default function AdminApp() {
         });
         setPlacements(firestorePlacements);
       }, (error) => console.warn("Firestore placements sync notice:", error));
+      unsubscribes.push(unsub);
+    } catch (err) {}
+
+    // 7. Training Centers (training_centers)
+    try {
+      const q = collection(db, "training_centers");
+      const unsub = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
+          setCenters(items);
+        }
+      }, (error) => console.warn("Firestore training_centers sync notice:", error));
+      unsubscribes.push(unsub);
+    } catch (err) {}
+
+    // 8. Batches (batches)
+    try {
+      const q = collection(db, "batches");
+      const unsub = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
+          setBatches(items);
+        }
+      }, (error) => console.warn("Firestore batches sync notice:", error));
+      unsubscribes.push(unsub);
+    } catch (err) {}
+
+    // 9. Students (students)
+    try {
+      const q = collection(db, "students");
+      const unsub = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
+          setStudents(items);
+        }
+      }, (error) => console.warn("Firestore students sync notice:", error));
+      unsubscribes.push(unsub);
+    } catch (err) {}
+
+    // 10. Certificates (certificates)
+    try {
+      const q = collection(db, "certificates");
+      const unsub = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
+          setCertificates(items);
+        }
+      }, (error) => console.warn("Firestore certificates sync notice:", error));
       unsubscribes.push(unsub);
     } catch (err) {}
 

@@ -26,14 +26,32 @@ import DonatePage from './pages/DonatePage';
 // Standalone Isolated Admin Panel
 import AdminApp from './admin/AdminApp';
 
+import VerifyCertificatePage from './pages/VerifyCertificatePage';
+
 export default function App() {
   const [isAdmin, setIsAdmin] = useState(() => {
     return window.location.pathname.startsWith('/admin') || window.location.hash.startsWith('#/admin');
   });
 
+  const [verifyCertCode, setVerifyCertCode] = useState(() => {
+    const hash = window.location.hash;
+    if (hash.includes('verify-certificate')) {
+      const parts = hash.split('verify-certificate/');
+      return parts[1] || '';
+    }
+    return null;
+  });
+
   useEffect(() => {
     const handleLocationChange = () => {
       setIsAdmin(window.location.pathname.startsWith('/admin') || window.location.hash.startsWith('#/admin'));
+      const hash = window.location.hash;
+      if (hash.includes('verify-certificate')) {
+        const parts = hash.split('verify-certificate/');
+        setVerifyCertCode(parts[1] || '');
+      } else {
+        setVerifyCertCode(null);
+      }
     };
     window.addEventListener('popstate', handleLocationChange);
     window.addEventListener('hashchange', handleLocationChange);
@@ -88,6 +106,18 @@ export default function App() {
   // Completely separate isolated Admin Panel view
   if (isAdmin) {
     return <AdminApp />;
+  }
+
+  if (verifyCertCode !== null) {
+    return (
+      <VerifyCertificatePage 
+        certCodeFromUrl={verifyCertCode} 
+        onBackToHome={() => {
+          window.location.hash = '#/';
+          setVerifyCertCode(null);
+        }} 
+      />
+    );
   }
 
   return (
