@@ -198,21 +198,19 @@ export default function AdminApp() {
   // Selected Item Modal State
   const [selectedApp, setSelectedApp] = useState(null);
 
-  // Real-time synchronization with Firebase Firestore for Training Applications
+  // Real-time synchronization with Firebase Firestore for All Submissions (Multi-device Admin support)
   useEffect(() => {
-    let unsubscribe = null;
+    const unsubscribes = [];
+
+    // 1. Applications (training_applications)
     try {
       const q = collection(db, "training_applications");
-      unsubscribe = onSnapshot(q, (snapshot) => {
-        const firestoreApps = snapshot.docs.map(docSnap => {
-          const data = docSnap.data();
-          return {
-            ...data,
-            firestoreId: docSnap.id
-          };
-        });
+      const unsub = onSnapshot(q, (snapshot) => {
+        const firestoreApps = snapshot.docs.map(docSnap => ({
+          ...docSnap.data(),
+          firestoreId: docSnap.id
+        }));
 
-        // Sort applications by timestamp / application date descending
         firestoreApps.sort((a, b) => {
           const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.applicationDate || 0).getTime();
           const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.applicationDate || 0).getTime();
@@ -220,9 +218,8 @@ export default function AdminApp() {
         });
 
         setApplications(prev => {
-          // Merge Firestore apps with any local-only submissions
-          const firestoreIds = new Set(firestoreApps.map(a => a.id));
-          const localOnly = prev.filter(a => !firestoreIds.has(a.id));
+          const firestoreIds = new Set(firestoreApps.map(a => a.firestoreId || a.id));
+          const localOnly = prev.filter(a => !firestoreIds.has(a.firestoreId || a.id));
           const merged = [...firestoreApps, ...localOnly];
           try {
             localStorage.setItem('lvs_submitted_applications', JSON.stringify(merged));
@@ -232,12 +229,143 @@ export default function AdminApp() {
       }, (error) => {
         console.warn("Firestore training_applications sync notice:", error);
       });
+      unsubscribes.push(unsub);
     } catch (err) {
       console.warn("Firestore setup notice:", err);
     }
 
+    // 2. Donations (donations)
+    try {
+      const q = collection(db, "donations");
+      const unsub = onSnapshot(q, (snapshot) => {
+        const firestoreDonations = snapshot.docs.map(docSnap => ({
+          ...docSnap.data(),
+          firestoreId: docSnap.id
+        }));
+        firestoreDonations.sort((a, b) => {
+          const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.date || 0).getTime();
+          const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.date || 0).getTime();
+          return timeB - timeA;
+        });
+        setDonations(prev => {
+          const firestoreIds = new Set(firestoreDonations.map(d => d.firestoreId || d.id));
+          const localOnly = prev.filter(d => !firestoreIds.has(d.firestoreId || d.id));
+          const merged = [...firestoreDonations, ...localOnly];
+          try {
+            localStorage.setItem('lvs_submitted_donations', JSON.stringify(merged));
+          } catch (e) {}
+          return merged;
+        });
+      }, (error) => console.warn("Firestore donations sync notice:", error));
+      unsubscribes.push(unsub);
+    } catch (err) {}
+
+    // 3. Contacts (contacts)
+    try {
+      const q = collection(db, "contacts");
+      const unsub = onSnapshot(q, (snapshot) => {
+        const firestoreContacts = snapshot.docs.map(docSnap => ({
+          ...docSnap.data(),
+          firestoreId: docSnap.id
+        }));
+        firestoreContacts.sort((a, b) => {
+          const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.date || 0).getTime();
+          const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.date || 0).getTime();
+          return timeB - timeA;
+        });
+        setContacts(prev => {
+          const firestoreIds = new Set(firestoreContacts.map(c => c.firestoreId || c.id));
+          const localOnly = prev.filter(c => !firestoreIds.has(c.firestoreId || c.id));
+          const merged = [...firestoreContacts, ...localOnly];
+          try {
+            localStorage.setItem('lvs_submitted_contacts', JSON.stringify(merged));
+          } catch (e) {}
+          return merged;
+        });
+      }, (error) => console.warn("Firestore contacts sync notice:", error));
+      unsubscribes.push(unsub);
+    } catch (err) {}
+
+    // 4. Volunteers (volunteers)
+    try {
+      const q = collection(db, "volunteers");
+      const unsub = onSnapshot(q, (snapshot) => {
+        const firestoreVolunteers = snapshot.docs.map(docSnap => ({
+          ...docSnap.data(),
+          firestoreId: docSnap.id
+        }));
+        firestoreVolunteers.sort((a, b) => {
+          const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.applicationDate || 0).getTime();
+          const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.applicationDate || 0).getTime();
+          return timeB - timeA;
+        });
+        setVolunteers(prev => {
+          const firestoreIds = new Set(firestoreVolunteers.map(v => v.firestoreId || v.id));
+          const localOnly = prev.filter(v => !firestoreIds.has(v.firestoreId || v.id));
+          const merged = [...firestoreVolunteers, ...localOnly];
+          try {
+            localStorage.setItem('lvs_submitted_volunteers', JSON.stringify(merged));
+          } catch (e) {}
+          return merged;
+        });
+      }, (error) => console.warn("Firestore volunteers sync notice:", error));
+      unsubscribes.push(unsub);
+    } catch (err) {}
+
+    // 5. Partners (partners)
+    try {
+      const q = collection(db, "partners");
+      const unsub = onSnapshot(q, (snapshot) => {
+        const firestorePartners = snapshot.docs.map(docSnap => ({
+          ...docSnap.data(),
+          firestoreId: docSnap.id
+        }));
+        firestorePartners.sort((a, b) => {
+          const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.dateJoined || 0).getTime();
+          const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.dateJoined || 0).getTime();
+          return timeB - timeA;
+        });
+        setPartners(prev => {
+          const firestoreIds = new Set(firestorePartners.map(p => p.firestoreId || p.id));
+          const localOnly = prev.filter(p => !firestoreIds.has(p.firestoreId || p.id));
+          const merged = [...firestorePartners, ...localOnly];
+          try {
+            localStorage.setItem('lvs_submitted_partners', JSON.stringify(merged));
+          } catch (e) {}
+          return merged;
+        });
+      }, (error) => console.warn("Firestore partners sync notice:", error));
+      unsubscribes.push(unsub);
+    } catch (err) {}
+
+    // 6. Placements (placements)
+    try {
+      const q = collection(db, "placements");
+      const unsub = onSnapshot(q, (snapshot) => {
+        const firestorePlacements = snapshot.docs.map(docSnap => ({
+          ...docSnap.data(),
+          firestoreId: docSnap.id
+        }));
+        firestorePlacements.sort((a, b) => {
+          const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.joiningDate || 0).getTime();
+          const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.joiningDate || 0).getTime();
+          return timeB - timeA;
+        });
+        setPlacements(prev => {
+          const firestoreIds = new Set(firestorePlacements.map(p => p.firestoreId || p.id));
+          const localOnly = prev.filter(p => !firestoreIds.has(p.firestoreId || p.id));
+          const merged = [...firestorePlacements, ...localOnly];
+          try {
+            localStorage.setItem('lvs_submitted_placements', JSON.stringify(merged));
+          } catch (e) {}
+          return merged;
+        });
+      }, (error) => console.warn("Firestore placements sync notice:", error));
+      unsubscribes.push(unsub);
+    } catch (err) {}
+
     return () => {
-      if (unsubscribe) unsubscribe();
+      unsubscribes.forEach(unsub => unsub && unsub());
     };
   }, []);
 

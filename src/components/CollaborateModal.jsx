@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, Send, Handshake, User, Phone, Mail, MapPin, Building, Target } from 'lucide-react';
+import { db, collection, addDoc, serverTimestamp } from '../firebase';
 
 export default function CollaborateModal({ isOpen, onClose }) {
   const [submitted, setSubmitted] = useState(false);
@@ -27,7 +28,7 @@ export default function CollaborateModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newCollab = {
@@ -42,8 +43,16 @@ export default function CollaborateModal({ isOpen, onClose }) {
       dateJoined: new Date().toISOString().split('T')[0],
       status: 'Pending',
       programsSupported: 1,
-      notes: formData.proposal || 'Collaboration Proposal'
+      notes: formData.proposal || 'Collaboration Proposal',
+      createdAt: serverTimestamp()
     };
+
+    try {
+      const docRef = await addDoc(collection(db, "partners"), newCollab);
+      newCollab.firestoreId = docRef.id;
+    } catch (firebaseErr) {
+      console.warn("Firebase partner save notice:", firebaseErr);
+    }
 
     try {
       const existing = JSON.parse(localStorage.getItem('lvs_submitted_partners') || '[]');

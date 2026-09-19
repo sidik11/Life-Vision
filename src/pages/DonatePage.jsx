@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Heart, ShieldCheck, CheckCircle2, User, Mail, Phone, Calendar, CreditCard, MapPin, Globe, Building, Hash, PhoneCall, IndianRupee, QrCode, Copy, Sparkles, Award, Users, BookOpen, ChevronLeft, ChevronRight, Scissors } from 'lucide-react';
+import { db, collection, addDoc, serverTimestamp } from '../firebase';
 
 export default function DonatePage({ onOpenApply }) {
   const [submitted, setSubmitted] = useState(false);
@@ -23,7 +24,7 @@ export default function DonatePage({ onOpenApply }) {
 
   const presetAmounts = ['2000', '4000', '8000', '16000'];
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newDonation = {
@@ -36,8 +37,16 @@ export default function DonatePage({ onOpenApply }) {
       receiptNo: `RCP-80G-2026-${Math.floor(100 + Math.random() * 900)}`,
       email: formData.email,
       mobile: formData.mobile,
-      pan: formData.panNo
+      pan: formData.panNo,
+      createdAt: serverTimestamp()
     };
+
+    try {
+      const docRef = await addDoc(collection(db, "donations"), newDonation);
+      newDonation.firestoreId = docRef.id;
+    } catch (firebaseErr) {
+      console.warn("Firebase donation save notice:", firebaseErr);
+    }
 
     try {
       const existing = JSON.parse(localStorage.getItem('lvs_submitted_donations') || '[]');

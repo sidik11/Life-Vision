@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, Send, GraduationCap, User, Phone, Mail, BookOpen, MapPin, Award, Briefcase, Share2 } from 'lucide-react';
+import { db, collection, addDoc, serverTimestamp } from '../firebase';
 
 export default function StudentPlacementModal({ isOpen, onClose }) {
   const [submitted, setSubmitted] = useState(false);
@@ -52,7 +53,7 @@ export default function StudentPlacementModal({ isOpen, onClose }) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newPlacement = {
@@ -65,8 +66,16 @@ export default function StudentPlacementModal({ isOpen, onClose }) {
       jobRole: formData.supportType || 'Higher Education Placement',
       location: `${formData.district || 'Bhubaneswar'}, ${formData.state || 'Odisha'}`,
       joiningDate: new Date().toISOString().split('T')[0],
-      salary: 'Scholarship Requested'
+      salary: 'Scholarship Requested',
+      createdAt: serverTimestamp()
     };
+
+    try {
+      const docRef = await addDoc(collection(db, "placements"), newPlacement);
+      newPlacement.firestoreId = docRef.id;
+    } catch (firebaseErr) {
+      console.warn("Firebase placement save notice:", firebaseErr);
+    }
 
     try {
       const existing = JSON.parse(localStorage.getItem('lvs_submitted_placements') || '[]');

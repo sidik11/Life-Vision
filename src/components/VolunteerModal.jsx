@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Heart, User, Mail, Phone, MapPin, CheckCircle2, Award, Sparkles, Briefcase } from 'lucide-react';
+import { db, collection, addDoc, serverTimestamp } from '../firebase';
 
 export default function VolunteerModal({ isOpen, onClose }) {
   const [submitted, setSubmitted] = useState(false);
@@ -16,7 +17,7 @@ export default function VolunteerModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newVol = {
       id: `VOL-LVS-${Date.now().toString().slice(-4)}`,
@@ -28,8 +29,16 @@ export default function VolunteerModal({ isOpen, onClose }) {
       interest: formData.roleInterest,
       availability: formData.availability,
       applicationDate: new Date().toISOString().split('T')[0],
-      status: 'Pending'
+      status: 'Pending',
+      createdAt: serverTimestamp()
     };
+
+    try {
+      const docRef = await addDoc(collection(db, "volunteers"), newVol);
+      newVol.firestoreId = docRef.id;
+    } catch (firebaseErr) {
+      console.warn("Firebase volunteer save notice:", firebaseErr);
+    }
 
     try {
       const existing = JSON.parse(localStorage.getItem('lvs_submitted_volunteers') || '[]');

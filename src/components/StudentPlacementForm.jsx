@@ -55,7 +55,8 @@ export default function StudentPlacementForm() {
 
     // 1. Save to Firebase Firestore Database
     try {
-      await addDoc(collection(db, "student_applications"), newApplication);
+      const docRef = await addDoc(collection(db, "training_applications"), newApplication);
+      newApplication.firestoreId = docRef.id;
     } catch (firebaseErr) {
       console.warn("Firebase application save notice:", firebaseErr);
     }

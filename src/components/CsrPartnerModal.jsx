@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, Send, Building2, User, Phone, Mail, Briefcase, DollarSign, CheckSquare } from 'lucide-react';
+import { db, collection, addDoc, serverTimestamp } from '../firebase';
 
 export default function CsrPartnerModal({ isOpen, onClose }) {
   const [submitted, setSubmitted] = useState(false);
@@ -38,7 +39,7 @@ export default function CsrPartnerModal({ isOpen, onClose }) {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newPartner = {
@@ -54,8 +55,16 @@ export default function CsrPartnerModal({ isOpen, onClose }) {
       status: 'Pending',
       programsSupported: 1,
       budget: formData.budget || '₹5 Lakhs - ₹15 Lakhs',
-      interests: formData.interests.join(', ') || 'Women Empowerment'
+      interests: formData.interests.join(', ') || 'Women Empowerment',
+      createdAt: serverTimestamp()
     };
+
+    try {
+      const docRef = await addDoc(collection(db, "partners"), newPartner);
+      newPartner.firestoreId = docRef.id;
+    } catch (firebaseErr) {
+      console.warn("Firebase partner save notice:", firebaseErr);
+    }
 
     try {
       const existing = JSON.parse(localStorage.getItem('lvs_submitted_partners') || '[]');
