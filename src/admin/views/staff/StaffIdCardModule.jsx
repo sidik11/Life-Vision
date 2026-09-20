@@ -3,6 +3,7 @@ import {
   IdCard, Clock, CheckCircle2, XCircle, Search, Filter, 
   Printer, Send, Mail, Phone, Calendar, User, Eye, Check, X 
 } from 'lucide-react';
+import ActionPopover from '../../components/Common/ActionPopover';
 import { db, doc, updateDoc, collection, addDoc, serverTimestamp } from '../../../firebase';
 import { sendStaffIdCardEmailApi, printOrSaveStaffIdCardPdf } from '../../../utils/staffIdPdfHelper';
 
@@ -40,7 +41,7 @@ export default function StaffIdCardModule({
     const emailMatch = (s.email || '').toLowerCase().includes(term);
     const deptMatch = (s.department || '').toLowerCase().includes(term);
     const roleMatch = (s.role || s.designation || '').toLowerCase().includes(term);
-    const matchesSearch = nameMatch || idMatch || emailMatch || deptMatch || roleMatch;
+    const matchesSearch = nameMatch || idMatch || emailMatch || phoneMatch || roleMatch;
 
     if (selectedStatus === 'All') return matchesSearch;
     if (selectedStatus === 'Pending Approval') {
@@ -144,6 +145,50 @@ export default function StaffIdCardModule({
     if (showToast) showToast(`✕ ID Card request for ${updatedStaff.name} rejected.`, 'info');
   };
 
+  // Three-dot Action Popover Items
+  const getActionItems = (staffMember) => {
+    const isPending = staffMember.cardStatus === 'Pending Approval' || staffMember.approvalStatus === 'Pending';
+    const isRejected = staffMember.cardStatus === 'Rejected' || staffMember.approvalStatus === 'Rejected';
+
+    const items = [];
+
+    if (isPending) {
+      items.push(
+        {
+          label: '✓ Approve & Send PDF Email',
+          icon: Check,
+          onClick: () => handleApproveIdCard(staffMember)
+        },
+        {
+          label: '✕ Reject Request',
+          icon: X,
+          danger: true,
+          onClick: () => handleRejectIdCard(staffMember)
+        },
+        { divider: true }
+      );
+    }
+
+    items.push({
+      label: 'View & Print ID Card',
+      icon: Eye,
+      onClick: () => setSelectedCardStaff(staffMember)
+    });
+
+    if (!isPending && !isRejected) {
+      items.push(
+        { divider: true },
+        {
+          label: 'Re-Send PDF Email',
+          icon: Send,
+          onClick: () => handleApproveIdCard(staffMember)
+        }
+      );
+    }
+
+    return items;
+  };
+
   return (
     <div className="space-y-6">
       
@@ -156,7 +201,7 @@ export default function StaffIdCardModule({
           </div>
           <h2 className="text-xl font-bold text-slate-800 font-serif">Staff ID Card Requests & Approval Portal</h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Review ID Card generation requests. Click tick (✓) to approve and dispatch PDF ID card to staff email.
+            Review ID Card generation requests. Click three dots or tick (✓) to view & print ID card or send PDF to staff email.
           </p>
         </div>
 
@@ -232,10 +277,16 @@ export default function StaffIdCardModule({
                           <img
                             src={s.avatar || s.photoDoc || '/image/logo.png'}
                             alt={s.name}
-                            className="w-10 h-10 rounded-xl object-cover ring-2 ring-emerald-500/20 bg-white shrink-0"
+                            className="w-10 h-10 rounded-xl object-cover ring-2 ring-emerald-500/20 bg-white shrink-0 cursor-pointer"
+                            onClick={() => setSelectedCardStaff(s)}
                           />
                           <div>
-                            <div className="font-bold text-slate-900">{s.name}</div>
+                            <div 
+                              className="font-bold text-slate-900 cursor-pointer hover:text-emerald-700 transition-colors"
+                              onClick={() => setSelectedCardStaff(s)}
+                            >
+                              {s.name}
+                            </div>
                             <div className="text-[10px] text-slate-500 font-mono truncate max-w-[140px]">{s.email}</div>
                           </div>
                         </div>
@@ -291,44 +342,35 @@ export default function StaffIdCardModule({
                         )}
                       </td>
 
-                      {/* Action */}
+                      {/* Action Column with Three Dots Menu */}
                       <td className="p-3.5 text-right">
-                        {isPending ? (
-                          <div className="flex items-center justify-end space-x-2">
-                            {/* Approve (✓) */}
-                            <button
-                              type="button"
-                              onClick={() => handleApproveIdCard(s)}
-                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-2xs flex items-center gap-1 shadow-sm transition-all cursor-pointer"
-                              title="Approve ID Card & Send PDF to Staff Email"
-                            >
-                              <Check className="w-3.5 h-3.5 stroke-[3]" />
-                              <span>✓ Approve</span>
-                            </button>
+                        <div className="flex items-center justify-end space-x-2">
+                          {isPending && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleApproveIdCard(s)}
+                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-2xs flex items-center gap-1 shadow-xs transition-all cursor-pointer"
+                                title="Approve ID Card & Send PDF"
+                              >
+                                <Check className="w-3 h-3 stroke-[3]" />
+                                <span>Approve</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRejectIdCard(s)}
+                                className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-lg text-2xs flex items-center gap-1 transition-all cursor-pointer"
+                                title="Reject Request"
+                              >
+                                <X className="w-3 h-3 stroke-[3]" />
+                                <span>Reject</span>
+                              </button>
+                            </>
+                          )}
 
-                            {/* Reject (✕) */}
-                            <button
-                              type="button"
-                              onClick={() => handleRejectIdCard(s)}
-                              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-xl text-2xs flex items-center gap-1 transition-all cursor-pointer"
-                              title="Reject Approval Request"
-                            >
-                              <X className="w-3.5 h-3.5 stroke-[3]" />
-                              <span>✕ Reject</span>
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-end space-x-2">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedCardStaff(s)}
-                              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 font-bold rounded-xl text-2xs flex items-center gap-1.5 transition-all cursor-pointer"
-                            >
-                              <Eye className="w-3.5 h-3.5 text-slate-600" />
-                              <span>View / Print ID Card</span>
-                            </button>
-                          </div>
-                        )}
+                          {/* THREE DOTS ACTION POPOVER MENU (STRICTLY AS REQUESTED) */}
+                          <ActionPopover items={getActionItems(s)} />
+                        </div>
                       </td>
 
                     </tr>
