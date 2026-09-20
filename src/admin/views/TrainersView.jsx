@@ -26,9 +26,10 @@ export default function TrainersView({
   const [newTrainer, setNewTrainer] = useState({
     name: '',
     role: 'Master Trainer',
+    gender: 'Female',
     qualification: '',
-    sector: '',
-    experience: '',
+    sector: 'Apparel, Made-Ups & Home Furnishing',
+    experience: '3 Years',
     isTotCertified: true,
     totCertNumber: '',
     phone: '',
@@ -66,7 +67,7 @@ export default function TrainersView({
   const handleAddTrainerSubmit = (e) => {
     e.preventDefault();
     if (!newTrainer.name || !newTrainer.phone) {
-      if (showToast) showToast('Please enter Trainer Name and Contact Number.', 'error');
+      if (showToast) showToast('Please enter Full Name and Contact Number.', 'error');
       return;
     }
 
@@ -85,9 +86,10 @@ export default function TrainersView({
     setNewTrainer({
       name: '',
       role: 'Master Trainer',
+      gender: 'Female',
       qualification: '',
-      sector: '',
-      experience: '',
+      sector: 'Apparel, Made-Ups & Home Furnishing',
+      experience: '3 Years',
       isTotCertified: true,
       totCertNumber: '',
       phone: '',
@@ -240,9 +242,15 @@ export default function TrainersView({
                         {trn.role || 'Master Trainer'}
                       </span>
                     </td>
-                    <td className="p-4 font-bold text-slate-900">{trn.sector || trn.specialization || 'Apparel'}</td>
+                    <td className="p-4 font-bold text-slate-900">
+                      {trn.role === 'Center Head' ? <span className="text-slate-400 font-semibold">N/A (Center Head)</span> : (trn.sector || trn.specialization || 'Apparel')}
+                    </td>
                     <td className="p-4">
-                      {trn.isTotCertified !== false ? (
+                      {trn.role === 'Center Head' ? (
+                        <span className="px-2 py-0.5 bg-slate-100 text-slate-500 font-bold rounded-md text-[10px]">
+                          N/A (Center Head)
+                        </span>
+                      ) : trn.isTotCertified !== false ? (
                         <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded-md text-[10px] inline-flex items-center gap-1">
                           <Award className="w-3 h-3 text-emerald-600" />
                           <span>TOT Verified</span>
@@ -314,13 +322,13 @@ export default function TrainersView({
             <form onSubmit={handleAddTrainerSubmit} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="font-bold text-slate-700">Trainer Full Name *</label>
+                  <label className="font-bold text-slate-700">Full Name *</label>
                   <input
                     type="text"
                     required
                     value={newTrainer.name}
                     onChange={(e) => setNewTrainer({...newTrainer, name: e.target.value})}
-                    placeholder="Enter Trainer Name"
+                    placeholder="Enter Full Name"
                     className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
                   />
                 </div>
@@ -334,6 +342,19 @@ export default function TrainersView({
                   >
                     <option value="Master Trainer">Master Trainer</option>
                     <option value="Center Head">Center Head</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700">Gender *</label>
+                  <select
+                    value={newTrainer.gender || 'Female'}
+                    onChange={(e) => setNewTrainer({...newTrainer, gender: e.target.value})}
+                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  >
+                    <option value="Female">Female</option>
+                    <option value="Male">Male</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
 
@@ -360,49 +381,101 @@ export default function TrainersView({
                   />
                 </div>
 
-                <div>
-                  <label className="font-bold text-slate-700">Skill Domain / Sector</label>
-                  <input
-                    type="text"
-                    value={newTrainer.sector}
-                    onChange={(e) => setNewTrainer({...newTrainer, sector: e.target.value})}
-                    placeholder="Enter Sector / Domain"
-                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  />
-                </div>
+                {/* Skill Domain / Sector (SHOW ONLY FOR TRAINERS, HIDE FOR CENTER HEAD) */}
+                {newTrainer.role !== 'Center Head' && (
+                  <div>
+                    <label className="font-bold text-slate-700">Skill Domain / Sector *</label>
+                    <select
+                      value={newTrainer.sector || 'Apparel, Made-Ups & Home Furnishing'}
+                      onChange={(e) => setNewTrainer({...newTrainer, sector: e.target.value})}
+                      className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    >
+                      <option value="Apparel, Made-Ups & Home Furnishing">Apparel, Made-Ups & Home Furnishing</option>
+                      <option value="Beauty & Wellness">Beauty & Wellness</option>
+                      <option value="Healthcare & Nursing">Healthcare & Nursing</option>
+                      <option value="IT-ITeS & Digital Skills">IT-ITeS & Digital Skills</option>
+                      <option value="Electronics & Hardware">Electronics & Hardware</option>
+                      <option value="Automotive & Mechanical">Automotive & Mechanical</option>
+                      <option value="Agriculture & Allied Activities">Agriculture & Allied Activities</option>
+                      <option value="Construction & Building">Construction & Building</option>
+                      <option value="Domestic Workers & Caretaking">Domestic Workers & Caretaking</option>
+                      <option value="Food Processing & Hospitality">Food Processing & Hospitality</option>
+                      <option value="Handicrafts & Carpet">Handicrafts & Carpet</option>
+                      <option value="Leather & Sports Goods">Leather & Sports Goods</option>
+                      <option value="Logistics & Supply Chain">Logistics & Supply Chain</option>
+                      <option value="Media & Entertainment">Media & Entertainment</option>
+                      <option value="Retail & E-Commerce">Retail & E-Commerce</option>
+                      <option value="Telecom & Communication">Telecom & Communication</option>
+                      <option value="Tourism & Hospitality">Tourism & Hospitality</option>
+                      <option value="Other Sector">Other Sector</option>
+                    </select>
+                  </div>
+                )}
 
-                <div>
-                  <label className="font-bold text-slate-700">TOT Certified (Training of Trainers)</label>
-                  <select
-                    value={newTrainer.isTotCertified ? 'Yes' : 'No'}
-                    onChange={(e) => setNewTrainer({...newTrainer, isTotCertified: e.target.value === 'Yes'})}
-                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  >
-                    <option value="Yes">Yes (TOT Certified)</option>
-                    <option value="No">No (Pending)</option>
-                  </select>
-                </div>
+                {/* TOT Details (SHOW ONLY FOR TRAINERS, HIDE FOR CENTER HEAD) */}
+                {newTrainer.role !== 'Center Head' && (
+                  <>
+                    <div>
+                      <label className="font-bold text-slate-700">TOT Certified (Training of Trainers)</label>
+                      <select
+                        value={newTrainer.isTotCertified ? 'Yes' : 'No'}
+                        onChange={(e) => setNewTrainer({...newTrainer, isTotCertified: e.target.value === 'Yes'})}
+                        className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      >
+                        <option value="Yes">Yes (TOT Certified)</option>
+                        <option value="No">No (Pending)</option>
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="font-bold text-slate-700">TOT Certificate Number</label>
-                  <input
-                    type="text"
-                    value={newTrainer.totCertNumber}
-                    onChange={(e) => setNewTrainer({...newTrainer, totCertNumber: e.target.value})}
-                    placeholder="Enter TOT Certificate Number"
-                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  />
-                </div>
+                    {newTrainer.isTotCertified && (
+                      <div>
+                        <label className="font-bold text-slate-700">TOT Certificate Number</label>
+                        <input
+                          type="text"
+                          value={newTrainer.totCertNumber}
+                          onChange={(e) => setNewTrainer({...newTrainer, totCertNumber: e.target.value})}
+                          placeholder="Enter TOT Certificate Number"
+                          className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
 
+                {/* Experience (Years) Dropdown with Non-Negative Manual Entry */}
                 <div>
-                  <label className="font-bold text-slate-700">Years of Experience</label>
-                  <input
-                    type="text"
-                    value={newTrainer.experience}
-                    onChange={(e) => setNewTrainer({...newTrainer, experience: e.target.value})}
-                    placeholder="Enter Experience (e.g. 5 Years)"
-                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  />
+                  <label className="font-bold text-slate-700">Experience (Years)</label>
+                  <div className="flex gap-2 mt-1">
+                    <select
+                      value={['1 Year', '2 Years', '3 Years', '4 Years', '5 Years', '5+ Years'].includes(newTrainer.experience) ? newTrainer.experience : 'Custom'}
+                      onChange={(e) => {
+                        if (e.target.value !== 'Custom') {
+                          setNewTrainer({...newTrainer, experience: e.target.value});
+                        }
+                      }}
+                      className="w-1/2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    >
+                      <option value="1 Year">1 Year</option>
+                      <option value="2 Years">2 Years</option>
+                      <option value="3 Years">3 Years</option>
+                      <option value="4 Years">4 Years</option>
+                      <option value="5 Years">5 Years</option>
+                      <option value="5+ Years">5+ Years</option>
+                      <option value="Custom">Manual Entry</option>
+                    </select>
+
+                    <input
+                      type="number"
+                      min="0"
+                      value={parseInt(newTrainer.experience) >= 0 ? parseInt(newTrainer.experience) : ''}
+                      onChange={(e) => {
+                        const val = Math.max(0, parseInt(e.target.value) || 0);
+                        setNewTrainer({...newTrainer, experience: `${val} Years`});
+                      }}
+                      placeholder="Years"
+                      className="w-1/2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    />
+                  </div>
                 </div>
               </div>
 
