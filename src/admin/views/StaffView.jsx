@@ -164,10 +164,10 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
             .staff-name { position: absolute; top: 275px; width: 100%; text-align: center; font-size: 14px; font-weight: 900; color: #021a10; z-index: 10; font-family: sans-serif; }
             .staff-role { position: absolute; top: 293px; width: 100%; text-align: center; font-size: 10px; font-weight: 800; color: #047857; z-index: 10; text-transform: uppercase; }
 
-            .info-val-id { position: absolute; top: 325px; left: 158px; font-size: 10px; font-weight: 800; color: #0f172a; z-index: 10; font-family: monospace; }
-            .info-val-dept { position: absolute; top: 350px; left: 158px; font-size: 10px; font-weight: 800; color: #0f172a; z-index: 10; }
-            .info-val-phone { position: absolute; top: 375px; left: 158px; font-size: 10px; font-weight: 800; color: #0f172a; z-index: 10; font-family: monospace; }
-            .info-val-date { position: absolute; top: 400px; left: 158px; font-size: 10px; font-weight: 800; color: #0f172a; z-index: 10; }
+            .info-val-id { position: absolute; top: 323px; left: 156px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: monospace; line-height: 1; }
+            .info-val-dept { position: absolute; top: 350px; left: 156px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; line-height: 1; max-width: 145px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .info-val-phone { position: absolute; top: 377px; left: 156px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: monospace; line-height: 1; }
+            .info-val-date { position: absolute; top: 404px; left: 156px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; line-height: 1; }
 
             @media print {
               body { background: transparent; padding: 0; gap: 20px; }
@@ -451,11 +451,11 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                       <p className="text-[10px] font-extrabold text-[#047857] uppercase tracking-wide truncate">{s.role}</p>
                     </div>
 
-                    {/* OVERLAID FIELDS ALIGNED TO COLONS */}
-                    <div className="absolute top-[325px] left-[158px] text-[10px] font-extrabold text-[#0f172a] font-mono z-10">{s.id}</div>
-                    <div className="absolute top-[350px] left-[158px] text-[10px] font-extrabold text-[#0f172a] z-10 max-w-[150px] truncate">{s.department}</div>
-                    <div className="absolute top-[375px] left-[158px] text-[10px] font-extrabold text-[#0f172a] font-mono z-10">{s.phone || '+91 9416362914'}</div>
-                    <div className="absolute top-[400px] left-[158px] text-[10px] font-extrabold text-[#0f172a] z-10">{s.joinDate || '2026-01-01'}</div>
+                    {/* OVERLAID FIELDS ALIGNED TO EXACT HORIZONTAL COLON LINE */}
+                    <div className="absolute top-[323px] left-[156px] text-[11px] font-extrabold text-[#0f172a] font-mono leading-none z-10">{s.id}</div>
+                    <div className="absolute top-[350px] left-[156px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10 max-w-[145px] truncate">{s.department}</div>
+                    <div className="absolute top-[377px] left-[156px] text-[11px] font-extrabold text-[#0f172a] font-mono leading-none z-10">{s.phone || '+91 9416362914'}</div>
+                    <div className="absolute top-[404px] left-[156px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10">{s.joinDate || '2026-01-01'}</div>
                   </div>
 
                   {/* ACTION BUTTON */}
@@ -565,10 +565,12 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                   <div className="absolute top-[293px] w-full text-center px-3 z-10">
                     <p className="text-[10px] font-extrabold text-[#047857] uppercase tracking-wide truncate">{selectedCardStaff.role}</p>
                   </div>
-                  <div className="absolute top-[325px] left-[158px] text-[10px] font-extrabold text-[#0f172a] font-mono z-10">{selectedCardStaff.id}</div>
-                  <div className="absolute top-[350px] left-[158px] text-[10px] font-extrabold text-[#0f172a] z-10 max-w-[150px] truncate">{selectedCardStaff.department}</div>
-                  <div className="absolute top-[375px] left-[158px] text-[10px] font-extrabold text-[#0f172a] font-mono z-10">{selectedCardStaff.phone || '+91 9416362914'}</div>
-                  <div className="absolute top-[400px] left-[158px] text-[10px] font-extrabold text-[#0f172a] z-10">{selectedCardStaff.joinDate || '2026-01-01'}</div>
+
+                  {/* OVERLAID FIELDS ALIGNED TO EXACT HORIZONTAL COLON LINE */}
+                  <div className="absolute top-[323px] left-[156px] text-[11px] font-extrabold text-[#0f172a] font-mono leading-none z-10">{selectedCardStaff.id}</div>
+                  <div className="absolute top-[350px] left-[156px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10 max-w-[145px] truncate">{selectedCardStaff.department}</div>
+                  <div className="absolute top-[377px] left-[156px] text-[11px] font-extrabold text-[#0f172a] font-mono leading-none z-10">{selectedCardStaff.phone || '+91 9416362914'}</div>
+                  <div className="absolute top-[404px] left-[156px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10">{selectedCardStaff.joinDate || '2026-01-01'}</div>
                 </div>
               </div>
 

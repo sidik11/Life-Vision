@@ -168,8 +168,11 @@ export default function AdminLogin({ onLogin }) {
   // Printable ID Card Pop-up
   const handlePrintIdCard = () => {
     if (!generatedCard) return;
-    const printWindow = window.open('', '_blank', 'width=650,height=750');
+    const printWindow = window.open('', '_blank', 'width=800,height=950');
     if (!printWindow) return;
+
+    const frontImgSrc = '/Team Member/id_card_front.jpg';
+    const backImgSrc = '/Team Member/id_card_back.jpg';
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -177,47 +180,46 @@ export default function AdminLogin({ onLogin }) {
         <head>
           <title>Staff ID Card - ${generatedCard.name}</title>
           <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-            .id-card { width: 340px; background: linear-gradient(135deg, #021a10 0%, #053221 60%, #047857 100%); color: white; border-radius: 20px; padding: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); border: 2px solid #10b981; text-align: center; box-sizing: border-box; }
-            .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 14px; text-align: left; }
-            .logo { height: 34px; background: white; padding: 3px 6px; border-radius: 8px; }
-            .org-name { font-size: 13px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px; }
-            .sub-header { font-size: 10px; color: #6ee7b7; font-weight: 700; text-transform: uppercase; }
-            .photo { width: 90px; height: 90px; border-radius: 18px; object-fit: cover; border: 3px solid #10b981; margin: 0 auto 10px auto; display: block; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-            .name { font-size: 17px; font-weight: 900; color: #ffffff; margin: 2px 0; }
-            .role { display: inline-block; padding: 3px 12px; background: rgba(16, 185, 129, 0.25); color: #6ee7b7; border-radius: 20px; font-size: 11px; font-weight: 800; border: 1px solid #10b981; margin-bottom: 12px; }
-            .info-table { width: 100%; text-align: left; font-size: 11px; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 8px; }
-            .info-row { display: flex; justify-content: space-between; padding: 3px 0; }
-            .info-label { color: #a7f3d0; font-weight: 600; }
-            .info-val { color: #ffffff; font-weight: 700; text-align: right; }
-            .footer { margin-top: 12px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.2); font-size: 9px; color: #a7f3d0; text-align: center; }
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&display=swap');
+            body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 30px; padding: 30px; margin: 0; }
+            
+            .card-container { width: 340px; height: 510px; position: relative; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); background: #fff; }
+            .card-bg { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 1; }
+
+            /* Overlay Elements for Front Card */
+            .photo-box { position: absolute; top: 154px; left: 50%; transform: translateX(-50%); width: 114px; height: 114px; border-radius: 18px; object-fit: cover; z-index: 10; background: #fff; border: 2px solid #10b981; }
+            .staff-name { position: absolute; top: 275px; width: 100%; text-align: center; font-size: 14px; font-weight: 900; color: #021a10; z-index: 10; font-family: sans-serif; }
+            .staff-role { position: absolute; top: 293px; width: 100%; text-align: center; font-size: 10px; font-weight: 800; color: #047857; z-index: 10; text-transform: uppercase; }
+
+            .info-val-id { position: absolute; top: 323px; left: 156px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: monospace; line-height: 1; }
+            .info-val-dept { position: absolute; top: 350px; left: 156px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; line-height: 1; max-width: 145px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .info-val-phone { position: absolute; top: 377px; left: 156px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: monospace; line-height: 1; }
+            .info-val-date { position: absolute; top: 404px; left: 156px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; line-height: 1; }
+
+            @media print {
+              body { background: transparent; padding: 0; gap: 20px; }
+              .card-container { page-break-after: always; box-shadow: none; border: 1px solid #ddd; }
+            }
           </style>
         </head>
         <body>
-          <div class="id-card">
-            <div class="header">
-              <div>
-                <div class="org-name">LIFE VISION SOCIETY</div>
-                <div class="sub-header">Official Staff Identity Card</div>
-              </div>
-              <img src="/image/logo.png" class="logo" alt="Logo" />
-            </div>
-            <img src="${generatedCard.avatar || '/image/logo.png'}" class="photo" alt="Staff Photo" />
-            <div class="name">${generatedCard.name}</div>
-            <div class="role">${generatedCard.role}</div>
-            <div class="info-table">
-              <div class="info-row"><span class="info-label">Staff ID:</span><span class="info-val">${generatedCard.id}</span></div>
-              <div class="info-row"><span class="info-label">Department:</span><span class="info-val">${generatedCard.department}</span></div>
-              <div class="info-row"><span class="info-label">Blood Group:</span><span class="info-val">${generatedCard.bloodGroup}</span></div>
-              <div class="info-row"><span class="info-label">Joining Date:</span><span class="info-val">${generatedCard.joinDate}</span></div>
-              <div class="info-row"><span class="info-label">Location:</span><span class="info-val">${generatedCard.location}</span></div>
-              <div class="info-row"><span class="info-label">Phone:</span><span class="info-val">${generatedCard.phone}</span></div>
-              <div class="info-row"><span class="info-label">Emergency Contact:</span><span class="info-val">${generatedCard.emergencyContact}</span></div>
-            </div>
-            <div class="footer">
-              Property of Life Vision Society • Authorised Staff • Helpline: +91 9416362914
-            </div>
+          <!-- FRONT SIDE -->
+          <div class="card-container">
+            <img src="${frontImgSrc}" class="card-bg" alt="Front ID Template" />
+            <img src="${generatedCard.avatar || '/image/logo.png'}" class="photo-box" alt="Staff Photo" />
+            <div class="staff-name">${generatedCard.name}</div>
+            <div class="staff-role">${generatedCard.role}</div>
+            <div class="info-val-id">${generatedCard.id}</div>
+            <div class="info-val-dept">${generatedCard.department}</div>
+            <div class="info-val-phone">${generatedCard.phone || '+91 9416362914'}</div>
+            <div class="info-val-date">${generatedCard.joinDate || '2026-01-01'}</div>
           </div>
+
+          <!-- BACK SIDE -->
+          <div class="card-container">
+            <img src="${backImgSrc}" class="card-bg" alt="Back ID Template" />
+          </div>
+
           <script>
             window.onload = function() { window.print(); }
           </script>
@@ -465,7 +467,7 @@ export default function AdminLogin({ onLogin }) {
           {selectedRole === 'staff' && (
             <div>
               {generatedCard ? (
-                /* DISPLAY GENERATED STAFF ID CARD */
+                /* DISPLAY GENERATED STAFF ID CARD WITH TEMPLATE OVERLAY */
                 <div className="space-y-4">
                   <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-center space-y-1">
                     <CheckCircle2 className="w-6 h-6 text-[#047857] mx-auto animate-bounce" />
@@ -478,60 +480,33 @@ export default function AdminLogin({ onLogin }) {
                   </div>
 
                   {/* ID CARD VISUAL DISPLAY */}
-                  <div className="w-full max-w-xs mx-auto bg-gradient-to-b from-[#021A10] via-[#053221] to-[#047857] rounded-2xl p-4 text-white shadow-2xl border-2 border-emerald-400 relative overflow-hidden">
-                    {/* Header */}
-                    <div className="flex items-center justify-between border-b border-white/20 pb-2 mb-3">
-                      <div className="text-left">
-                        <div className="text-xs font-black tracking-wider text-white">LIFE VISION SOCIETY</div>
-                        <div className="text-[9px] text-emerald-300 font-bold uppercase">Staff Identity Card</div>
-                      </div>
-                      <img src="/image/logo.png" alt="Logo" className="w-7 h-7 object-contain bg-white rounded-md p-0.5" />
+                  <div className="relative w-[340px] h-[510px] mx-auto rounded-2xl overflow-hidden shadow-2xl border-2 border-emerald-500 bg-slate-900 shrink-0">
+                    <img
+                      src="/Team Member/id_card_front.jpg"
+                      alt="Front ID Template"
+                      className="w-full h-full object-cover"
+                    />
+
+                    {/* OVERLAID STAFF PHOTO */}
+                    <img
+                      src={generatedCard.avatar || '/image/logo.png'}
+                      alt={generatedCard.name}
+                      className="absolute top-[154px] left-1/2 -translate-x-1/2 w-[114px] h-[114px] rounded-[18px] object-cover border-2 border-emerald-500 shadow-md bg-white z-10"
+                    />
+
+                    {/* OVERLAID NAME & ROLE */}
+                    <div className="absolute top-[275px] w-full text-center px-3 z-10">
+                      <h4 className="text-[14px] font-black text-[#021a10] truncate">{generatedCard.name}</h4>
+                    </div>
+                    <div className="absolute top-[293px] w-full text-center px-3 z-10">
+                      <p className="text-[10px] font-extrabold text-[#047857] uppercase tracking-wide truncate">{generatedCard.role}</p>
                     </div>
 
-                    {/* Photo & Main Details */}
-                    <div className="flex flex-col items-center text-center space-y-1">
-                      <img
-                        src={generatedCard.avatar}
-                        alt={generatedCard.name}
-                        className="w-20 h-20 rounded-2xl object-cover ring-3 ring-emerald-400 bg-white p-0.5 shadow-md"
-                      />
-                      <h4 className="text-sm font-extrabold text-white pt-1">{generatedCard.name}</h4>
-                      <span className="px-2.5 py-0.5 bg-emerald-500/30 text-emerald-200 rounded-full text-[10px] font-black border border-emerald-400/50">
-                        {generatedCard.role}
-                      </span>
-                    </div>
-
-                    {/* Meta Fields */}
-                    <div className="mt-3 pt-2 border-t border-white/15 text-[10px] space-y-1 text-slate-200 text-left">
-                      <div className="flex justify-between">
-                        <span className="text-emerald-300 font-semibold">Staff ID:</span>
-                        <span className="font-mono font-bold text-white">{generatedCard.id}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-emerald-300 font-semibold">Department:</span>
-                        <span className="font-bold text-white">{generatedCard.department}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-emerald-300 font-semibold">Blood Group:</span>
-                        <span className="font-bold text-white">{generatedCard.bloodGroup}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-emerald-300 font-semibold">Location:</span>
-                        <span className="font-bold text-white">{generatedCard.location}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-emerald-300 font-semibold">Phone:</span>
-                        <span className="font-mono text-white">{generatedCard.phone}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-emerald-300 font-semibold">Emergency Contact:</span>
-                        <span className="font-mono text-white">{generatedCard.emergencyContact}</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 pt-2 border-t border-white/10 text-[8px] text-emerald-200 text-center font-mono">
-                      Official ID • Life Vision Society • Helpline: +91 9416362914
-                    </div>
+                    {/* OVERLAID FIELDS ALIGNED TO EXACT HORIZONTAL COLON LINE */}
+                    <div className="absolute top-[323px] left-[156px] text-[11px] font-extrabold text-[#0f172a] font-mono leading-none z-10">{generatedCard.id}</div>
+                    <div className="absolute top-[350px] left-[156px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10 max-w-[145px] truncate">{generatedCard.department}</div>
+                    <div className="absolute top-[377px] left-[156px] text-[11px] font-extrabold text-[#0f172a] font-mono leading-none z-10">{generatedCard.phone || '+91 9416362914'}</div>
+                    <div className="absolute top-[404px] left-[156px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10">{generatedCard.joinDate || '2026-01-01'}</div>
                   </div>
 
                   {/* ACTION BUTTONS */}
