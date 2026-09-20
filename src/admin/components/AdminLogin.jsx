@@ -252,14 +252,14 @@ export default function AdminLogin({ onLogin }) {
             .staff-name { position: absolute; top: 275px; width: 100%; text-align: center; font-size: 14px; font-weight: 900; color: #021a10; z-index: 10; font-family: sans-serif; }
             .staff-role { position: absolute; top: 293px; width: 100%; text-align: center; font-size: 10px; font-weight: 800; color: #047857; z-index: 10; text-transform: uppercase; }
 
-            .info-section { position: absolute; top: 316px; left: 52px; right: 24px; z-index: 10; display: flex; flex-direction: column; gap: 3px; }
+            .info-section { position: absolute; top: 316px; left: 68px; right: 20px; z-index: 10; display: flex; flex-direction: column; gap: 3px; }
             .info-row { display: flex; align-items: center; font-size: 9.5px; line-height: 1; }
             .icon-circle { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0; }
             .bg-emerald { background: #047857; }
             .bg-teal { background: #0e4b55; }
-            .info-label { font-weight: 700; color: #1e293b; width: 70px; flex-shrink: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+            .info-label { font-weight: 700; color: #1e293b; width: 68px; flex-shrink: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
             .colon { font-weight: 700; color: #1e293b; margin-right: 6px; font-family: 'Plus Jakarta Sans', sans-serif; }
-            .info-value { font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 155px; font-family: 'Plus Jakarta Sans', sans-serif; }
+            .info-value { font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 145px; font-family: 'Plus Jakarta Sans', sans-serif; }
 
             @media print {
               body { background: transparent; padding: 0; gap: 20px; }
@@ -599,15 +599,15 @@ export default function AdminLogin({ onLogin }) {
                     </div>
 
                     {/* DYNAMIC MANUALLY RENDERED 4 INFO ROWS WITH ICONS & PERFECT ALIGNMENT */}
-                    <div className="absolute top-[316px] left-[52px] right-[24px] z-10 flex flex-col gap-[3px] font-sans">
+                    <div className="absolute top-[316px] left-[68px] right-[20px] z-10 flex flex-col gap-[3px] font-sans">
                       {/* Employee ID */}
                       <div className="flex items-center text-[9.5px] leading-none">
                         <div className="w-[16px] h-[16px] rounded-full bg-[#047857] flex items-center justify-center shrink-0 mr-1.5">
                           <User className="w-2.5 h-2.5 text-white" />
                         </div>
-                        <span className="font-bold text-[#1e293b] w-[70px] shrink-0">Employee ID</span>
+                        <span className="font-bold text-[#1e293b] w-[68px] shrink-0">Employee ID</span>
                         <span className="font-bold text-[#1e293b] mr-1.5">:</span>
-                        <span className="font-extrabold text-[#0f172a] truncate max-w-[155px]">{generatedCard.id}</span>
+                        <span className="font-extrabold text-[#0f172a] truncate max-w-[145px]">{generatedCard.id}</span>
                       </div>
 
                       {/* Department */}
@@ -615,9 +615,9 @@ export default function AdminLogin({ onLogin }) {
                         <div className="w-[16px] h-[16px] rounded-full bg-[#047857] flex items-center justify-center shrink-0 mr-1.5">
                           <Mail className="w-2.5 h-2.5 text-white" />
                         </div>
-                        <span className="font-bold text-[#1e293b] w-[70px] shrink-0">Department</span>
+                        <span className="font-bold text-[#1e293b] w-[68px] shrink-0">Department</span>
                         <span className="font-bold text-[#1e293b] mr-1.5">:</span>
-                        <span className="font-extrabold text-[#0f172a] truncate max-w-[155px]">{generatedCard.department}</span>
+                        <span className="font-extrabold text-[#0f172a] truncate max-w-[145px]">{generatedCard.department}</span>
                       </div>
 
                       {/* Contact No. */}
@@ -625,9 +625,9 @@ export default function AdminLogin({ onLogin }) {
                         <div className="w-[16px] h-[16px] rounded-full bg-[#0e4b55] flex items-center justify-center shrink-0 mr-1.5">
                           <Phone className="w-2.5 h-2.5 text-white" />
                         </div>
-                        <span className="font-bold text-[#1e293b] w-[70px] shrink-0">Contact No.</span>
+                        <span className="font-bold text-[#1e293b] w-[68px] shrink-0">Contact No.</span>
                         <span className="font-bold text-[#1e293b] mr-1.5">:</span>
-                        <span className="font-extrabold text-[#0f172a] truncate max-w-[155px]">{generatedCard.phone || '+91 9416362914'}</span>
+                        <span className="font-extrabold text-[#0f172a] truncate max-w-[145px]">{generatedCard.phone || '+91 9416362914'}</span>
                       </div>
 
                       {/* Joining Date */}
@@ -635,9 +635,9 @@ export default function AdminLogin({ onLogin }) {
                         <div className="w-[16px] h-[16px] rounded-full bg-[#047857] flex items-center justify-center shrink-0 mr-1.5">
                           <Calendar className="w-2.5 h-2.5 text-white" />
                         </div>
-                        <span className="font-bold text-[#1e293b] w-[70px] shrink-0">Joining Date</span>
+                        <span className="font-bold text-[#1e293b] w-[68px] shrink-0">Joining Date</span>
                         <span className="font-bold text-[#1e293b] mr-1.5">:</span>
-                        <span className="font-extrabold text-[#0f172a] truncate max-w-[155px]">{generatedCard.joinDate || '2026-01-01'}</span>
+                        <span className="font-extrabold text-[#0f172a] truncate max-w-[145px]">{generatedCard.joinDate || '2026-01-01'}</span>
                       </div>
                     </div>
                   </div>
