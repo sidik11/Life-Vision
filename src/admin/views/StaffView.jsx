@@ -29,6 +29,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
     email: '',
     phone: '',
     bloodGroup: 'O+',
+    joinDate: new Date().toISOString().split('T')[0],
     location: '',
     emergencyContact: '+91 9416362914'
   });
@@ -67,7 +68,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
       id: `STF-2026-${Math.floor(100 + Math.random() * 900)}`,
       ...newStaff,
       emergencyContact: newStaff.emergencyContact || '+91 9416362914',
-      joinDate: new Date().toISOString().split('T')[0],
+      joinDate: newStaff.joinDate || new Date().toISOString().split('T')[0],
       status: 'Active',
       avatar: photoPreview || '/image/logo.png'
     };
@@ -93,6 +94,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
       email: '',
       phone: '',
       bloodGroup: 'O+',
+      joinDate: new Date().toISOString().split('T')[0],
       location: '',
       emergencyContact: '+91 9416362914'
     });
@@ -727,15 +729,26 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700">Emergency Contact</label>
-                <input
-                  type="text"
-                  value={newStaff.emergencyContact}
-                  onChange={(e) => setNewStaff({ ...newStaff, emergencyContact: e.target.value })}
-                  placeholder="+91 9416362914"
-                  className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700">Joining Date</label>
+                  <input
+                    type="date"
+                    value={newStaff.joinDate}
+                    onChange={(e) => setNewStaff({ ...newStaff, joinDate: e.target.value })}
+                    className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700">Emergency Contact</label>
+                  <input
+                    type="text"
+                    value={newStaff.emergencyContact}
+                    onChange={(e) => setNewStaff({ ...newStaff, emergencyContact: e.target.value })}
+                    placeholder="+91 9416362914"
+                    className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  />
+                </div>
               </div>
 
               <div>
@@ -877,14 +890,25 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700">Emergency Contact</label>
-                <input
-                  type="text"
-                  value={editingStaff.emergencyContact || ''}
-                  onChange={(e) => setEditingStaff({ ...editingStaff, emergencyContact: e.target.value })}
-                  className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700">Joining Date</label>
+                  <input
+                    type="date"
+                    value={editingStaff.joinDate || ''}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, joinDate: e.target.value })}
+                    className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700">Emergency Contact</label>
+                  <input
+                    type="text"
+                    value={editingStaff.emergencyContact || ''}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, emergencyContact: e.target.value })}
+                    className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  />
+                </div>
               </div>
 
               <div>
