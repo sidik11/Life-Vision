@@ -26,18 +26,21 @@ export default function TrainersView({
   const [newTrainer, setNewTrainer] = useState({
     name: '',
     role: 'Master Trainer',
-    qualification: 'Master Degree / B.Tech',
-    sector: 'Apparel & Tailoring',
-    experience: '5 Years',
+    qualification: '',
+    sector: '',
+    experience: '',
     isTotCertified: true,
-    totCertNumber: 'TOT-NSDC-2025-889',
+    totCertNumber: '',
     phone: '',
     email: '',
-    address: 'Bhubaneswar, Odisha',
-    assignedCenter: centers[0]?.name || 'Main Skill Hub',
-    assignedBatches: 'BATCH-2026-T1',
-    specialization: 'Boutique Cutting & Pattern Drafting',
+    address: '',
+    assignedCenter: 'Unassigned',
+    assignedBatches: 'None',
+    specialization: '',
     joiningDate: new Date().toISOString().split('T')[0],
+    photoDoc: '',
+    aadharDoc: '',
+    extraDocs: [], // [{ title: '', file: null, fileName: '' }]
     status: 'Active'
   });
 
@@ -70,9 +73,9 @@ export default function TrainersView({
     const nextIdNum = String(trainers.length + 1).padStart(3, '0');
     const created = {
       id: `LVS-TRN-2026-${nextIdNum}`,
-      photo: '/beautician_training.jpg',
+      photo: newTrainer.photoUrl || '/beautician_training.jpg',
       ...newTrainer,
-      rating: '4.9 ★'
+      rating: '5.0 ★'
     };
 
     if (setTrainers) {
@@ -81,21 +84,25 @@ export default function TrainersView({
     setShowAddModal(false);
     setNewTrainer({
       name: '',
-      qualification: 'Master Degree / B.Tech',
-      sector: 'Apparel & Tailoring',
-      experience: '5 Years',
+      role: 'Master Trainer',
+      qualification: '',
+      sector: '',
+      experience: '',
       isTotCertified: true,
-      totCertNumber: 'TOT-NSDC-2025-889',
+      totCertNumber: '',
       phone: '',
       email: '',
-      address: 'Bhubaneswar, Odisha',
-      assignedCenter: centers[0]?.name || 'Main Skill Hub',
-      assignedBatches: 'BATCH-2026-T1',
-      specialization: 'Boutique Cutting & Pattern Drafting',
+      address: '',
+      assignedCenter: 'Unassigned',
+      assignedBatches: 'None',
+      specialization: '',
       joiningDate: new Date().toISOString().split('T')[0],
+      photoDoc: '',
+      aadharDoc: '',
+      extraDocs: [],
       status: 'Active'
     });
-    if (showToast) showToast(`Master Trainer ${created.name} (${created.id}) registered successfully!`, 'success');
+    if (showToast) showToast(`${created.role || 'Trainer'} ${created.name} (${created.id}) registered successfully!`, 'success');
   };
 
   const handleStatusUpdate = (trainerId, newStatus) => {
@@ -337,7 +344,7 @@ export default function TrainersView({
                     required
                     value={newTrainer.phone}
                     onChange={(e) => setNewTrainer({...newTrainer, phone: e.target.value})}
-                    placeholder="+91 98610 12345"
+                    placeholder="Enter Contact Mobile Number"
                     className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
                   />
                 </div>
@@ -348,7 +355,7 @@ export default function TrainersView({
                     type="email"
                     value={newTrainer.email}
                     onChange={(e) => setNewTrainer({...newTrainer, email: e.target.value})}
-                    placeholder="trainer@lifevisionsociety.org"
+                    placeholder="Enter Email Address"
                     className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
                   />
                 </div>
@@ -359,33 +366,7 @@ export default function TrainersView({
                     type="text"
                     value={newTrainer.sector}
                     onChange={(e) => setNewTrainer({...newTrainer, sector: e.target.value})}
-                    placeholder="e.g. Apparel, Beauty, Healthcare"
-                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700">Assigned Centre</label>
-                  <select
-                    value={newTrainer.assignedCenter}
-                    onChange={(e) => setNewTrainer({...newTrainer, assignedCenter: e.target.value})}
-                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  >
-                    {centers.length > 0 ? (
-                      centers.map(c => <option key={c.id || c.name} value={c.name}>{c.name}</option>)
-                    ) : (
-                      <option value="Main Skill Hub">Main Skill Hub</option>
-                    )}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700">Assigned Batches</label>
-                  <input
-                    type="text"
-                    value={newTrainer.assignedBatches}
-                    onChange={(e) => setNewTrainer({...newTrainer, assignedBatches: e.target.value})}
-                    placeholder="e.g. BATCH-2026-T1, BATCH-2026-T2"
+                    placeholder="Enter Sector / Domain"
                     className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
                   />
                 </div>
@@ -408,10 +389,150 @@ export default function TrainersView({
                     type="text"
                     value={newTrainer.totCertNumber}
                     onChange={(e) => setNewTrainer({...newTrainer, totCertNumber: e.target.value})}
-                    placeholder="TOT-NSDC-2025-XXXX"
+                    placeholder="Enter TOT Certificate Number"
                     className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
                   />
                 </div>
+
+                <div>
+                  <label className="font-bold text-slate-700">Years of Experience</label>
+                  <input
+                    type="text"
+                    value={newTrainer.experience}
+                    onChange={(e) => setNewTrainer({...newTrainer, experience: e.target.value})}
+                    placeholder="Enter Experience (e.g. 5 Years)"
+                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  />
+                </div>
+              </div>
+
+              {/* Dynamic Document Uploads Section (Photo, Aadhaar, Custom Documents <= 5MB) */}
+              <div className="pt-4 border-t border-slate-100 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800 text-xs">Upload Verification Credentials & Documents</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewTrainer(prev => ({
+                        ...prev,
+                        extraDocs: [...(prev.extraDocs || []), { title: '', fileName: '' }]
+                      }));
+                    }}
+                    className="px-3 py-1 bg-pink-50 hover:bg-pink-100 text-[#C52B75] text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add More Document</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Photo Upload */}
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 block">Trainer Photo</label>
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          if (file.size > 5 * 1024 * 1024) {
+                            if (showToast) showToast('File size exceeds 5MB limit!', 'error');
+                            e.target.value = '';
+                            return;
+                          }
+                          setNewTrainer(p => ({ 
+                            ...p, 
+                            photoDoc: file.name, 
+                            photoUrl: URL.createObjectURL(file) 
+                          }));
+                          if (showToast) showToast(`Selected Photo: ${file.name}`, 'info');
+                        }
+                      }}
+                      className="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-pink-100 file:text-[#C52B75] hover:file:bg-pink-200 cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Aadhaar Upload */}
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 block">Aadhaar Card Copy</label>
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          if (file.size > 5 * 1024 * 1024) {
+                            if (showToast) showToast('File size exceeds 5MB limit!', 'error');
+                            e.target.value = '';
+                            return;
+                          }
+                          setNewTrainer(p => ({ ...p, aadharDoc: file.name }));
+                          if (showToast) showToast(`Selected Aadhaar: ${file.name}`, 'info');
+                        }
+                      }}
+                      className="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-200 file:text-slate-800 hover:file:bg-slate-300 cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* Additional Dynamic Custom Documents */}
+                {newTrainer.extraDocs && newTrainer.extraDocs.length > 0 && (
+                  <div className="space-y-2 pt-1">
+                    {newTrainer.extraDocs.map((docItem, idx) => (
+                      <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-2 items-center">
+                        <input
+                          type="text"
+                          placeholder="Document Name (e.g. Qualification Degree, Resume)"
+                          value={docItem.title || ''}
+                          onChange={(e) => {
+                            const newTitle = e.target.value;
+                            setNewTrainer(p => {
+                              const updated = [...p.extraDocs];
+                              updated[idx] = { ...updated[idx], title: newTitle };
+                              return { ...p, extraDocs: updated };
+                            });
+                          }}
+                          className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none"
+                        />
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                if (file.size > 5 * 1024 * 1024) {
+                                  if (showToast) showToast('File size exceeds 5MB limit!', 'error');
+                                  e.target.value = '';
+                                  return;
+                                }
+                                setNewTrainer(p => {
+                                  const updated = [...p.extraDocs];
+                                  updated[idx] = { ...updated[idx], fileName: file.name };
+                                  return { ...p, extraDocs: updated };
+                                });
+                                if (showToast) showToast(`Attached ${file.name}`, 'info');
+                              }
+                            }}
+                            className="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-200 file:text-slate-800 cursor-pointer"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewTrainer(p => ({
+                                ...p,
+                                extraDocs: p.extraDocs.filter((_, i) => i !== idx)
+                              }));
+                            }}
+                            className="p-1 text-slate-400 hover:text-rose-600 rounded-lg shrink-0"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">

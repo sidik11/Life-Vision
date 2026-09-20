@@ -305,7 +305,7 @@ export default function StudentsView({
                     required
                     value={newStudent.name}
                     onChange={(e) => setNewStudent({...newStudent, name: e.target.value})}
-                    placeholder="e.g. Sunita Sahu"
+                    placeholder="Enter Student Full Name"
                     className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
                   />
                 </div>
@@ -316,7 +316,7 @@ export default function StudentsView({
                     type="text"
                     value={newStudent.guardianName}
                     onChange={(e) => setNewStudent({...newStudent, guardianName: e.target.value})}
-                    placeholder="e.g. Ramesh Sahu"
+                    placeholder="Enter Guardian Name"
                     className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
                   />
                 </div>
@@ -328,7 +328,7 @@ export default function StudentsView({
                     required
                     value={newStudent.phone}
                     onChange={(e) => setNewStudent({...newStudent, phone: e.target.value})}
-                    placeholder="+91 98610 12345"
+                    placeholder="Enter Mobile Number"
                     className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
                   />
                 </div>

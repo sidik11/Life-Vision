@@ -548,7 +548,7 @@ export default function AdminLogin({ onLogin }) {
                       required
                       value={staffData.name}
                       onChange={(e) => setStaffData({ ...staffData, name: e.target.value })}
-                      placeholder="e.g. Ramesh Chandra Swain"
+                      placeholder="Enter Staff Full Name"
                       className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
                     />
                   </div>
@@ -562,7 +562,7 @@ export default function AdminLogin({ onLogin }) {
                         required
                         value={staffData.role}
                         onChange={(e) => setStaffData({ ...staffData, role: e.target.value })}
-                        placeholder="e.g. Master Trainer"
+                        placeholder="Enter Role Designation"
                         className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
                       />
                     </div>
@@ -592,7 +592,7 @@ export default function AdminLogin({ onLogin }) {
                         required
                         value={staffData.email}
                         onChange={(e) => setStaffData({ ...staffData, email: e.target.value })}
-                        placeholder="staff@lifevisionsociety.org"
+                        placeholder="Enter Email Address"
                         className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
                       />
                     </div>
@@ -603,7 +603,7 @@ export default function AdminLogin({ onLogin }) {
                         required
                         value={staffData.phone}
                         onChange={(e) => setStaffData({ ...staffData, phone: e.target.value })}
-                        placeholder="+91 98610 xxxxx"
+                        placeholder="Enter Mobile Number"
                         className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
                       />
                     </div>
@@ -647,7 +647,7 @@ export default function AdminLogin({ onLogin }) {
                         type="text"
                         value={staffData.location}
                         onChange={(e) => setStaffData({ ...staffData, location: e.target.value })}
-                        placeholder="e.g. Bhubaneswar HQ"
+                        placeholder="Enter Office / Center Location"
                         className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
                       />
                     </div>
@@ -657,7 +657,7 @@ export default function AdminLogin({ onLogin }) {
                         type="tel"
                         value={staffData.emergencyContact}
                         onChange={(e) => setStaffData({ ...staffData, emergencyContact: e.target.value })}
-                        placeholder="+91 94370 xxxxx"
+                        placeholder="Enter Emergency Contact Number"
                         className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
                       />
                     </div>

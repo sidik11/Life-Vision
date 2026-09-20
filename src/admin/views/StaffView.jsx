@@ -633,7 +633,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                   required
                   value={newStaff.name}
                   onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
-                  placeholder="e.g. Ramesh Chandra Das"
+                  placeholder="Enter Staff Full Name"
                   className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
                 />
               </div>
@@ -646,7 +646,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                     required
                     value={newStaff.role}
                     onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })}
-                    placeholder="e.g. Master Trainer"
+                    placeholder="Enter Role Designation"
                     className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
                   />
                 </div>
@@ -674,7 +674,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                     required
                     value={newStaff.email}
                     onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
-                    placeholder="name@lifevisionsociety.org"
+                    placeholder="Enter Email Address"
                     className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
                   />
                 </div>
@@ -685,7 +685,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                     required
                     value={newStaff.phone}
                     onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
-                    placeholder="+91 98610 xxxxx"
+                    placeholder="Enter Mobile Number"
                     className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
                   />
                 </div>
@@ -715,7 +715,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                     type="text"
                     value={newStaff.location}
                     onChange={(e) => setNewStaff({ ...newStaff, location: e.target.value })}
-                    placeholder="e.g. Bhubaneswar HQ"
+                    placeholder="Enter Center / Location"
                     className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
                   />
                 </div>
