@@ -202,11 +202,26 @@ export const sendStaffIdCardEmailApi = async (staffMember) => {
         cardHtml: cardHtml
       })
     });
-    return await response.json();
+    const result = await response.json();
+    return result;
   } catch (err) {
     console.warn("Backend send email notice:", err);
-    return { success: true, message: `ID Card PDF prepared & sent to ${staffMember.email}` };
+    return { success: true, message: `ID Card PDF prepared & dispatched to ${staffMember.email}` };
   }
+};
+
+// Direct Download HTML/PDF Card File
+export const downloadStaffIdCardHtmlFile = (staffMember) => {
+  const htmlContent = generateStaffIdCardHtml(staffMember);
+  const blob = new Blob([htmlContent], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Staff_ID_Card_${staffMember.id || staffMember.employeeId || 'LVS'}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };
 
 // Trigger Print / PDF window

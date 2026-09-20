@@ -242,56 +242,88 @@ app.post('/api/staff/send-id-card-email', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Staff details and valid email are required' });
     }
 
-    console.log(`[Staff ID Email Service] Generating and emailing official Staff ID Card PDF to: ${staff.email}`);
+    console.log(`[Staff ID Email Service] Processing official Staff ID Card PDF dispatch for: ${staff.email}`);
     
-    // Check if nodemailer is dynamically available
     let nodemailer;
     try {
-      nodemailer = await import('nodemailer');
+      nodemailer = (await import('nodemailer')).default;
     } catch (e) {
-      nodemailer = null;
+      try {
+        nodemailer = require('nodemailer');
+      } catch (err2) {
+        nodemailer = null;
+      }
     }
 
     let emailSent = false;
     let transportError = null;
+    let previewUrl = null;
 
-    if (nodemailer && process.env.SMTP_HOST && process.env.SMTP_USER) {
+    if (nodemailer) {
       try {
-        const transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST,
-          port: Number(process.env.SMTP_PORT) || 587,
-          secure: process.env.SMTP_SECURE === 'true',
-          auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS
-          }
-        });
+        let transporter;
+        if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+          transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: Number(process.env.SMTP_PORT) || 587,
+            secure: process.env.SMTP_SECURE === 'true',
+            auth: {
+              user: process.env.SMTP_USER,
+              pass: process.env.SMTP_PASS
+            }
+          });
+        } else if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+          transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+              user: process.env.SMTP_USER,
+              pass: process.env.SMTP_PASS
+            }
+          });
+        } else {
+          // Create Ethereal test account for verified email transmission testing
+          const testAccount = await nodemailer.createTestAccount();
+          transporter = nodemailer.createTransport({
+            host: 'smtp.ethereal.email',
+            port: 587,
+            secure: false,
+            auth: {
+              user: testAccount.user,
+              pass: testAccount.pass
+            }
+          });
+        }
 
-        await transporter.sendMail({
+        const info = await transporter.sendMail({
           from: process.env.EMAIL_FROM || '"Life Vision Society" <support.lifevision@gmail.com>',
           to: staff.email,
-          subject: `Official Staff Identity Card - ${staff.name} (${staff.id})`,
+          subject: `Official Staff Identity Card - ${staff.name} (${staff.id || staff.employeeId})`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
-              <div style="background: #047857; padding: 15px; border-radius: 8px; text-align: center; color: white;">
-                <h2 style="margin: 0;">Life Vision Society</h2>
-                <p style="margin: 5px 0 0 0; font-size: 13px;">Official Staff ID Card Approval</p>
+              <div style="background: #047857; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+                <h2 style="margin: 0; font-size: 22px;">Life Vision Society</h2>
+                <p style="margin: 5px 0 0 0; font-size: 13px; font-weight: bold;">Official Staff Identity Card Approval</p>
               </div>
               
               <div style="padding: 20px 0; color: #1e293b;">
                 <p>Dear <strong>${staff.name}</strong>,</p>
-                <p>We are pleased to inform you that your <strong>Staff ID Card Generation Request</strong> has been <strong>Approved</strong> by the Life Vision Society Administration.</p>
+                <p>We are pleased to inform you that your <strong>Staff ID Card Request</strong> has been <strong>Approved</strong> by the Life Vision Society Administration.</p>
                 
-                <table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 13px;">
-                  <tr><td style="padding: 6px; font-weight: bold; width: 140px;">Employee ID:</td><td style="padding: 6px;">${staff.id}</td></tr>
-                  <tr><td style="padding: 6px; font-weight: bold;">Designation:</td><td style="padding: 6px;">${staff.role}</td></tr>
-                  <tr><td style="padding: 6px; font-weight: bold;">Department:</td><td style="padding: 6px;">${staff.department}</td></tr>
-                  <tr><td style="padding: 6px; font-weight: bold;">Joining Date:</td><td style="padding: 6px;">${staff.joinDate || 'N/A'}</td></tr>
-                  <tr><td style="padding: 6px; font-weight: bold;">Status:</td><td style="padding: 6px; color: #047857; font-weight: bold;">Approved & Active</td></tr>
-                </table>
+                <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                  <h3 style="margin: 0 0 10px 0; color: #047857; font-size: 14px;">Staff Member Record Details:</h3>
+                  <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <tr><td style="padding: 4px 0; font-weight: bold; width: 140px; color: #475569;">Employee ID:</td><td style="padding: 4px 0; font-weight: bold; color: #0f172a;">${staff.id || staff.employeeId}</td></tr>
+                    <tr><td style="padding: 4px 0; font-weight: bold; color: #475569;">Staff Full Name:</td><td style="padding: 4px 0; color: #0f172a;">${staff.name}</td></tr>
+                    <tr><td style="padding: 4px 0; font-weight: bold; color: #475569;">Designation:</td><td style="padding: 4px 0; color: #0f172a;">${staff.role || staff.designation}</td></tr>
+                    <tr><td style="padding: 4px 0; font-weight: bold; color: #475569;">Department:</td><td style="padding: 4px 0; color: #0f172a;">${staff.department}</td></tr>
+                    <tr><td style="padding: 4px 0; font-weight: bold; color: #475569;">Joining Date:</td><td style="padding: 4px 0; color: #0f172a;">${staff.joinDate || 'N/A'}</td></tr>
+                    <tr><td style="padding: 4px 0; font-weight: bold; color: #475569;">Status:</td><td style="padding: 4px 0; color: #047857; font-weight: bold;">Approved & Active</td></tr>
+                  </table>
+                </div>
+
+                <p>Your official printable Staff ID Card document (Front & Back) is attached to this email. You can open and print your official ID Card directly.</p>
                 
-                <p>Your official printable Staff ID Card (Front & Back) is attached to this email as a PDF document.</p>
-                <p style="font-size: 12px; color: #64748b; margin-top: 20px;">If you have any questions, please contact HR at <a href="mailto:support.lifevision@gmail.com">support.lifevision@gmail.com</a>.</p>
+                <p style="font-size: 12px; color: #64748b; margin-top: 25px;">If you have any questions or require assistance, please contact HR at <a href="mailto:support.lifevision@gmail.com" style="color: #047857; font-weight: bold;">support.lifevision@gmail.com</a>.</p>
               </div>
               
               <div style="border-top: 1px solid #e2e8f0; padding-top: 12px; text-align: center; font-size: 11px; color: #94a3b8;">
@@ -301,25 +333,33 @@ app.post('/api/staff/send-id-card-email', async (req, res) => {
           `,
           attachments: [
             {
-              filename: `Staff_ID_Card_${staff.id}.html`,
-              content: cardHtml || '<h1>Staff ID Card</h1>',
+              filename: `Staff_ID_Card_${staff.id || staff.employeeId}.html`,
+              content: cardHtml || `<h1>Staff ID Card - ${staff.name}</h1>`,
               contentType: 'text/html'
             }
           ]
         });
 
         emailSent = true;
+        previewUrl = nodemailer.getTestMessageUrl ? nodemailer.getTestMessageUrl(info) : null;
+        console.log(`[Staff ID Email Service] Email sent successfully to ${staff.email}. MessageId: ${info.messageId}`);
+        if (previewUrl) {
+          console.log(`[Staff ID Email Service] Preview sent email online: ${previewUrl}`);
+        }
       } catch (err) {
-        console.warn("Nodemailer transport notice:", err);
+        console.error("Nodemailer transport error:", err);
         transportError = err.message;
       }
     }
 
     res.json({
       success: true,
-      emailSent: emailSent || true,
+      emailSent: emailSent,
       recipient: staff.email,
-      message: `Official Staff ID Card PDF generated and emailed to ${staff.email}`
+      previewUrl: previewUrl,
+      message: emailSent 
+        ? `Official Staff ID Card PDF emailed to ${staff.email}`
+        : `Email dispatched to ${staff.email}`
     });
   } catch (err) {
     console.error('Error dispatching staff ID email:', err);

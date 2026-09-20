@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import ActionPopover from '../../components/Common/ActionPopover';
 import { db, doc, updateDoc, collection, addDoc, serverTimestamp } from '../../../firebase';
-import { sendStaffIdCardEmailApi, printOrSaveStaffIdCardPdf } from '../../../utils/staffIdPdfHelper';
+import { sendStaffIdCardEmailApi, printOrSaveStaffIdCardPdf, downloadStaffIdCardHtmlFile } from '../../../utils/staffIdPdfHelper';
 
 export default function StaffIdCardModule({ 
   staffList = [], 
@@ -192,6 +192,11 @@ export default function StaffIdCardModule({
           label: 'Re-Send PDF Email',
           icon: Send,
           onClick: () => handleResendPdfEmail(staffMember)
+        },
+        {
+          label: 'Download ID Card File',
+          icon: Printer,
+          onClick: () => downloadStaffIdCardHtmlFile(staffMember)
         }
       );
     }
