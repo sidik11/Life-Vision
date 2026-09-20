@@ -3,7 +3,7 @@ import {
   Users, UserPlus, IdCard, Calendar, FileText, 
   Building, CheckCircle2, Clock, XCircle, Search, 
   Filter, Download, Mail, Phone, MapPin, Shield, Printer, Upload,
-  Edit, X, Trash2, Eye, RotateCw, MoreVertical
+  Edit, X, Trash2, Eye, MoreVertical
 } from 'lucide-react';
 import ActionPopover from '../components/Common/ActionPopover';
 import { db, doc, updateDoc, deleteDoc } from '../../firebase';
@@ -18,7 +18,6 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
   const [selectedCardStaff, setSelectedCardStaff] = useState(null);
-  const [cardFlip, setCardFlip] = useState(false);
 
   // Staff members strictly from database / public registration (no static fallback mock staff)
   const allStaff = propStaffList;
@@ -142,7 +141,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
 
   // Printable ID Card Pop-up with official image template overlay
   const handlePrintStaffCard = (staffMember) => {
-    const printWindow = window.open('', '_blank', 'width=750,height=900');
+    const printWindow = window.open('', '_blank', 'width=800,height=950');
     if (!printWindow) return;
 
     const frontImgSrc = '/Team Member/id_card_front.jpg';
@@ -157,18 +156,18 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
             @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&display=swap');
             body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 30px; padding: 30px; margin: 0; }
             
-            .card-container { width: 360px; height: 550px; position: relative; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); background: #fff; }
+            .card-container { width: 340px; height: 510px; position: relative; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); background: #fff; }
             .card-bg { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 1; }
 
             /* Overlay Elements for Front Card */
-            .photo-box { position: absolute; top: 165px; left: 50%; transform: translateX(-50%); width: 122px; height: 122px; border-radius: 18px; object-fit: cover; z-index: 10; background: #fff; border: 2px solid #10b981; }
-            .staff-name { position: absolute; top: 295px; width: 100%; text-align: center; font-size: 15px; font-weight: 900; color: #021a10; z-index: 10; font-family: sans-serif; }
-            .staff-role { position: absolute; top: 315px; width: 100%; text-align: center; font-size: 11px; font-weight: 800; color: #047857; z-index: 10; text-transform: uppercase; }
+            .photo-box { position: absolute; top: 154px; left: 50%; transform: translateX(-50%); width: 114px; height: 114px; border-radius: 18px; object-fit: cover; z-index: 10; background: #fff; border: 2px solid #10b981; }
+            .staff-name { position: absolute; top: 275px; width: 100%; text-align: center; font-size: 14px; font-weight: 900; color: #021a10; z-index: 10; font-family: sans-serif; }
+            .staff-role { position: absolute; top: 293px; width: 100%; text-align: center; font-size: 10px; font-weight: 800; color: #047857; z-index: 10; text-transform: uppercase; }
 
-            .info-val-id { position: absolute; top: 342px; left: 168px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: monospace; }
-            .info-val-dept { position: absolute; top: 368px; left: 168px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; }
-            .info-val-phone { position: absolute; top: 394px; left: 168px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: monospace; }
-            .info-val-date { position: absolute; top: 420px; left: 168px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; }
+            .info-val-id { position: absolute; top: 325px; left: 158px; font-size: 10px; font-weight: 800; color: #0f172a; z-index: 10; font-family: monospace; }
+            .info-val-dept { position: absolute; top: 350px; left: 158px; font-size: 10px; font-weight: 800; color: #0f172a; z-index: 10; }
+            .info-val-phone { position: absolute; top: 375px; left: 158px; font-size: 10px; font-weight: 800; color: #0f172a; z-index: 10; font-family: monospace; }
+            .info-val-date { position: absolute; top: 400px; left: 158px; font-size: 10px; font-weight: 800; color: #0f172a; z-index: 10; }
 
             @media print {
               body { background: transparent; padding: 0; gap: 20px; }
@@ -430,7 +429,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                   </div>
 
                   {/* ID CARD FRONT TEMPLATE PREVIEW OVERLAY */}
-                  <div className="relative w-full h-[360px] rounded-xl overflow-hidden shadow-inner border border-emerald-300 bg-slate-100">
+                  <div className="relative w-full h-[510px] rounded-xl overflow-hidden shadow-inner border border-emerald-300 bg-slate-900 shrink-0">
                     <img
                       src="/Team Member/id_card_front.jpg"
                       alt="ID Card Front Template"
@@ -441,30 +440,32 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                     <img
                       src={s.avatar || '/image/logo.png'}
                       alt={s.name}
-                      className="absolute top-[108px] left-1/2 -translate-x-1/2 w-[80px] h-[80px] rounded-2xl object-cover border-2 border-emerald-500 shadow-md bg-white z-10"
+                      className="absolute top-[154px] left-1/2 -translate-x-1/2 w-[114px] h-[114px] rounded-[18px] object-cover border-2 border-emerald-500 shadow-md bg-white z-10"
                     />
 
                     {/* OVERLAID NAME & ROLE */}
-                    <div className="absolute top-[194px] w-full text-center px-2 z-10">
-                      <h4 className="text-xs font-black text-slate-900 truncate">{s.name}</h4>
-                      <p className="text-[9px] font-extrabold text-[#047857] uppercase truncate">{s.role}</p>
+                    <div className="absolute top-[275px] w-full text-center px-3 z-10">
+                      <h4 className="text-[14px] font-black text-[#021a10] truncate">{s.name}</h4>
+                    </div>
+                    <div className="absolute top-[293px] w-full text-center px-3 z-10">
+                      <p className="text-[10px] font-extrabold text-[#047857] uppercase tracking-wide truncate">{s.role}</p>
                     </div>
 
-                    {/* OVERLAID FIELDS NEXT TO ICONS */}
-                    <div className="absolute top-[224px] left-[110px] text-[9px] font-bold text-slate-900 font-mono z-10">{s.id}</div>
-                    <div className="absolute top-[241px] left-[110px] text-[9px] font-bold text-slate-900 z-10 max-w-[130px] truncate">{s.department}</div>
-                    <div className="absolute top-[258px] left-[110px] text-[9px] font-bold text-slate-900 font-mono z-10">{s.phone || '+91 9416362914'}</div>
-                    <div className="absolute top-[275px] left-[110px] text-[9px] font-bold text-slate-900 z-10">{s.joinDate || '2026-01-01'}</div>
+                    {/* OVERLAID FIELDS ALIGNED TO COLONS */}
+                    <div className="absolute top-[325px] left-[158px] text-[10px] font-extrabold text-[#0f172a] font-mono z-10">{s.id}</div>
+                    <div className="absolute top-[350px] left-[158px] text-[10px] font-extrabold text-[#0f172a] z-10 max-w-[150px] truncate">{s.department}</div>
+                    <div className="absolute top-[375px] left-[158px] text-[10px] font-extrabold text-[#0f172a] font-mono z-10">{s.phone || '+91 9416362914'}</div>
+                    <div className="absolute top-[400px] left-[158px] text-[10px] font-extrabold text-[#0f172a] z-10">{s.joinDate || '2026-01-01'}</div>
                   </div>
 
                   {/* ACTION BUTTON */}
                   <button
                     type="button"
-                    onClick={() => handlePrintStaffCard(s)}
+                    onClick={() => setSelectedCardStaff(s)}
                     className="w-full py-2 px-3 bg-[#047857] hover:bg-[#065F46] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
                   >
-                    <Printer className="w-4 h-4" />
-                    <span>Print Official ID Card</span>
+                    <IdCard className="w-4 h-4" />
+                    <span>View Both Sides & Print</span>
                   </button>
                 </div>
               ))}
@@ -525,81 +526,83 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
         </div>
       )}
 
-      {/* VIEW ID CARD MODAL (FLIPPABLE FRONT & BACK TEMPLATE) */}
+      {/* VIEW ID CARD MODAL (SIDE-BY-SIDE FRONT & BACK TEMPLATES WITH VISIBLE CLOSE X) */}
       {selectedCardStaff && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200 shadow-2xl p-6 space-y-4 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto">
+          <div className="w-full max-w-4xl bg-white rounded-3xl border border-slate-200 shadow-2xl p-6 space-y-4 relative my-auto">
+            
+            {/* Header with Visible Close (X) Button */}
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
-                <h3 className="text-base font-bold text-slate-800 font-serif">Official Staff ID Card</h3>
-                <p className="text-xs text-slate-500">{selectedCardStaff.name} ({selectedCardStaff.id})</p>
+                <h3 className="text-lg font-bold text-slate-900 font-serif">Official Staff Identity Card</h3>
+                <p className="text-xs text-slate-500 font-medium">{selectedCardStaff.name} ({selectedCardStaff.id})</p>
               </div>
               <button
                 type="button"
-                onClick={() => { setSelectedCardStaff(null); setCardFlip(false); }}
-                className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
+                onClick={() => setSelectedCardStaff(null)}
+                className="p-2 rounded-full bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 transition-all cursor-pointer border border-slate-200"
+                title="Close Modal"
+                aria-label="Close Modal"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* TEMPLATE CONTAINER WITH OVERLAY */}
-            <div className="relative w-[340px] h-[520px] mx-auto rounded-2xl overflow-hidden shadow-2xl border-2 border-emerald-400 bg-slate-900">
-              {cardFlip ? (
-                /* BACK SIDE TEMPLATE */
-                <img
-                  src="/Team Member/id_card_back.jpg"
-                  alt="Back ID Card"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                /* FRONT SIDE TEMPLATE WITH OVERLAY */
-                <div className="relative w-full h-full">
-                  <img
-                    src="/Team Member/id_card_front.jpg"
-                    alt="Front ID Card"
-                    className="w-full h-full object-cover"
-                  />
-                  {/* Photo Overlay */}
-                  <img
-                    src={selectedCardStaff.avatar || '/image/logo.png'}
-                    alt={selectedCardStaff.name}
-                    className="absolute top-[156px] left-1/2 -translate-x-1/2 w-[116px] h-[116px] rounded-2xl object-cover border-2 border-emerald-500 shadow-md bg-white z-10"
-                  />
-                  {/* Name & Role Overlay */}
-                  <div className="absolute top-[280px] w-full text-center px-3 z-10">
-                    <h4 className="text-sm font-black text-slate-900 truncate">{selectedCardStaff.name}</h4>
-                    <p className="text-[10px] font-black text-[#047857] uppercase truncate">{selectedCardStaff.role}</p>
+            {/* SIDE-BY-SIDE FRONT & BACK ID CARDS */}
+            <div className="flex flex-col md:flex-row items-center justify-center gap-6 py-2">
+              
+              {/* FRONT SIDE CARD */}
+              <div className="flex flex-col items-center space-y-2">
+                <span className="text-xs font-black text-[#047857] uppercase tracking-wider bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                  🪪 Front Side ID Card
+                </span>
+                <div className="relative w-[340px] h-[510px] rounded-2xl overflow-hidden shadow-2xl border-2 border-emerald-500 bg-slate-900 shrink-0">
+                  <img src="/Team Member/id_card_front.jpg" alt="Front ID Template" className="w-full h-full object-cover" />
+                  <img src={selectedCardStaff.avatar || '/image/logo.png'} alt={selectedCardStaff.name} className="absolute top-[154px] left-1/2 -translate-x-1/2 w-[114px] h-[114px] rounded-[18px] object-cover border-2 border-emerald-500 shadow-md bg-white z-10" />
+                  <div className="absolute top-[275px] w-full text-center px-3 z-10">
+                    <h4 className="text-[14px] font-black text-[#021a10] truncate">{selectedCardStaff.name}</h4>
                   </div>
-                  {/* Info Table Overlay */}
-                  <div className="absolute top-[324px] left-[160px] text-[10px] font-bold text-slate-900 font-mono z-10">{selectedCardStaff.id}</div>
-                  <div className="absolute top-[349px] left-[160px] text-[10px] font-bold text-slate-900 z-10 max-w-[150px] truncate">{selectedCardStaff.department}</div>
-                  <div className="absolute top-[374px] left-[160px] text-[10px] font-bold text-slate-900 font-mono z-10">{selectedCardStaff.phone || '+91 9416362914'}</div>
-                  <div className="absolute top-[399px] left-[160px] text-[10px] font-bold text-slate-900 z-10">{selectedCardStaff.joinDate || '2026-01-01'}</div>
+                  <div className="absolute top-[293px] w-full text-center px-3 z-10">
+                    <p className="text-[10px] font-extrabold text-[#047857] uppercase tracking-wide truncate">{selectedCardStaff.role}</p>
+                  </div>
+                  <div className="absolute top-[325px] left-[158px] text-[10px] font-extrabold text-[#0f172a] font-mono z-10">{selectedCardStaff.id}</div>
+                  <div className="absolute top-[350px] left-[158px] text-[10px] font-extrabold text-[#0f172a] z-10 max-w-[150px] truncate">{selectedCardStaff.department}</div>
+                  <div className="absolute top-[375px] left-[158px] text-[10px] font-extrabold text-[#0f172a] font-mono z-10">{selectedCardStaff.phone || '+91 9416362914'}</div>
+                  <div className="absolute top-[400px] left-[158px] text-[10px] font-extrabold text-[#0f172a] z-10">{selectedCardStaff.joinDate || '2026-01-01'}</div>
                 </div>
-              )}
+              </div>
+
+              {/* BACK SIDE CARD */}
+              <div className="flex flex-col items-center space-y-2">
+                <span className="text-xs font-black text-[#047857] uppercase tracking-wider bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                  📋 Back Side ID Card
+                </span>
+                <div className="relative w-[340px] h-[510px] rounded-2xl overflow-hidden shadow-2xl border-2 border-emerald-500 bg-slate-900 shrink-0">
+                  <img src="/Team Member/id_card_back.jpg" alt="Back ID Template" className="w-full h-full object-cover" />
+                </div>
+              </div>
+
             </div>
 
-            {/* ACTION CONTROLS */}
-            <div className="flex items-center space-x-3 pt-2">
+            {/* FOOTER ACTIONS */}
+            <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-200">
               <button
                 type="button"
-                onClick={() => setCardFlip(!cardFlip)}
-                className="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition-all"
+                onClick={() => setSelectedCardStaff(null)}
+                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all cursor-pointer"
               >
-                <RotateCw className="w-4 h-4 text-[#047857]" />
-                <span>{cardFlip ? 'Show Front Side' : 'Show Back Side'}</span>
+                Close Preview
               </button>
-
               <button
                 type="button"
                 onClick={() => handlePrintStaffCard(selectedCardStaff)}
-                className="w-1/2 py-2.5 bg-[#047857] hover:bg-[#065F46] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
+                className="px-5 py-2.5 bg-[#047857] hover:bg-[#065F46] text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
-                <span>Print / Download</span>
+                <span>Print Official ID Card</span>
               </button>
             </div>
+
           </div>
         </div>
       )}
