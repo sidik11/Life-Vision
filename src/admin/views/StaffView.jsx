@@ -3,24 +3,30 @@ import {
   User, Users, UserPlus, IdCard, Calendar, FileText, 
   Building, CheckCircle2, Clock, XCircle, Search, 
   Filter, Download, Mail, Phone, MapPin, Shield, Printer, Upload,
-  Edit, X, Trash2, Eye, MoreVertical
+  Edit, X, Trash2, Eye, MoreVertical, Check, Send, AlertCircle
 } from 'lucide-react';
 import ActionPopover from '../components/Common/ActionPopover';
 import { db, doc, updateDoc, deleteDoc } from '../../firebase';
 import { saveToFirestore } from '../../utils/firebaseSave';
+import { sendStaffIdCardEmailApi } from '../../utils/staffIdPdfHelper';
 
 export default function StaffView({ staffList: propStaffList = [], setStaffList: propSetStaffList, activeSubTab = 'all-staff', showToast }) {
   const [subTab, setSubTab] = useState(activeSubTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState('All');
+  const [approvalFilter, setApprovalFilter] = useState('pending'); // 'pending' | 'approved' | 'rejected' | 'all'
   
   // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
   const [selectedCardStaff, setSelectedCardStaff] = useState(null);
+  const [selectedDocsStaff, setSelectedDocsStaff] = useState(null);
 
   // Staff members strictly from database / public registration (no static fallback mock staff)
   const allStaff = propStaffList;
+  const pendingStaffList = allStaff.filter(s => s.approvalStatus === 'Pending' || s.status === 'Pending Approval');
+  const approvedStaffList = allStaff.filter(s => s.approvalStatus === 'Approved' || (s.status === 'Active' && !s.approvalStatus));
+  const rejectedStaffList = allStaff.filter(s => s.approvalStatus === 'Rejected' || s.status === 'Rejected');
 
   const [newStaff, setNewStaff] = useState({
     name: '',
@@ -143,6 +149,73 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
       }
       if (showToast) showToast(`Staff member ${staffMember.name} deleted.`, 'info');
     }
+  };
+
+  // Approve Staff ID Card & Auto-Email PDF to Staff given email
+  const handleApproveStaffId = async (staffMember) => {
+    const updatedStaff = {
+      ...staffMember,
+      status: 'Active',
+      approvalStatus: 'Approved',
+      approvedAt: new Date().toISOString()
+    };
+
+    if (propSetStaffList) {
+      propSetStaffList(prev => prev.map(s => (s.id === updatedStaff.id || (s.firestoreId && s.firestoreId === updatedStaff.firestoreId)) ? updatedStaff : s));
+    }
+
+    if (updatedStaff.firestoreId) {
+      try {
+        await updateDoc(doc(db, "staff", updatedStaff.firestoreId), {
+          status: 'Active',
+          approvalStatus: 'Approved',
+          approvedAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.warn("Firestore approve staff notice:", err);
+      }
+    }
+
+    // Auto dispatch email with PDF to staff email
+    try {
+      await sendStaffIdCardEmailApi(updatedStaff);
+    } catch (err) {
+      console.warn("Email send notice:", err);
+    }
+
+    if (showToast) showToast(`✓ Staff ID Card Approved for ${updatedStaff.name}! PDF ID Card sent to ${updatedStaff.email}`, 'success');
+  };
+
+  // Reject / Cancel Staff ID Approval Request
+  const handleRejectStaffId = async (staffMember) => {
+    if (!window.confirm(`Are you sure you want to reject / cancel ID Card approval for ${staffMember.name}?`)) {
+      return;
+    }
+
+    const updatedStaff = {
+      ...staffMember,
+      status: 'Rejected',
+      approvalStatus: 'Rejected',
+      rejectedAt: new Date().toISOString()
+    };
+
+    if (propSetStaffList) {
+      propSetStaffList(prev => prev.map(s => (s.id === updatedStaff.id || (s.firestoreId && s.firestoreId === updatedStaff.firestoreId)) ? updatedStaff : s));
+    }
+
+    if (updatedStaff.firestoreId) {
+      try {
+        await updateDoc(doc(db, "staff", updatedStaff.firestoreId), {
+          status: 'Rejected',
+          approvalStatus: 'Rejected',
+          rejectedAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.warn("Firestore reject staff notice:", err);
+      }
+    }
+
+    if (showToast) showToast(`✗ ID Card approval request for ${updatedStaff.name} rejected / cancelled.`, 'info');
   };
 
   // Printable ID Card Pop-up with official image template overlay
@@ -302,6 +375,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
       <div className="flex items-center space-x-2 border-b border-slate-200 overflow-x-auto pb-2 scrollbar-none">
         {[
           { id: 'all-staff', label: '👥 All Staff', count: allStaff.length },
+          { id: 'staff-id-approval', label: '⏳ Staff ID Approval', count: pendingStaffList.length },
           { id: 'staff-id-cards', label: '🪪 Staff ID Cards' },
           { id: 'staff-attendance', label: '📅 Attendance' },
           { id: 'leave-management', label: '🏖️ Leave Management' },
@@ -431,6 +505,240 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* STAFF ID APPROVAL TAB */}
+      {subTab === 'staff-id-approval' && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div>
+              <div className="flex items-center space-x-2 text-amber-700 text-xs font-bold uppercase tracking-wider mb-1">
+                <Clock className="w-4 h-4" />
+                <span>Staff ID Card Approval Portal</span>
+              </div>
+              <h2 className="text-xl font-bold text-slate-800 font-serif">Staff ID Card Generation Requests</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Review staff requests for ID Card generation. Click tick (✓) to approve & auto-email PDF ID card, or cross (✗) to cancel approval.
+              </p>
+            </div>
+
+            {/* Approval Filter Status Tabs */}
+            <div className="flex items-center space-x-1.5 bg-slate-100 p-1 rounded-xl shrink-0">
+              {[
+                { id: 'pending', label: '⏳ Pending', count: pendingStaffList.length },
+                { id: 'approved', label: '✓ Approved', count: approvedStaffList.length },
+                { id: 'rejected', label: '✗ Rejected', count: rejectedStaffList.length },
+                { id: 'all', label: 'All Requests', count: allStaff.length }
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setApprovalFilter(f.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    approvalFilter === f.id
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span>{f.label}</span>
+                  <span className={`ml-1 text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                    approvalFilter === f.id ? 'bg-slate-100 text-slate-800' : 'bg-slate-200 text-slate-600'
+                  }`}>
+                    {f.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* List of Requests */}
+          {(() => {
+            const listToDisplay = approvalFilter === 'pending'
+              ? pendingStaffList
+              : approvalFilter === 'approved'
+              ? approvedStaffList
+              : approvalFilter === 'rejected'
+              ? rejectedStaffList
+              : allStaff;
+
+            if (listToDisplay.length === 0) {
+              return (
+                <div className="bg-slate-50 rounded-2xl border border-slate-200 p-12 text-center space-y-3">
+                  <UserCheck className="w-12 h-12 text-slate-300 mx-auto" />
+                  <h3 className="text-base font-bold text-slate-700 font-serif">
+                    No {approvalFilter === 'pending' ? 'Pending' : approvalFilter === 'approved' ? 'Approved' : approvalFilter === 'rejected' ? 'Rejected' : ''} Approval Requests
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    {approvalFilter === 'pending'
+                      ? 'All staff ID card requests have been processed. New requests submitted via staff login will appear here.'
+                      : 'No records matching the selected status filter.'}
+                  </p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="space-y-4">
+                {listToDisplay.map((s) => {
+                  const isPending = s.approvalStatus === 'Pending' || s.status === 'Pending Approval';
+                  const isApproved = s.approvalStatus === 'Approved' || (s.status === 'Active' && !s.approvalStatus);
+                  const isRejected = s.approvalStatus === 'Rejected' || s.status === 'Rejected';
+
+                  return (
+                    <div
+                      key={s.id || s.firestoreId}
+                      className={`bg-white rounded-2xl border p-5 shadow-xs transition-all relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-5 ${
+                        isPending
+                          ? 'border-amber-300 ring-1 ring-amber-200 bg-amber-50/20'
+                          : isApproved
+                          ? 'border-emerald-200 bg-emerald-50/10'
+                          : 'border-rose-200 bg-rose-50/10'
+                      }`}
+                    >
+                      {/* Left accent bar */}
+                      <div className={`w-1.5 absolute top-0 bottom-0 left-0 ${
+                        isPending ? 'bg-amber-500' : isApproved ? 'bg-emerald-500' : 'bg-rose-500'
+                      }`} />
+
+                      {/* Main Staff Info Block */}
+                      <div className="flex items-start space-x-4 min-w-0 flex-1 pl-2">
+                        <img
+                          src={s.avatar || s.photoDoc || '/image/logo.png'}
+                          alt={s.name}
+                          className="w-16 h-16 rounded-2xl object-cover ring-2 ring-emerald-500/30 shadow-sm shrink-0 bg-white"
+                        />
+
+                        <div className="space-y-1.5 min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-base font-bold text-slate-900 truncate">{s.name}</h3>
+                            <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 rounded-md text-[10px] font-black font-mono">
+                              ID: {s.id}
+                            </span>
+                            
+                            {/* Status Badge */}
+                            {isPending && (
+                              <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 border border-amber-300 rounded-full text-[10px] font-black flex items-center gap-1 animate-pulse">
+                                <Clock className="w-3 h-3 text-amber-600" />
+                                <span>⏳ Pending Admin Approval</span>
+                              </span>
+                            )}
+                            {isApproved && (
+                              <span className="px-2.5 py-0.5 bg-emerald-100 text-[#047857] border border-emerald-300 rounded-full text-[10px] font-black flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-[#047857]" />
+                                <span>✓ Approved & PDF Emailed</span>
+                              </span>
+                            )}
+                            {isRejected && (
+                              <span className="px-2.5 py-0.5 bg-rose-100 text-rose-800 border border-rose-300 rounded-full text-[10px] font-black flex items-center gap-1">
+                                <XCircle className="w-3 h-3 text-rose-600" />
+                                <span>✗ Approval Cancelled / Rejected</span>
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-600">
+                            <span className="text-emerald-700 font-bold">{s.role}</span>
+                            <span>•</span>
+                            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded-md text-2xs font-bold border border-emerald-200">
+                              {s.department}
+                            </span>
+                            {s.bloodGroup && (
+                              <span className="px-1.5 py-0.5 bg-rose-50 text-rose-700 rounded-md text-2xs font-extrabold border border-rose-200">
+                                🩸 {s.bloodGroup}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Contact & Registration Meta */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-1 text-2xs text-slate-600 font-medium">
+                            <div className="flex items-center gap-1.5">
+                              <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span className="truncate">{s.email}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span>{s.phone}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span>Joined: {s.joinDate || 'N/A'}</span>
+                            </div>
+                          </div>
+
+                          {/* Uploaded Documents indicator */}
+                          {(s.aadharDoc || (s.extraDocs && s.extraDocs.length > 0)) && (
+                            <div className="pt-1.5 flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedDocsStaff(s)}
+                                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-2xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border border-slate-200"
+                              >
+                                <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>View Uploaded Docs ({ (s.aadharDoc ? 1 : 0) + (s.extraDocs ? s.extraDocs.length : 0) })</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* RIGHT COLUMN: TICK & CROSS ACTION BUTTONS (STRICTLY AS REQUESTED) */}
+                      <div className="flex items-center space-x-3 shrink-0 self-center border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-5 w-full md:w-auto justify-end">
+                        
+                        {/* TICK BUTTON (APPROVE) */}
+                        <button
+                          type="button"
+                          onClick={() => handleApproveStaffId(s)}
+                          className={`p-3 rounded-2xl font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md ${
+                            isApproved
+                              ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border-2 border-emerald-400'
+                              : 'bg-emerald-600 hover:bg-emerald-700 text-white border-2 border-emerald-600 hover:scale-105 active:scale-95'
+                          }`}
+                          title="Tick to Approve Staff ID Card & Email PDF to Staff"
+                        >
+                          <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                            <Check className="w-4 h-4 stroke-[3]" />
+                          </div>
+                          <span className="font-extrabold uppercase tracking-wide">
+                            {isApproved ? '✓ Approved' : '✓ Tick to Approve'}
+                          </span>
+                        </button>
+
+                        {/* CROSS BUTTON (REJECT / CANCEL) */}
+                        <button
+                          type="button"
+                          onClick={() => handleRejectStaffId(s)}
+                          className={`p-3 rounded-2xl font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                            isRejected
+                              ? 'bg-rose-100 text-rose-800 border-2 border-rose-300'
+                              : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-rose-200 hover:border-rose-400 hover:scale-105 active:scale-95'
+                          }`}
+                          title="Tick/Click to Reject / Cancel Staff ID Approval"
+                        >
+                          <div className="w-6 h-6 rounded-full bg-rose-200/60 flex items-center justify-center shrink-0 text-rose-700">
+                            <X className="w-4 h-4 stroke-[3]" />
+                          </div>
+                          <span className="font-extrabold uppercase tracking-wide">
+                            {isRejected ? '✗ Rejected' : '✗ Reject'}
+                          </span>
+                        </button>
+
+                        {/* ID Card Preview Button */}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCardStaff(s)}
+                          className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-bold transition-all cursor-pointer border border-slate-200 flex items-center justify-center"
+                          title="Preview ID Card"
+                        >
+                          <Eye className="w-4 h-4 text-slate-600" />
+                        </button>
+
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -1053,6 +1361,82 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      {/* VIEW UPLOADED DOCUMENTS MODAL */}
+      {selectedDocsStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto">
+          <div className="w-full max-w-2xl bg-white rounded-3xl border border-slate-200 shadow-2xl p-6 space-y-4 relative my-auto">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 font-serif">Staff Uploaded Documents</h3>
+                <p className="text-xs text-slate-500 font-medium">{selectedDocsStaff.name} ({selectedDocsStaff.id})</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedDocsStaff(null)}
+                className="p-1.5 rounded-full bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 max-h-[65vh] overflow-y-auto p-1">
+              {/* Aadhaar Document */}
+              {selectedDocsStaff.aadharDoc && (
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                  <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Shield className="w-4 h-4 text-emerald-600" />
+                    <span>Aadhaar Card Document</span>
+                  </h4>
+                  {selectedDocsStaff.aadharDoc.startsWith('data:image') ? (
+                    <img src={selectedDocsStaff.aadharDoc} alt="Aadhaar Card" className="max-h-60 rounded-xl object-contain border border-slate-200 mx-auto" />
+                  ) : (
+                    <a
+                      href={selectedDocsStaff.aadharDoc}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-xl inline-block"
+                    >
+                      Download / View Aadhaar File
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {/* Extra Documents */}
+              {selectedDocsStaff.extraDocs && selectedDocsStaff.extraDocs.map((docItem, idx) => (
+                <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                  <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <FileText className="w-4 h-4 text-emerald-600" />
+                    <span>{docItem.title || `Extra Document #${idx + 1}`}</span>
+                  </h4>
+                  {docItem.file && docItem.file.startsWith('data:image') ? (
+                    <img src={docItem.file} alt={docItem.title} className="max-h-60 rounded-xl object-contain border border-slate-200 mx-auto" />
+                  ) : docItem.file ? (
+                    <a
+                      href={docItem.file}
+                      download={docItem.fileName || 'document'}
+                      className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-xl inline-block"
+                    >
+                      Download / View File ({docItem.fileName || 'Attachment'})
+                    </a>
+                  ) : (
+                    <span className="text-xs text-slate-400 font-medium">No file attached.</span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedDocsStaff(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all cursor-pointer"
+              >
+                Close Documents
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -785,6 +785,7 @@ export default function AdminApp() {
       case 'staff':
       case 'all-staff':
       case 'add-staff':
+      case 'staff-id-approval':
       case 'staff-id-cards':
       case 'staff-attendance':
       case 'leave-management':

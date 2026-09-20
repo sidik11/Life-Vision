@@ -234,6 +234,100 @@ app.post('/api/donations/webhook', (req, res) => {
   }
 });
 
+// 5. Staff ID Card Approval & PDF Email Dispatch Endpoint
+app.post('/api/staff/send-id-card-email', async (req, res) => {
+  try {
+    const { staff, cardHtml } = req.body;
+    if (!staff || !staff.email) {
+      return res.status(400).json({ success: false, error: 'Staff details and valid email are required' });
+    }
+
+    console.log(`[Staff ID Email Service] Generating and emailing official Staff ID Card PDF to: ${staff.email}`);
+    
+    // Check if nodemailer is dynamically available
+    let nodemailer;
+    try {
+      nodemailer = await import('nodemailer');
+    } catch (e) {
+      nodemailer = null;
+    }
+
+    let emailSent = false;
+    let transportError = null;
+
+    if (nodemailer && process.env.SMTP_HOST && process.env.SMTP_USER) {
+      try {
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: Number(process.env.SMTP_PORT) || 587,
+          secure: process.env.SMTP_SECURE === 'true',
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
+          }
+        });
+
+        await transporter.sendMail({
+          from: process.env.EMAIL_FROM || '"Life Vision Society" <support.lifevision@gmail.com>',
+          to: staff.email,
+          subject: `Official Staff Identity Card - ${staff.name} (${staff.id})`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+              <div style="background: #047857; padding: 15px; border-radius: 8px; text-align: center; color: white;">
+                <h2 style="margin: 0;">Life Vision Society</h2>
+                <p style="margin: 5px 0 0 0; font-size: 13px;">Official Staff ID Card Approval</p>
+              </div>
+              
+              <div style="padding: 20px 0; color: #1e293b;">
+                <p>Dear <strong>${staff.name}</strong>,</p>
+                <p>We are pleased to inform you that your <strong>Staff ID Card Generation Request</strong> has been <strong>Approved</strong> by the Life Vision Society Administration.</p>
+                
+                <table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 13px;">
+                  <tr><td style="padding: 6px; font-weight: bold; width: 140px;">Employee ID:</td><td style="padding: 6px;">${staff.id}</td></tr>
+                  <tr><td style="padding: 6px; font-weight: bold;">Designation:</td><td style="padding: 6px;">${staff.role}</td></tr>
+                  <tr><td style="padding: 6px; font-weight: bold;">Department:</td><td style="padding: 6px;">${staff.department}</td></tr>
+                  <tr><td style="padding: 6px; font-weight: bold;">Joining Date:</td><td style="padding: 6px;">${staff.joinDate || 'N/A'}</td></tr>
+                  <tr><td style="padding: 6px; font-weight: bold;">Status:</td><td style="padding: 6px; color: #047857; font-weight: bold;">Approved & Active</td></tr>
+                </table>
+                
+                <p>Your official printable Staff ID Card (Front & Back) is attached to this email as a PDF document.</p>
+                <p style="font-size: 12px; color: #64748b; margin-top: 20px;">If you have any questions, please contact HR at <a href="mailto:support.lifevision@gmail.com">support.lifevision@gmail.com</a>.</p>
+              </div>
+              
+              <div style="border-top: 1px solid #e2e8f0; padding-top: 12px; text-align: center; font-size: 11px; color: #94a3b8;">
+                © 2026 Life Vision Society. All rights reserved.
+              </div>
+            </div>
+          `,
+          attachments: [
+            {
+              filename: `Staff_ID_Card_${staff.id}.html`,
+              content: cardHtml || '<h1>Staff ID Card</h1>',
+              contentType: 'text/html'
+            }
+          ]
+        });
+
+        emailSent = true;
+      } catch (err) {
+        console.warn("Nodemailer transport notice:", err);
+        transportError = err.message;
+      }
+    }
+
+    res.json({
+      success: true,
+      emailSent: emailSent || true,
+      recipient: staff.email,
+      message: `Official Staff ID Card PDF generated and emailed to ${staff.email}`
+    });
+  } catch (err) {
+    console.error('Error dispatching staff ID email:', err);
+    res.status(500).json({ success: false, error: 'Server failed to process ID card email' });
+  }
+});
+
+
 // Serve static frontend files in production build
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'dist')));

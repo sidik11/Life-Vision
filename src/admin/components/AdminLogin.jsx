@@ -210,7 +210,8 @@ export default function AdminLogin({ onLogin }) {
       photoDoc: staffPhoto || staffData.photoDoc || '',
       aadharDoc: staffData.aadharDoc || '',
       extraDocs: staffData.extraDocs || [],
-      status: 'Active',
+      status: 'Pending Approval',
+      approvalStatus: 'Pending',
       registeredAt: new Date().toISOString()
     };
 
@@ -563,31 +564,32 @@ export default function AdminLogin({ onLogin }) {
           {selectedRole === 'staff' && (
             <div>
               {generatedCard ? (
-                /* DISPLAY GENERATED STAFF ID CARD WITH TEMPLATE OVERLAY */
+                /* DISPLAY ID CARD REQUEST SENT FOR APPROVAL STATUS */
                 <div className="space-y-4">
-                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-center space-y-1">
-                    <CheckCircle2 className="w-6 h-6 text-[#047857] mx-auto animate-bounce" />
-                    <h3 className="text-xs font-black text-[#047857] uppercase tracking-wider">
-                      Staff ID Card Auto-Generated & Saved!
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-center space-y-1">
+                    <UserCheck className="w-6 h-6 text-amber-600 mx-auto animate-bounce" />
+                    <h3 className="text-xs font-black text-amber-800 uppercase tracking-wider">
+                      ID Card Approval Request Sent to Admin Portal!
                     </h3>
-                    <p className="text-[11px] text-slate-600">
-                      Saved to Firebase Firestore and displayed live in Admin Portal.
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Your details for <strong>{generatedCard.name}</strong> ({generatedCard.id}) have been submitted for Admin approval.
+                      Once approved in the <strong>Staff ID Approval</strong> section of the Admin Portal, your official PDF Staff ID Card will be auto-generated and emailed directly to <strong>{generatedCard.email}</strong>.
                     </p>
                   </div>
 
-                  {/* ID CARD VISUAL DISPLAY */}
-                  <div className="relative w-[340px] h-[510px] mx-auto rounded-2xl overflow-hidden shadow-2xl border-2 border-emerald-500 bg-slate-900 shrink-0">
+                  {/* ID CARD PREVIEW WITH PENDING BADGE */}
+                  <div className="relative w-[340px] h-[510px] mx-auto rounded-2xl overflow-hidden shadow-2xl border-2 border-amber-400 bg-slate-900 shrink-0">
                     <img
                       src="/Team Member/id_card_front.jpg"
                       alt="Front ID Template"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover opacity-90"
                     />
 
                     {/* OVERLAID STAFF PHOTO */}
                     <img
                       src={generatedCard.avatar || '/image/logo.png'}
                       alt={generatedCard.name}
-                      className="absolute top-[154px] left-1/2 -translate-x-1/2 w-[114px] h-[114px] rounded-[18px] object-cover border-2 border-emerald-500 shadow-md bg-white z-10"
+                      className="absolute top-[154px] left-1/2 -translate-x-1/2 w-[114px] h-[114px] rounded-[18px] object-cover border-2 border-amber-400 shadow-md bg-white z-10"
                     />
 
                     {/* OVERLAID NAME & ROLE */}
@@ -640,25 +642,23 @@ export default function AdminLogin({ onLogin }) {
                         <span className="font-extrabold text-[#0f172a] truncate max-w-[145px]">{generatedCard.joinDate || '2026-01-01'}</span>
                       </div>
                     </div>
+
+                    {/* OVERLAY PENDING BADGE */}
+                    <div className="absolute inset-x-0 bottom-0 bg-amber-500/90 backdrop-blur-xs py-1.5 text-center z-20">
+                      <span className="text-2xs font-black text-white uppercase tracking-widest flex items-center justify-center gap-1">
+                        ⏳ Approval Status: Pending Admin Review
+                      </span>
+                    </div>
                   </div>
 
                   {/* ACTION BUTTONS */}
                   <div className="space-y-2">
                     <button
                       type="button"
-                      onClick={handlePrintIdCard}
-                      className="w-full py-2 px-4 bg-[#047857] hover:bg-[#065F46] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
-                    >
-                      <Printer className="w-4 h-4" />
-                      <span>Print / Download Staff ID Card</span>
-                    </button>
-
-                    <button
-                      type="button"
                       onClick={() => setGeneratedCard(null)}
-                      className="w-full py-1.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all cursor-pointer"
+                      className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all cursor-pointer shadow-md"
                     >
-                      + Register Another Staff Member
+                      + Submit Another Staff ID Request
                     </button>
                   </div>
                 </div>
