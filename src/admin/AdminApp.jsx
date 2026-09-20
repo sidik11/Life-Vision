@@ -48,20 +48,6 @@ export default function AdminApp() {
     }
   });
 
-  // Auto-clear session when browser tab closes or navigating away
-  useEffect(() => {
-    const handleUnload = () => {
-      try {
-        sessionStorage.removeItem('lvs_admin_auth');
-        localStorage.removeItem('lvs_admin_auth');
-      } catch (e) {}
-    };
-
-    window.addEventListener('beforeunload', handleUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleUnload);
-    };
-  }, []);
   const [adminUser, setAdminUser] = useState(() => {
     try {
       const saved = localStorage.getItem('lvs_admin_profile');
