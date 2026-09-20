@@ -21,14 +21,14 @@ export default function AdminLogin({ onLogin }) {
   // Staff Registration State
   const [staffData, setStaffData] = useState({
     name: '',
-    role: 'Master Trainer',
-    department: 'Training',
+    role: '',
+    department: 'Mobilization',
     email: '',
     phone: '',
     bloodGroup: 'O+',
     joinDate: new Date().toISOString().split('T')[0],
-    location: 'Bhubaneswar HQ',
-    emergencyContact: ''
+    location: '',
+    emergencyContact: '+91 9416362914'
   });
   const [staffPhoto, setStaffPhoto] = useState(null);
   const [generatedCard, setGeneratedCard] = useState(null);
@@ -146,8 +146,8 @@ export default function AdminLogin({ onLogin }) {
       phone: staffData.phone.trim(),
       bloodGroup: staffData.bloodGroup || 'O+',
       joinDate: staffData.joinDate || new Date().toISOString().split('T')[0],
-      location: staffData.location.trim() || 'Bhubaneswar HQ',
-      emergencyContact: staffData.emergencyContact.trim() || staffData.phone.trim(),
+      location: staffData.location.trim(),
+      emergencyContact: staffData.emergencyContact.trim() || '+91 9416362914',
       avatar: staffPhoto || '/image/logo.png',
       status: 'Active',
       registeredAt: new Date().toISOString()
@@ -573,6 +573,7 @@ export default function AdminLogin({ onLogin }) {
                         onChange={(e) => setStaffData({ ...staffData, department: e.target.value })}
                         className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#047857]"
                       >
+                        <option value="Mobilization">Mobilization</option>
                         <option value="Training">Training</option>
                         <option value="Placement & Livelihood">Placement</option>
                         <option value="Operations">Operations</option>

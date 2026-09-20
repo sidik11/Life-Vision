@@ -24,13 +24,13 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
 
   const [newStaff, setNewStaff] = useState({
     name: '',
-    role: 'Master Trainer',
-    department: 'Training',
+    role: '',
+    department: 'Mobilization',
     email: '',
     phone: '',
     bloodGroup: 'O+',
-    location: 'Bhubaneswar HQ',
-    emergencyContact: ''
+    location: '',
+    emergencyContact: '+91 9416362914'
   });
   const [photoPreview, setPhotoPreview] = useState(null);
 
@@ -66,6 +66,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
     const created = {
       id: `STF-2026-${Math.floor(100 + Math.random() * 900)}`,
       ...newStaff,
+      emergencyContact: newStaff.emergencyContact || '+91 9416362914',
       joinDate: new Date().toISOString().split('T')[0],
       status: 'Active',
       avatar: photoPreview || '/image/logo.png'
@@ -84,13 +85,13 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
     setShowAddModal(false);
     setNewStaff({
       name: '',
-      role: 'Master Trainer',
-      department: 'Training',
+      role: '',
+      department: 'Mobilization',
       email: '',
       phone: '',
       bloodGroup: 'O+',
-      location: 'Bhubaneswar HQ',
-      emergencyContact: ''
+      location: '',
+      emergencyContact: '+91 9416362914'
     });
     setPhotoPreview(null);
     if (showToast) showToast(`Staff member ${created.name} added & saved to database!`, "success");
@@ -307,6 +308,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                   className="bg-slate-50 border border-slate-200 text-xs font-bold rounded-lg px-3 py-2 text-slate-700 focus:outline-none"
                 >
                   <option value="All">All Departments</option>
+                  <option value="Mobilization">Mobilization</option>
                   <option value="Management">Management</option>
                   <option value="Training">Training</option>
                   <option value="Placement & Livelihood">Placement</option>
@@ -657,6 +659,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                     onChange={(e) => setNewStaff({ ...newStaff, department: e.target.value })}
                     className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold"
                   >
+                    <option value="Mobilization">Mobilization</option>
                     <option value="Training">Training</option>
                     <option value="Placement & Livelihood">Placement</option>
                     <option value="Operations">Operations</option>
@@ -808,6 +811,7 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                     onChange={(e) => setEditingStaff({ ...editingStaff, department: e.target.value })}
                     className="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold"
                   >
+                    <option value="Mobilization">Mobilization</option>
                     <option value="Training">Training</option>
                     <option value="Placement & Livelihood">Placement</option>
                     <option value="Operations">Operations</option>
