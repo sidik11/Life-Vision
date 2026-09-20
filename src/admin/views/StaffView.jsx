@@ -59,14 +59,6 @@ export default function StaffView({
             Manage trainers, placement officers, center coordinators & executive staff across Odisha centers.
           </p>
         </div>
-
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="px-4 py-2.5 bg-[#123B5D] hover:bg-[#0E2F4A] text-white font-bold text-xs rounded-xl shadow-md flex items-center space-x-2 transition-all cursor-pointer shrink-0"
-        >
-          <UserPlus className="w-4 h-4" />
-          <span>Add New Staff</span>
-        </button>
       </div>
 
       {/* SUB-MODULE VIEW ROUTING */}
