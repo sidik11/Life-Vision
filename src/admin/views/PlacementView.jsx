@@ -174,16 +174,17 @@ export default function PlacementView({ placements = [], setPlacements, showToas
   // Delete Placement Record
   const handleDeletePlacement = async (plc) => {
     if (window.confirm(`Are you sure you want to delete placement record for ${plc.student || 'this student'}?`)) {
+      const docIdToDelete = plc.firestoreId || plc.id;
       try {
-        if (plc.id) {
-          await deleteDoc(doc(db, 'placements', plc.id));
+        if (docIdToDelete) {
+          await deleteDoc(doc(db, 'placements', docIdToDelete));
         }
       } catch (err) {
         console.warn("Firestore delete placement notice:", err);
       }
 
       if (setPlacements) {
-        setPlacements(prev => prev.filter(p => p.id !== plc.id));
+        setPlacements(prev => prev.filter(p => p.id !== plc.id && (!plc.firestoreId || p.firestoreId !== plc.firestoreId)));
       }
 
       notify(`Deleted placement record for ${plc.student || 'student'}.`, 'info');

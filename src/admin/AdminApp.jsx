@@ -660,6 +660,8 @@ export default function AdminApp() {
             centers={centers}
             batches={batches}
             students={students}
+            staff={staff}
+            trainers={trainers}
             onNavigate={(tab) => setActiveTab(tab)}
             onViewApp={(app) => setSelectedApp(app)}
           />
