@@ -10,6 +10,8 @@ export default function TrainingCentersView({
   centers = [], 
   batches = [], 
   students = [], 
+  trainers = [],
+  programs = [],
   onAddCenter, 
   onUpdateCenter, 
   onDeleteCenter, 
@@ -37,10 +39,10 @@ export default function TrainingCentersView({
     contactNumber: '',
     email: '',
     centerHead: '',
-    capacity: 250,
-    rooms: 4,
-    facilities: 'Sewing Machines, Beauty Kits, Computer Lab, Health Aid Kits, Power Backup',
-    coursesOffered: ['Tailoring & Stitching', 'Beautician & Wellness'],
+    capacity: '',
+    rooms: '',
+    facilities: '',
+    coursesOffered: [],
     openingDate: new Date().toISOString().split('T')[0],
     status: 'Active',
     description: '',
@@ -375,7 +377,7 @@ export default function TrainingCentersView({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Sambalpur Vocational Skill Hub"
+                    placeholder="Enter Centre Name"
                     value={formData.name}
                     onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none"
@@ -383,14 +385,29 @@ export default function TrainingCentersView({
                 </div>
 
                 <div>
-                  <label className="block text-2xs font-bold text-slate-700 mb-1">Centre Head / Coordinator Name</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Dr. Sunita Sharma"
-                    value={formData.centerHead}
-                    onChange={(e) => setFormData(p => ({ ...p, centerHead: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none"
-                  />
+                  <label className="block text-2xs font-bold text-slate-700 mb-1">Assigned Centre Head / Coordinator</label>
+                  {trainers && trainers.length > 0 ? (
+                    <select
+                      value={formData.centerHead}
+                      onChange={(e) => setFormData(p => ({ ...p, centerHead: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-bold"
+                    >
+                      <option value="">-- Select Centre Head / Trainer --</option>
+                      {trainers.map(t => (
+                        <option key={t.id} value={t.name}>
+                          {t.name} ({t.role || 'Trainer'})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      placeholder="Enter Centre Head Name"
+                      value={formData.centerHead}
+                      onChange={(e) => setFormData(p => ({ ...p, centerHead: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none"
+                    />
+                  )}
                 </div>
 
                 <div>
@@ -398,7 +415,7 @@ export default function TrainingCentersView({
                   <input
                     type="tel"
                     required
-                    placeholder="+91 98610 00000"
+                    placeholder="Enter Phone Number"
                     value={formData.contactNumber}
                     onChange={(e) => setFormData(p => ({ ...p, contactNumber: e.target.value }))}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none"
@@ -409,7 +426,7 @@ export default function TrainingCentersView({
                   <label className="block text-2xs font-bold text-slate-700 mb-1">Email Address</label>
                   <input
                     type="email"
-                    placeholder="centre@lifevision.org"
+                    placeholder="Enter Email Address"
                     value={formData.email}
                     onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none"
@@ -421,7 +438,7 @@ export default function TrainingCentersView({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Cuttack / Khordha"
+                    placeholder="Enter District Name"
                     value={formData.district}
                     onChange={(e) => setFormData(p => ({ ...p, district: e.target.value }))}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none"
@@ -432,7 +449,7 @@ export default function TrainingCentersView({
                   <label className="block text-2xs font-bold text-slate-700 mb-1">City / Village</label>
                   <input
                     type="text"
-                    placeholder="City or Village"
+                    placeholder="Enter City or Village"
                     value={formData.city}
                     onChange={(e) => setFormData(p => ({ ...p, city: e.target.value }))}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none"
@@ -443,8 +460,18 @@ export default function TrainingCentersView({
                   <label className="block text-2xs font-bold text-slate-700 mb-1">Centre Capacity (Trainees)</label>
                   <input
                     type="number"
-                    value={formData.capacity}
-                    onChange={(e) => setFormData(p => ({ ...p, capacity: Number(e.target.value) }))}
+                    min="0"
+                    placeholder="Enter total student capacity"
+                    value={formData.capacity === undefined ? '' : formData.capacity}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setFormData(p => ({ ...p, capacity: '' }));
+                      } else {
+                        const num = Math.max(0, parseInt(val, 10) || 0);
+                        setFormData(p => ({ ...p, capacity: num }));
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-bold"
                   />
                 </div>
@@ -453,8 +480,18 @@ export default function TrainingCentersView({
                   <label className="block text-2xs font-bold text-slate-700 mb-1">Available Rooms / Labs</label>
                   <input
                     type="number"
-                    value={formData.rooms}
-                    onChange={(e) => setFormData(p => ({ ...p, rooms: Number(e.target.value) }))}
+                    min="0"
+                    placeholder="Enter number of rooms/labs"
+                    value={formData.rooms === undefined ? '' : formData.rooms}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setFormData(p => ({ ...p, rooms: '' }));
+                      } else {
+                        const num = Math.max(0, parseInt(val, 10) || 0);
+                        setFormData(p => ({ ...p, rooms: num }));
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-bold"
                   />
                 </div>
@@ -465,18 +502,53 @@ export default function TrainingCentersView({
                 <input
                   type="text"
                   required
-                  placeholder="Street, Building No, Landmark"
+                  placeholder="Enter complete address"
                   value={formData.address}
                   onChange={(e) => setFormData(p => ({ ...p, address: e.target.value }))}
                   className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none"
                 />
               </div>
 
+              {/* Multi-Course Selection */}
+              <div>
+                <label className="block text-2xs font-bold text-slate-700 mb-1">Available Courses / Programs Offered *</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl max-h-36 overflow-y-auto">
+                  {(programs && programs.length > 0 ? programs.map(p => p.name || p.title) : [
+                    'Tailoring & Stitching',
+                    'Beautician & Wellness',
+                    'Agriculture & Farming',
+                    'Healthcare & Caregiving',
+                    'Tourism & Hospitality',
+                    'Food & Beverages'
+                  ]).map((cName) => {
+                    const isChecked = Array.isArray(formData.coursesOffered) && formData.coursesOffered.includes(cName);
+                    return (
+                      <label key={cName} className="flex items-center space-x-2 text-xs text-slate-800 cursor-pointer font-medium">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            const current = Array.isArray(formData.coursesOffered) ? [...formData.coursesOffered] : [];
+                            if (e.target.checked) {
+                              setFormData(p => ({ ...p, coursesOffered: [...current, cName] }));
+                            } else {
+                              setFormData(p => ({ ...p, coursesOffered: current.filter(c => c !== cName) }));
+                            }
+                          }}
+                          className="rounded text-[#C52B75] focus:ring-[#C52B75]"
+                        />
+                        <span>{cName}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-2xs font-bold text-slate-700 mb-1">Training Facilities & Lab Tools</label>
                 <textarea
                   rows={2}
-                  placeholder="e.g. Sewing Machines, Beauty Kits, Computer Lab, Health Aid Kits"
+                  placeholder="Enter training equipment and facility details"
                   value={formData.facilities}
                   onChange={(e) => setFormData(p => ({ ...p, facilities: e.target.value }))}
                   className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none"

@@ -7,7 +7,18 @@ import {
   User, Mail, FileText, Check, AlertCircle, Edit, Trash2
 } from 'lucide-react';
 
-export default function StudentsView({ students = [], setStudents, showToast, filter = 'all' }) {
+export default function StudentsView({ 
+  students = [], 
+  setStudents, 
+  centers = [], 
+  batches = [], 
+  programs = [], 
+  attendance = [], 
+  assessments = [], 
+  certificates = [], 
+  showToast, 
+  filter = 'all' 
+}) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('All');
   const [selectedCourseFilter, setSelectedCourseFilter] = useState('All');
@@ -28,9 +39,12 @@ export default function StudentsView({ students = [], setStudents, showToast, fi
     address: '',
     district: 'Bhubaneswar',
     qualification: '12th Pass',
-    course: 'Tailoring & Stitching',
-    center: 'Bhubaneswar LVS Skill Center',
-    batch: 'BATCH-2026-T1',
+    course: '',
+    center: '',
+    batch: '',
+    photoDoc: '',
+    aadharDoc: '',
+    marksheetDoc: '',
     status: 'Enrolled'
   });
 
@@ -330,58 +344,158 @@ export default function StudentsView({ students = [], setStudents, showToast, fi
                   />
                 </div>
 
+                {/* 1. Training Centre Selection */}
                 <div>
-                  <label className="font-bold text-slate-700">Course / Program</label>
+                  <label className="font-bold text-slate-700">Training Centre *</label>
                   <select
-                    value={newStudent.course}
-                    onChange={(e) => setNewStudent({...newStudent, course: e.target.value})}
-                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  >
-                    <option value="Tailoring & Stitching">Tailoring & Stitching</option>
-                    <option value="Beautician & Wellness">Beautician & Wellness</option>
-                    <option value="Agriculture & Farming">Agriculture & Farming</option>
-                    <option value="Healthcare & Caregiving">Healthcare & Caregiving</option>
-                    <option value="Food & Beverages">Food & Beverages</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700">Training Centre</label>
-                  <select
+                    required
                     value={newStudent.center}
-                    onChange={(e) => setNewStudent({...newStudent, center: e.target.value})}
+                    onChange={(e) => {
+                      const selectedC = e.target.value;
+                      setNewStudent(prev => ({ ...prev, center: selectedC, course: '', batch: '' }));
+                    }}
                     className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-pink-500"
                   >
-                    <option value="Bhubaneswar LVS Skill Center">Bhubaneswar LVS Skill Center</option>
-                    <option value="Cuttack Main Skill Hub">Cuttack Main Skill Hub</option>
-                    <option value="Puri Rural Skill Hub">Puri Rural Skill Hub</option>
-                    <option value="Khordha Vocational Hub">Khordha Vocational Hub</option>
-                    <option value="Ganjam Community Care Hub">Ganjam Community Care Hub</option>
+                    <option value="">-- Select Training Centre --</option>
+                    {centers && centers.length > 0 ? (
+                      centers.map(c => (
+                        <option key={c.id || c.name} value={c.name}>{c.name}</option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="Bhubaneswar LVS Skill Center">Bhubaneswar LVS Skill Center</option>
+                        <option value="Cuttack Main Skill Hub">Cuttack Main Skill Hub</option>
+                        <option value="Puri Rural Skill Hub">Puri Rural Skill Hub</option>
+                      </>
+                    )}
                   </select>
                 </div>
 
+                {/* 2. Course Selection (Filtered by Center) */}
                 <div>
-                  <label className="font-bold text-slate-700">Assigned Batch</label>
-                  <input
-                    type="text"
+                  <label className="font-bold text-slate-700">Course / Program *</label>
+                  <select
+                    required
+                    value={newStudent.course}
+                    onChange={(e) => {
+                      const selectedCrs = e.target.value;
+                      setNewStudent(prev => ({ ...prev, course: selectedCrs, batch: '' }));
+                    }}
+                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  >
+                    <option value="">-- Select Course --</option>
+                    {(() => {
+                      const matchedC = centers.find(c => c.name === newStudent.center);
+                      const centerCourses = matchedC?.coursesOffered || matchedC?.courses;
+                      let courseList = programs && programs.length > 0 ? programs.map(p => p.name || p.title) : [
+                        'Tailoring & Stitching',
+                        'Beautician & Wellness',
+                        'Agriculture & Farming',
+                        'Healthcare & Caregiving',
+                        'Food & Beverages'
+                      ];
+                      if (Array.isArray(centerCourses) && centerCourses.length > 0) {
+                        courseList = centerCourses;
+                      }
+                      return courseList.map(crs => (
+                        <option key={crs} value={crs}>{crs}</option>
+                      ));
+                    })()}
+                  </select>
+                </div>
+
+                {/* 3. Batch Selection (Filtered by Center & Course) */}
+                <div>
+                  <label className="font-bold text-slate-700">Assigned Batch *</label>
+                  <select
+                    required
                     value={newStudent.batch}
                     onChange={(e) => setNewStudent({...newStudent, batch: e.target.value})}
-                    placeholder="BATCH-2026-T1"
-                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  />
+                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  >
+                    <option value="">-- Select Batch --</option>
+                    {(() => {
+                      const matchingBatches = batches.filter(b => 
+                        (!newStudent.center || b.center === newStudent.center || b.centerId === newStudent.center) &&
+                        (!newStudent.course || b.course === newStudent.course)
+                      );
+                      if (matchingBatches.length > 0) {
+                        return matchingBatches.map(b => (
+                          <option key={b.id} value={b.id}>{b.id} ({b.course})</option>
+                        ));
+                      }
+                      return (
+                        <>
+                          <option value="BATCH-2026-T1">BATCH-2026-T1</option>
+                          <option value="BATCH-2026-B1">BATCH-2026-B1</option>
+                          <option value="BATCH-2026-A1">BATCH-2026-A1</option>
+                        </>
+                      );
+                    })()}
+                  </select>
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700">Status</label>
+                  <label className="font-bold text-slate-700">Training Status</label>
                   <select
                     value={newStudent.status}
                     onChange={(e) => setNewStudent({...newStudent, status: e.target.value})}
                     className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-pink-500"
                   >
                     <option value="Enrolled">Enrolled</option>
-                    <option value="Ongoing">Ongoing</option>
-                    <option value="Passed">Passed</option>
+                    <option value="In Training">In Training</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Placed">Placed</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Required Documents Upload Section */}
+              <div className="pt-2 border-t border-slate-100 space-y-3">
+                <span className="font-bold text-slate-800 text-xs block">Required Verification Documents</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-1">Student Photo</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setNewStudent(p => ({ ...p, photoDoc: file.name, photo: URL.createObjectURL(file) }));
+                        }
+                      }}
+                      className="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-1">Aadhaar Card Copy</label>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setNewStudent(p => ({ ...p, aadharDoc: file.name }));
+                        }
+                      }}
+                      className="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-1">Marksheet / Qualification</label>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setNewStudent(p => ({ ...p, marksheetDoc: file.name }));
+                        }
+                      }}
+                      className="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -480,34 +594,60 @@ export default function StudentsView({ students = [], setStudents, showToast, fi
                 </div>
               )}
 
-              {profileTab === 'attendance' && (
-                <div className="space-y-3">
-                  <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
-                    <div>
-                      <span className="text-emerald-800 font-bold text-xs">Overall Attendance Percentage</span>
-                      <p className="text-2xl font-black text-emerald-700">{selectedStudent.attendance || '96%'}</p>
+              {profileTab === 'attendance' && (() => {
+                const studentAttLogs = attendance.filter(a => a.studentId === selectedStudent.id || a.student === selectedStudent.name || a.batchId === selectedStudent.batch);
+                return (
+                  <div className="space-y-3">
+                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
+                      <div>
+                        <span className="text-emerald-800 font-bold text-xs">Overall Attendance Rate</span>
+                        <p className="text-2xl font-black text-emerald-700">{selectedStudent.attendance || '96%'}</p>
+                      </div>
+                      <span className="px-3 py-1 bg-emerald-200 text-emerald-800 font-bold rounded-lg text-xs">Regular</span>
                     </div>
-                    <span className="px-3 py-1 bg-emerald-200 text-emerald-800 font-bold rounded-lg text-xs">Regular</span>
+                    {studentAttLogs.length > 0 ? (
+                      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                        <div className="p-2 bg-slate-50 border-b border-slate-200 font-bold text-slate-700">Attendance Session Logs ({studentAttLogs.length})</div>
+                        <div className="divide-y divide-slate-100 max-h-36 overflow-y-auto">
+                          {studentAttLogs.map((log, idx) => (
+                            <div key={idx} className="p-2 flex justify-between items-center text-xs">
+                              <span>Date: {log.date || '2026-08-10'}</span>
+                              <span className="font-bold text-emerald-600">{log.status || 'Present'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-slate-500 text-[11px]">Attendance records dynamically tracked for batch {selectedStudent.batch}.</p>
+                    )}
                   </div>
-                  <p className="text-slate-500 text-[11px]">Attendance records automatically calculated from daily batch logs.</p>
-                </div>
-              )}
+                );
+              })()}
 
-              {profileTab === 'assessment' && (
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                  <span className="text-slate-500 font-bold uppercase text-[10px]">Exam Score & Result</span>
-                  <p className="text-lg font-bold text-slate-900">{selectedStudent.assessmentScore || '94/100 (Pass)'}</p>
-                  <p className="text-slate-600">Theory Marks: 46/50 • Practical Marks: 48/50</p>
-                </div>
-              )}
+              {profileTab === 'assessment' && (() => {
+                const matchAsm = assessments.find(a => a.studentId === selectedStudent.id || a.student === selectedStudent.name);
+                return (
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <span className="text-slate-500 font-bold uppercase text-[10px]">Exam Score & Result</span>
+                    <p className="text-lg font-bold text-slate-900">{matchAsm?.score || selectedStudent.assessmentScore || '94/100 (Passed)'}</p>
+                    <p className="text-slate-600">Theory Marks: {matchAsm?.theoryMarks || '46'}/50 • Practical Marks: {matchAsm?.practicalMarks || '48'}/50</p>
+                  </div>
+                );
+              })()}
 
-              {profileTab === 'certificate' && (
-                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
-                  <span className="text-amber-900 font-bold uppercase text-[10px]">Certificate Status</span>
-                  <p className="text-base font-bold text-amber-900">{selectedStudent.certificateStatus || 'Issued'}</p>
-                  <p className="text-amber-800 text-[11px]">Student has satisfied all 6 eligibility criteria for certification.</p>
-                </div>
-              )}
+              {profileTab === 'certificate' && (() => {
+                const matchCert = certificates.find(c => c.studentId === selectedStudent.id || c.student === selectedStudent.name);
+                return (
+                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
+                    <span className="text-amber-900 font-bold uppercase text-[10px]">Certificate Status</span>
+                    <p className="text-base font-bold text-amber-900">{matchCert?.status || selectedStudent.certificateStatus || 'Issued'}</p>
+                    {matchCert?.certificateNo && (
+                      <p className="text-xs font-mono font-bold text-slate-800">Certificate No: {matchCert.certificateNo}</p>
+                    )}
+                    <p className="text-amber-800 text-[11px]">Student has satisfied all eligibility criteria for certification.</p>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Footer */}

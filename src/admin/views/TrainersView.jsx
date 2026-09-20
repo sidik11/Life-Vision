@@ -17,6 +17,7 @@ export default function TrainersView({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCenterFilter, setSelectedCenterFilter] = useState('All');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('All');
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState('All');
   const [selectedTrainer, setSelectedTrainer] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [profileTab, setProfileTab] = useState('overview'); // overview, tot, batches, contact
@@ -24,6 +25,7 @@ export default function TrainersView({
   // New Trainer Form State
   const [newTrainer, setNewTrainer] = useState({
     name: '',
+    role: 'Master Trainer',
     qualification: 'Master Degree / B.Tech',
     sector: 'Apparel & Tailoring',
     experience: '5 Years',
@@ -47,14 +49,16 @@ export default function TrainersView({
       const tPhone = String(trn.phone || '');
       const tCenter = String(trn.assignedCenter || trn.center || '');
       const tStatus = String(trn.status || 'Active');
+      const tRole = String(trn.role || 'Master Trainer');
 
       const matchesSearch = tName.includes(searchTerm.toLowerCase()) || tId.includes(searchTerm.toLowerCase()) || tPhone.includes(searchTerm);
       const matchesCenter = selectedCenterFilter === 'All' || tCenter.includes(selectedCenterFilter);
       const matchesStatus = selectedStatusFilter === 'All' || tStatus === selectedStatusFilter;
+      const matchesRole = selectedRoleFilter === 'All' || tRole === selectedRoleFilter;
 
-      return matchesSearch && matchesCenter && matchesStatus;
+      return matchesSearch && matchesCenter && matchesStatus && matchesRole;
     });
-  }, [trainers, searchTerm, selectedCenterFilter, selectedStatusFilter]);
+  }, [trainers, searchTerm, selectedCenterFilter, selectedStatusFilter, selectedRoleFilter]);
 
   const handleAddTrainerSubmit = (e) => {
     e.preventDefault();
@@ -145,7 +149,7 @@ export default function TrainersView({
 
       {/* Filters Bar */}
       <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
             <input
@@ -156,6 +160,16 @@ export default function TrainersView({
               className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
             />
           </div>
+
+          <select
+            value={selectedRoleFilter}
+            onChange={(e) => setSelectedRoleFilter(e.target.value)}
+            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-pink-500"
+          >
+            <option value="All">All Roles</option>
+            <option value="Master Trainer">Master Trainer</option>
+            <option value="Center Head">Center Head</option>
+          </select>
 
           <select
             value={selectedCenterFilter}
@@ -189,6 +203,7 @@ export default function TrainersView({
               <tr className="border-b border-slate-200 text-slate-500 bg-slate-50 uppercase tracking-wider font-bold">
                 <th className="p-4">Trainer ID</th>
                 <th className="p-4">Trainer Name</th>
+                <th className="p-4">Role</th>
                 <th className="p-4">Skill Domain / Sector</th>
                 <th className="p-4">TOT Certified</th>
                 <th className="p-4">Assigned Centre</th>
@@ -210,6 +225,13 @@ export default function TrainersView({
                           <div className="text-[10px] text-slate-500">{trn.phone}</div>
                         </div>
                       </div>
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-2 py-0.5 font-bold rounded-md text-[10px] inline-block ${
+                        trn.role === 'Center Head' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-blue-100 text-blue-800 border border-blue-200'
+                      }`}>
+                        {trn.role || 'Master Trainer'}
+                      </span>
                     </td>
                     <td className="p-4 font-bold text-slate-900">{trn.sector || trn.specialization || 'Apparel'}</td>
                     <td className="p-4">
@@ -291,9 +313,21 @@ export default function TrainersView({
                     required
                     value={newTrainer.name}
                     onChange={(e) => setNewTrainer({...newTrainer, name: e.target.value})}
-                    placeholder="e.g. Dr. Ramesh Chandra"
+                    placeholder="Enter Trainer Name"
                     className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
                   />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700">Role Designation *</label>
+                  <select
+                    value={newTrainer.role || 'Master Trainer'}
+                    onChange={(e) => setNewTrainer({...newTrainer, role: e.target.value})}
+                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  >
+                    <option value="Master Trainer">Master Trainer</option>
+                    <option value="Center Head">Center Head</option>
+                  </select>
                 </div>
 
                 <div>

@@ -28,8 +28,32 @@ export default function ReportsView({
   ];
 
   const handleExport = (reportName) => {
+    let csvRows = [];
+    csvRows.push(["Training Centre / Unit", "Active Batches", "Enrolled Trainees", "Certificates Issued", "Status"]);
+    
+    if (centers && centers.length > 0) {
+      centers.forEach(c => {
+        const bCount = batches.filter(b => b.center === c.name).length;
+        const sCount = students.filter(s => s.center === c.name).length;
+        const certCount = certificates.filter(cert => cert.center === c.name).length;
+        csvRows.push([`"${c.name}"`, bCount, sCount, certCount, `"${c.status || 'Active'}"`]);
+      });
+    } else {
+      csvRows.push(["No Data", "0", "0", "0", "N/A"]);
+    }
+
+    const csvString = csvRows.map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${reportName.toLowerCase().replace(/\s+/g, '_')}_${dateRange}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
     if (showToast) {
-      showToast(`Exported ${reportName} (${dateRange}) as CSV/PDF successfully!`, "success");
+      showToast(`Exported ${reportName} (${dateRange}) CSV file successfully!`, "success");
     }
   };
 
@@ -69,26 +93,41 @@ export default function ReportsView({
             className="px-4 py-2.5 bg-white text-[#123B5D] hover:bg-slate-100 rounded-xl text-xs font-extrabold flex items-center space-x-2 shadow-md transition-all cursor-pointer"
           >
             <Download className="w-4 h-4 text-[#16A34A]" />
-            <span>Export CSV / PDF</span>
+            <span>Export CSV</span>
           </button>
         </div>
       </div>
 
-      {/* Sub Tab Navigation */}
-      <div className="flex items-center space-x-2 border-b border-slate-200 overflow-x-auto pb-2 scrollbar-none">
-        {reportTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setSubTab(tab.id)}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer ${
-              subTab === tab.id 
-                ? 'bg-[#123B5D] text-white shadow-sm' 
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
+      {/* Select Dropdown & Sub Tab Navigation */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-xs">
+        <div className="flex items-center space-x-2">
+          <span className="text-xs font-bold text-slate-700">Select Report Type:</span>
+          <select
+            value={subTab}
+            onChange={(e) => setSubTab(e.target.value)}
+            className="px-3 py-1.5 bg-slate-50 border border-slate-300 text-slate-900 font-extrabold text-xs rounded-xl focus:ring-2 focus:ring-[#123B5D]"
           >
-            {tab.label}
-          </button>
-        ))}
+            {reportTabs.map((tab) => (
+              <option key={tab.id} value={tab.id}>{tab.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center space-x-1.5 overflow-x-auto scrollbar-none">
+          {reportTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setSubTab(tab.id)}
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                subTab === tab.id 
+                  ? 'bg-[#123B5D] text-white shadow-xs' 
+                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Report Cards Metrics - Real DB numbers */}

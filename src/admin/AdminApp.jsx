@@ -680,6 +680,8 @@ export default function AdminApp() {
             centers={centers}
             batches={batches}
             students={students}
+            trainers={trainers}
+            programs={programs}
             onAddCenter={handleAddCenter}
             onUpdateCenter={handleUpdateCenter}
             onDeleteCenter={handleDeleteCenter}
@@ -706,7 +708,19 @@ export default function AdminApp() {
       case 'trainers':
         return <TrainersView trainers={trainers} setTrainers={handleSetTrainers} centers={centers} batches={batches} showToast={showToast} />;
       case 'students':
-        return <StudentsView students={students} setStudents={handleSetStudents} centers={centers} batches={batches} showToast={showToast} filter={activeTab} />;
+        return (
+          <StudentsView 
+            students={students} 
+            setStudents={handleSetStudents} 
+            centers={centers} 
+            batches={batches} 
+            programs={programs}
+            attendance={attendance}
+            certificates={certificates}
+            showToast={showToast} 
+            filter={activeTab} 
+          />
+        );
       case 'attendance':
         return <AttendanceView batches={batches} centers={centers} students={students} setStudents={handleSetStudents} attendance={attendance} onSaveAttendance={handleSaveAttendance} showToast={showToast} />;
       case 'assessments':

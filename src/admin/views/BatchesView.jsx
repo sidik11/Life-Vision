@@ -353,47 +353,28 @@ export default function BatchesView({
 
             <form onSubmit={handleFormSubmit} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block text-2xs font-bold text-slate-700 mb-1">Course / Training Program *</label>
-                  <select
-                    value={formData.course}
-                    onChange={(e) => handleCourseSelect(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-bold"
-                  >
-                    {programs && programs.length > 0 ? (
-                      programs.map(p => (
-                        <option key={p.id || p.name} value={p.name}>{p.name}</option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="Tailoring & Stitching">Tailoring & Stitching</option>
-                        <option value="Beautician & Wellness">Beautician & Wellness</option>
-                        <option value="Agriculture & Farming">Agriculture & Farming</option>
-                        <option value="Healthcare & Caregiving">Healthcare & Caregiving</option>
-                        <option value="Tourism & Hospitality">Tourism & Hospitality</option>
-                        <option value="Food & Beverages">Food & Beverages</option>
-                      </>
-                    )}
-                  </select>
-                </div>
-
+                {/* 1. Training Centre First */}
                 <div>
                   <label className="block text-2xs font-bold text-slate-700 mb-1">Training Centre *</label>
                   {centers.length > 0 ? (
                     <select
                       value={formData.center}
-                      onChange={(e) => setFormData(p => ({ ...p, center: e.target.value }))}
+                      onChange={(e) => {
+                        const newCenterName = e.target.value;
+                        setFormData(p => ({ ...p, center: newCenterName }));
+                      }}
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-bold"
                     >
+                      <option value="">-- Select Training Centre --</option>
                       {centers.map(c => (
-                        <option key={c.id || c.name} value={c.name}>{c.name} ({c.location || 'Odisha'})</option>
+                        <option key={c.id || c.name} value={c.name}>{c.name} ({c.location || c.district || 'Odisha'})</option>
                       ))}
                     </select>
                   ) : (
                     <input
                       type="text"
                       required
-                      placeholder="Enter Training Centre Name (or add in Centres view)"
+                      placeholder="Enter Training Centre Name"
                       value={formData.center}
                       onChange={(e) => setFormData(p => ({ ...p, center: e.target.value }))}
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-bold"
@@ -401,22 +382,54 @@ export default function BatchesView({
                   )}
                 </div>
 
+                {/* 2. Course / Program Second (Filtered by Training Centre if available) */}
                 <div>
-                  <label className="block text-2xs font-bold text-slate-700 mb-1">Assigned Trainer</label>
+                  <label className="block text-2xs font-bold text-slate-700 mb-1">Course / Training Program *</label>
+                  <select
+                    value={formData.course}
+                    onChange={(e) => handleCourseSelect(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-bold"
+                  >
+                    <option value="">-- Select Course --</option>
+                    {(() => {
+                      const matchedCenterObj = centers.find(c => c.name === formData.center);
+                      const centerCourses = matchedCenterObj?.coursesOffered || matchedCenterObj?.courses;
+                      let courseList = programs && programs.length > 0 ? programs.map(p => p.name || p.title) : [
+                        'Tailoring & Stitching',
+                        'Beautician & Wellness',
+                        'Agriculture & Farming',
+                        'Healthcare & Caregiving',
+                        'Tourism & Hospitality',
+                        'Food & Beverages'
+                      ];
+                      if (Array.isArray(centerCourses) && centerCourses.length > 0) {
+                        courseList = centerCourses;
+                      }
+                      return courseList.map(cName => (
+                        <option key={cName} value={cName}>{cName}</option>
+                      ));
+                    })()}
+                  </select>
+                </div>
+
+                {/* 3. Assigned Trainer */}
+                <div>
+                  <label className="block text-2xs font-bold text-slate-700 mb-1">Assigned Trainer / Center Head</label>
                   {trainers.length > 0 ? (
                     <select
                       value={formData.trainer}
                       onChange={(e) => setFormData(p => ({ ...p, trainer: e.target.value }))}
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-bold"
                     >
+                      <option value="">-- Select Trainer --</option>
                       {trainers.map(t => (
-                        <option key={t.id} value={t.name}>{t.name} ({t.id})</option>
+                        <option key={t.id} value={t.name}>{t.name} ({t.role || 'Trainer'})</option>
                       ))}
                     </select>
                   ) : (
                     <input
                       type="text"
-                      placeholder="e.g. Dr. Sunita Sharma"
+                      placeholder="Enter Trainer Name"
                       value={formData.trainer}
                       onChange={(e) => setFormData(p => ({ ...p, trainer: e.target.value }))}
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none"
@@ -428,7 +441,7 @@ export default function BatchesView({
                   <label className="block text-2xs font-bold text-slate-700 mb-1">Qualification / NSQF Level</label>
                   <input
                     type="text"
-                    placeholder="e.g. Level 4 (AMH/Q1947)"
+                    placeholder="Enter Qualification Code (e.g. Level 4)"
                     value={formData.qualification}
                     onChange={(e) => setFormData(p => ({ ...p, qualification: e.target.value }))}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none"
@@ -461,8 +474,18 @@ export default function BatchesView({
                   <label className="block text-2xs font-bold text-slate-700 mb-1">Batch Capacity (Students)</label>
                   <input
                     type="number"
-                    value={formData.capacity}
-                    onChange={(e) => setFormData(p => ({ ...p, capacity: Number(e.target.value) }))}
+                    min="0"
+                    placeholder="Enter max capacity"
+                    value={formData.capacity === undefined ? '' : formData.capacity}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setFormData(p => ({ ...p, capacity: '' }));
+                      } else {
+                        const num = Math.max(0, parseInt(val, 10) || 0);
+                        setFormData(p => ({ ...p, capacity: num }));
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-bold"
                   />
                 </div>
@@ -493,8 +516,12 @@ export default function BatchesView({
                     <label className="text-3xs font-bold text-slate-600 block">Theory Hours</label>
                     <input
                       type="number"
-                      value={formData.theoryHours}
-                      onChange={(e) => setFormData(p => ({ ...p, theoryHours: Number(e.target.value) }))}
+                      min="0"
+                      value={formData.theoryHours === undefined ? '' : formData.theoryHours}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData(p => ({ ...p, theoryHours: val === '' ? '' : Math.max(0, parseInt(val, 10) || 0) }));
+                      }}
                       className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold"
                     />
                   </div>
@@ -502,8 +529,12 @@ export default function BatchesView({
                     <label className="text-3xs font-bold text-slate-600 block">Practical Hours</label>
                     <input
                       type="number"
-                      value={formData.practicalHours}
-                      onChange={(e) => setFormData(p => ({ ...p, practicalHours: Number(e.target.value) }))}
+                      min="0"
+                      value={formData.practicalHours === undefined ? '' : formData.practicalHours}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData(p => ({ ...p, practicalHours: val === '' ? '' : Math.max(0, parseInt(val, 10) || 0) }));
+                      }}
                       className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold"
                     />
                   </div>
@@ -511,8 +542,12 @@ export default function BatchesView({
                     <label className="text-3xs font-bold text-slate-600 block">OJT Hours</label>
                     <input
                       type="number"
-                      value={formData.ojtHours}
-                      onChange={(e) => setFormData(p => ({ ...p, ojtHours: Number(e.target.value) }))}
+                      min="0"
+                      value={formData.ojtHours === undefined ? '' : formData.ojtHours}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData(p => ({ ...p, ojtHours: val === '' ? '' : Math.max(0, parseInt(val, 10) || 0) }));
+                      }}
                       className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold"
                     />
                   </div>
