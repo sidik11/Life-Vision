@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Users, UserPlus, IdCard, Calendar, FileText, 
+  User, Users, UserPlus, IdCard, Calendar, FileText, 
   Building, CheckCircle2, Clock, XCircle, Search, 
   Filter, Download, Mail, Phone, MapPin, Shield, Printer, Upload,
   Edit, X, Trash2, Eye, MoreVertical
@@ -170,10 +170,14 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
             .staff-name { position: absolute; top: 275px; width: 100%; text-align: center; font-size: 14px; font-weight: 900; color: #021a10; z-index: 10; font-family: sans-serif; }
             .staff-role { position: absolute; top: 293px; width: 100%; text-align: center; font-size: 10px; font-weight: 800; color: #047857; z-index: 10; text-transform: uppercase; }
 
-            .info-val-id { position: absolute; top: 323px; left: 156px; width: 160px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .info-val-dept { position: absolute; top: 350px; left: 156px; width: 160px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .info-val-phone { position: absolute; top: 377px; left: 156px; width: 160px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .info-val-date { position: absolute; top: 404px; left: 156px; width: 160px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .info-section { position: absolute; top: 318px; left: 24px; right: 24px; z-index: 10; display: flex; flex-direction: column; gap: 6px; }
+            .info-row { display: flex; align-items: center; font-size: 11px; line-height: 1; }
+            .icon-circle { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 8px; flex-shrink: 0; }
+            .bg-emerald { background: #047857; }
+            .bg-teal { background: #0e4b55; }
+            .info-label { font-weight: 700; color: #1e293b; width: 95px; flex-shrink: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+            .colon { font-weight: 700; color: #1e293b; margin-right: 8px; font-family: 'Plus Jakarta Sans', sans-serif; }
+            .info-value { font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; font-family: 'Plus Jakarta Sans', sans-serif; }
 
             @media print {
               body { background: transparent; padding: 0; gap: 20px; }
@@ -188,10 +192,41 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
             <img src="${staffMember.avatar || '/image/logo.png'}" class="photo-box" alt="Staff Photo" />
             <div class="staff-name">${staffMember.name}</div>
             <div class="staff-role">${staffMember.role}</div>
-            <div class="info-val-id">${staffMember.id}</div>
-            <div class="info-val-dept">${staffMember.department}</div>
-            <div class="info-val-phone">${staffMember.phone || '+91 9416362914'}</div>
-            <div class="info-val-date">${staffMember.joinDate || '2026-01-01'}</div>
+            
+            <div class="info-section">
+              <div class="info-row">
+                <div class="icon-circle bg-emerald">
+                  <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <span class="info-label">Employee ID</span>
+                <span class="colon">:</span>
+                <span class="info-value">${staffMember.id}</span>
+              </div>
+              <div class="info-row">
+                <div class="icon-circle bg-emerald">
+                  <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                </div>
+                <span class="info-label">Department</span>
+                <span class="colon">:</span>
+                <span class="info-value">${staffMember.department}</span>
+              </div>
+              <div class="info-row">
+                <div class="icon-circle bg-teal">
+                  <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                </div>
+                <span class="info-label">Contact No.</span>
+                <span class="colon">:</span>
+                <span class="info-value">${staffMember.phone || '+91 9416362914'}</span>
+              </div>
+              <div class="info-row">
+                <div class="icon-circle bg-emerald">
+                  <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+                <span class="info-label">Joining Date</span>
+                <span class="colon">:</span>
+                <span class="info-value">${staffMember.joinDate || '2026-01-01'}</span>
+              </div>
+            </div>
           </div>
 
           <!-- BACK SIDE -->
@@ -458,11 +493,48 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                       <p className="text-[10px] font-extrabold text-[#047857] uppercase tracking-wide truncate">{s.role}</p>
                     </div>
 
-                    {/* OVERLAID FIELDS ALIGNED TO EXACT HORIZONTAL COLON LINE */}
-                    <div className="absolute top-[323px] left-[156px] w-[160px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10 truncate">{s.id}</div>
-                    <div className="absolute top-[350px] left-[156px] w-[160px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10 truncate">{s.department}</div>
-                    <div className="absolute top-[377px] left-[156px] w-[160px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10 truncate">{s.phone || '+91 9416362914'}</div>
-                    <div className="absolute top-[404px] left-[156px] w-[160px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10 truncate">{s.joinDate || '2026-01-01'}</div>
+                    {/* DYNAMIC MANUALLY RENDERED 4 INFO ROWS WITH ICONS & PERFECT ALIGNMENT */}
+                    <div className="absolute top-[318px] left-[24px] right-[24px] z-10 flex flex-col gap-1.5 font-sans">
+                      {/* Employee ID */}
+                      <div className="flex items-center text-[11px] leading-none">
+                        <div className="w-[20px] h-[20px] rounded-full bg-[#047857] flex items-center justify-center shrink-0 mr-2">
+                          <User className="w-3 h-3 text-white" />
+                        </div>
+                        <span className="font-bold text-[#1e293b] w-[95px] shrink-0">Employee ID</span>
+                        <span className="font-bold text-[#1e293b] mr-2.5">:</span>
+                        <span className="font-extrabold text-[#0f172a] truncate max-w-[150px]">{s.id}</span>
+                      </div>
+
+                      {/* Department */}
+                      <div className="flex items-center text-[11px] leading-none">
+                        <div className="w-[20px] h-[20px] rounded-full bg-[#047857] flex items-center justify-center shrink-0 mr-2">
+                          <Mail className="w-3 h-3 text-white" />
+                        </div>
+                        <span className="font-bold text-[#1e293b] w-[95px] shrink-0">Department</span>
+                        <span className="font-bold text-[#1e293b] mr-2.5">:</span>
+                        <span className="font-extrabold text-[#0f172a] truncate max-w-[150px]">{s.department}</span>
+                      </div>
+
+                      {/* Contact No. */}
+                      <div className="flex items-center text-[11px] leading-none">
+                        <div className="w-[20px] h-[20px] rounded-full bg-[#0e4b55] flex items-center justify-center shrink-0 mr-2">
+                          <Phone className="w-3 h-3 text-white" />
+                        </div>
+                        <span className="font-bold text-[#1e293b] w-[95px] shrink-0">Contact No.</span>
+                        <span className="font-bold text-[#1e293b] mr-2.5">:</span>
+                        <span className="font-extrabold text-[#0f172a] truncate max-w-[150px]">{s.phone || '+91 9416362914'}</span>
+                      </div>
+
+                      {/* Joining Date */}
+                      <div className="flex items-center text-[11px] leading-none">
+                        <div className="w-[20px] h-[20px] rounded-full bg-[#047857] flex items-center justify-center shrink-0 mr-2">
+                          <Calendar className="w-3 h-3 text-white" />
+                        </div>
+                        <span className="font-bold text-[#1e293b] w-[95px] shrink-0">Joining Date</span>
+                        <span className="font-bold text-[#1e293b] mr-2.5">:</span>
+                        <span className="font-extrabold text-[#0f172a] truncate max-w-[150px]">{s.joinDate || '2026-01-01'}</span>
+                      </div>
+                    </div>
                   </div>
 
                   {/* ACTION BUTTON */}
@@ -573,11 +645,48 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
                     <p className="text-[10px] font-extrabold text-[#047857] uppercase tracking-wide truncate">{selectedCardStaff.role}</p>
                   </div>
 
-                  {/* OVERLAID FIELDS ALIGNED TO EXACT HORIZONTAL COLON LINE */}
-                  <div className="absolute top-[323px] left-[156px] w-[160px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10 truncate">{selectedCardStaff.id}</div>
-                  <div className="absolute top-[350px] left-[156px] w-[160px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10 truncate">{selectedCardStaff.department}</div>
-                  <div className="absolute top-[377px] left-[156px] w-[160px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10 truncate">{selectedCardStaff.phone || '+91 9416362914'}</div>
-                  <div className="absolute top-[404px] left-[156px] w-[160px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10 truncate">{selectedCardStaff.joinDate || '2026-01-01'}</div>
+                  {/* DYNAMIC 4 INFO ROWS WITH CIRCLE ICONS, LABELS, COLONS, AND VALUES */}
+                  <div className="absolute top-[318px] left-[26px] right-[24px] z-10 space-y-[6px]">
+                    {/* Employee ID */}
+                    <div className="flex items-center text-[11px] leading-none">
+                      <div className="w-[20px] h-[20px] rounded-full bg-[#047857] flex items-center justify-center shrink-0 mr-2">
+                        <User className="w-3 h-3 text-white" />
+                      </div>
+                      <span className="font-bold text-[#1e293b] w-[95px] shrink-0">Employee ID</span>
+                      <span className="font-bold text-[#1e293b] mr-2.5">:</span>
+                      <span className="font-extrabold text-[#0f172a] truncate max-w-[150px]">{selectedCardStaff.id}</span>
+                    </div>
+
+                    {/* Department */}
+                    <div className="flex items-center text-[11px] leading-none">
+                      <div className="w-[20px] h-[20px] rounded-full bg-[#047857] flex items-center justify-center shrink-0 mr-2">
+                        <Mail className="w-3 h-3 text-white" />
+                      </div>
+                      <span className="font-bold text-[#1e293b] w-[95px] shrink-0">Department</span>
+                      <span className="font-bold text-[#1e293b] mr-2.5">:</span>
+                      <span className="font-extrabold text-[#0f172a] truncate max-w-[150px]">{selectedCardStaff.department}</span>
+                    </div>
+
+                    {/* Contact No. */}
+                    <div className="flex items-center text-[11px] leading-none">
+                      <div className="w-[20px] h-[20px] rounded-full bg-[#0e4b55] flex items-center justify-center shrink-0 mr-2">
+                        <Phone className="w-3 h-3 text-white" />
+                      </div>
+                      <span className="font-bold text-[#1e293b] w-[95px] shrink-0">Contact No.</span>
+                      <span className="font-bold text-[#1e293b] mr-2.5">:</span>
+                      <span className="font-extrabold text-[#0f172a] truncate max-w-[150px]">{selectedCardStaff.phone || '+91 9416362914'}</span>
+                    </div>
+
+                    {/* Joining Date */}
+                    <div className="flex items-center text-[11px] leading-none">
+                      <div className="w-[20px] h-[20px] rounded-full bg-[#047857] flex items-center justify-center shrink-0 mr-2">
+                        <Calendar className="w-3 h-3 text-white" />
+                      </div>
+                      <span className="font-bold text-[#1e293b] w-[95px] shrink-0">Joining Date</span>
+                      <span className="font-bold text-[#1e293b] mr-2.5">:</span>
+                      <span className="font-extrabold text-[#0f172a] truncate max-w-[150px]">{selectedCardStaff.joinDate || '2026-01-01'}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
