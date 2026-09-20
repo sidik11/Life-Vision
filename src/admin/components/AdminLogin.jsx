@@ -191,10 +191,10 @@ export default function AdminLogin({ onLogin }) {
             .staff-name { position: absolute; top: 275px; width: 100%; text-align: center; font-size: 14px; font-weight: 900; color: #021a10; z-index: 10; font-family: sans-serif; }
             .staff-role { position: absolute; top: 293px; width: 100%; text-align: center; font-size: 10px; font-weight: 800; color: #047857; z-index: 10; text-transform: uppercase; }
 
-            .info-val-id { position: absolute; top: 323px; left: 156px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: monospace; line-height: 1; }
-            .info-val-dept { position: absolute; top: 350px; left: 156px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; line-height: 1; max-width: 145px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .info-val-phone { position: absolute; top: 377px; left: 156px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: monospace; line-height: 1; }
-            .info-val-date { position: absolute; top: 404px; left: 156px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; line-height: 1; }
+            .info-val-id { position: absolute; top: 323px; left: 154px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1; }
+            .info-val-dept { position: absolute; top: 350px; left: 154px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .info-val-phone { position: absolute; top: 377px; left: 154px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1; }
+            .info-val-date { position: absolute; top: 404px; left: 154px; font-size: 11px; font-weight: 800; color: #0f172a; z-index: 10; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1; }
 
             @media print {
               body { background: transparent; padding: 0; gap: 20px; }
@@ -503,10 +503,10 @@ export default function AdminLogin({ onLogin }) {
                     </div>
 
                     {/* OVERLAID FIELDS ALIGNED TO EXACT HORIZONTAL COLON LINE */}
-                    <div className="absolute top-[323px] left-[156px] text-[11px] font-extrabold text-[#0f172a] font-mono leading-none z-10">{generatedCard.id}</div>
-                    <div className="absolute top-[350px] left-[156px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10 max-w-[145px] truncate">{generatedCard.department}</div>
-                    <div className="absolute top-[377px] left-[156px] text-[11px] font-extrabold text-[#0f172a] font-mono leading-none z-10">{generatedCard.phone || '+91 9416362914'}</div>
-                    <div className="absolute top-[404px] left-[156px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10">{generatedCard.joinDate || '2026-01-01'}</div>
+                    <div className="absolute top-[323px] left-[154px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10">{generatedCard.id}</div>
+                    <div className="absolute top-[350px] left-[154px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10 max-w-[150px] truncate">{generatedCard.department}</div>
+                    <div className="absolute top-[377px] left-[154px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10">{generatedCard.phone || '+91 9416362914'}</div>
+                    <div className="absolute top-[404px] left-[154px] text-[11px] font-extrabold text-[#0f172a] leading-none z-10">{generatedCard.joinDate || '2026-01-01'}</div>
                   </div>
 
                   {/* ACTION BUTTONS */}
