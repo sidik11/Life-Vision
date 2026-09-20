@@ -42,11 +42,26 @@ import {
 export default function AdminApp() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     try {
-      return localStorage.getItem('lvs_admin_auth') === 'true';
+      return sessionStorage.getItem('lvs_admin_auth') === 'true';
     } catch (e) {
       return false;
     }
   });
+
+  // Auto-clear session when browser tab closes or navigating away
+  useEffect(() => {
+    const handleUnload = () => {
+      try {
+        sessionStorage.removeItem('lvs_admin_auth');
+        localStorage.removeItem('lvs_admin_auth');
+      } catch (e) {}
+    };
+
+    window.addEventListener('beforeunload', handleUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload);
+    };
+  }, []);
   const [adminUser, setAdminUser] = useState(() => {
     try {
       const saved = localStorage.getItem('lvs_admin_profile');
@@ -623,7 +638,8 @@ export default function AdminApp() {
       } else {
         localStorage.setItem('lvs_admin_profile', JSON.stringify(user));
       }
-      localStorage.setItem('lvs_admin_auth', 'true');
+      sessionStorage.setItem('lvs_admin_auth', 'true');
+      localStorage.removeItem('lvs_admin_auth');
     } catch (e) { }
     setAdminUser(userToUse);
     setIsAuthenticated(true);
@@ -632,6 +648,7 @@ export default function AdminApp() {
 
   const handleLogout = () => {
     try {
+      sessionStorage.removeItem('lvs_admin_auth');
       localStorage.removeItem('lvs_admin_auth');
     } catch (e) { }
     setIsAuthenticated(false);

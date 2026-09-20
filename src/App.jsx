@@ -44,7 +44,14 @@ export default function App() {
 
   useEffect(() => {
     const handleLocationChange = () => {
-      setIsAdmin(window.location.pathname.startsWith('/admin') || window.location.hash.startsWith('#/admin'));
+      const isCurrentlyAdmin = window.location.pathname.startsWith('/admin') || window.location.hash.startsWith('#/admin');
+      setIsAdmin(isCurrentlyAdmin);
+      if (!isCurrentlyAdmin) {
+        try {
+          sessionStorage.removeItem('lvs_admin_auth');
+          localStorage.removeItem('lvs_admin_auth');
+        } catch (e) { }
+      }
       const hash = window.location.hash;
       if (hash.includes('verify-certificate')) {
         const parts = hash.split('verify-certificate/');
@@ -91,6 +98,10 @@ export default function App() {
       setIsAdmin(true);
       return;
     }
+    try {
+      sessionStorage.removeItem('lvs_admin_auth');
+      localStorage.removeItem('lvs_admin_auth');
+    } catch (e) { }
     const targetSection = sectionId === 'placement' ? 'training' : (sectionId === 'partners' ? 'about' : sectionId);
     setActiveSection(targetSection);
     if (targetId) {
