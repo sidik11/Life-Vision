@@ -59,28 +59,72 @@ export default function StaffIdCardModule({
     return matchesSearch;
   });
 
-  // Handle Approve (✓) -> Update Firestore -> Auto-Email PDF to Staff given email
+  // Handle Approve (✓) -> Call Email API -> Update Firestore to Generated ONLY IF email succeeds!
   const handleApproveIdCard = async (staffMember) => {
+    // Duplicate Protection: If already generated and emailed, require manual Resend Email action
+    if (staffMember.cardStatus === 'Generated' && staffMember.emailSent) {
+      if (showToast) showToast(`Staff ID Card for ${staffMember.name} is already generated and emailed to ${staffMember.email}. Use "Resend Email" option if needed.`, 'info');
+      return;
+    }
+
+    if (showToast) showToast(`Generating PDF & dispatching email to ${staffMember.email}...`, 'info');
+
+    // 1. Invoke backend Email API to attach and send PDF
+    let emailResult = { success: false, emailSent: false, error: 'Failed to communicate with email service' };
+    try {
+      emailResult = await sendStaffIdCardEmailApi(staffMember);
+    } catch (err) {
+      emailResult = { success: false, emailSent: false, error: err.message || 'Email API error' };
+    }
+
+    // 2. IF EMAIL FAILS: Do NOT mark status as Generated! Keep as Pending Approval & show error message
+    if (!emailResult.success || !emailResult.emailSent) {
+      const errorMsg = emailResult.error || emailResult.message || 'Email dispatch failed';
+      
+      // Track failure in Firestore without setting status to Generated
+      if (staffMember.firestoreId) {
+        try {
+          await updateDoc(doc(db, "staff", staffMember.firestoreId), {
+            emailSent: false,
+            emailStatus: 'Failed',
+            lastEmailError: errorMsg
+          });
+        } catch (err) {
+          console.warn("Firestore error tracking notice:", err);
+        }
+      }
+
+      if (showToast) showToast(`✕ Failed to send ID Card PDF email to ${staffMember.email}: ${errorMsg}. ID Card remains Pending Approval.`, 'error');
+      return;
+    }
+
+    // 3. IF EMAIL SUCCEEDS: Update status to Generated in Firebase and state
     const updatedStaff = {
       ...staffMember,
       status: 'Active',
       approvalStatus: 'Approved',
       cardStatus: 'Generated',
+      emailSent: true,
+      emailSentAt: new Date().toISOString(),
+      emailStatus: 'Sent',
       approvedDate: new Date().toISOString()
     };
 
-    // 1. Update Staff list state
+    // Update local React state
     if (setStaffList) {
       setStaffList(prev => prev.map(s => (s.id === updatedStaff.id || (s.firestoreId && s.firestoreId === updatedStaff.firestoreId)) ? updatedStaff : s));
     }
 
-    // 2. Update Firestore `staff` collection
+    // Update Firestore `staff` collection
     if (staffMember.firestoreId) {
       try {
         await updateDoc(doc(db, "staff", staffMember.firestoreId), {
           status: 'Active',
           approvalStatus: 'Approved',
           cardStatus: 'Generated',
+          emailSent: true,
+          emailSentAt: new Date().toISOString(),
+          emailStatus: 'Sent',
           approvedDate: new Date().toISOString()
         });
       } catch (err) {
@@ -88,13 +132,16 @@ export default function StaffIdCardModule({
       }
     }
 
-    // 3. Save reference in Firestore `staffIdCards` collection
+    // Save reference in Firestore `staffIdCards` collection
     try {
       await addDoc(collection(db, "staffIdCards"), {
         staffId: staffMember.id || staffMember.employeeId,
         staffName: staffMember.name,
         email: staffMember.email,
         status: 'Generated',
+        emailSent: true,
+        emailSentAt: new Date().toISOString(),
+        emailStatus: 'Sent',
         requestDate: staffMember.requestDate || new Date().toISOString(),
         approvedDate: new Date().toISOString(),
         createdAt: serverTimestamp()
@@ -103,14 +150,7 @@ export default function StaffIdCardModule({
       console.warn("Firestore staffIdCards notice:", err);
     }
 
-    // 4. Generate PDF & Send Email to Staff member's registered email
-    try {
-      await sendStaffIdCardEmailApi(updatedStaff);
-    } catch (err) {
-      console.warn("Email API notice:", err);
-    }
-
-    if (showToast) showToast(`✓ ID Card Approved & Generated for ${updatedStaff.name}! PDF sent to ${updatedStaff.email}.`, 'success');
+    if (showToast) showToast(`✓ ID Card Approved & PDF emailed to ${updatedStaff.email}! Status updated to Generated.`, 'success');
   };
 
   // Handle Reject (✕)
@@ -145,13 +185,33 @@ export default function StaffIdCardModule({
     if (showToast) showToast(`✕ ID Card request for ${updatedStaff.name} rejected.`, 'info');
   };
 
-  // Handle Re-Send PDF Email
+  // Handle Manual Re-Send PDF Email Action
   const handleResendPdfEmail = async (staffMember) => {
+    if (showToast) showToast(`Re-sending ID Card PDF to ${staffMember.email}...`, 'info');
+
+    let emailResult = { success: false, emailSent: false };
     try {
-      await sendStaffIdCardEmailApi(staffMember);
-      if (showToast) showToast(`✓ Official ID Card PDF re-sent to ${staffMember.email}!`, 'success');
+      emailResult = await sendStaffIdCardEmailApi(staffMember);
     } catch (err) {
-      if (showToast) showToast(`ID Card PDF dispatched to ${staffMember.email}.`, 'info');
+      emailResult = { success: false, emailSent: false, error: err.message };
+    }
+
+    if (emailResult.success && emailResult.emailSent) {
+      if (staffMember.firestoreId) {
+        try {
+          await updateDoc(doc(db, "staff", staffMember.firestoreId), {
+            emailSent: true,
+            lastResentAt: new Date().toISOString(),
+            emailStatus: 'Sent'
+          });
+        } catch (err) {
+          console.warn("Firestore update notice:", err);
+        }
+      }
+      if (showToast) showToast(`✓ Official ID Card PDF re-sent to ${staffMember.email}!`, 'success');
+    } else {
+      const errorMsg = emailResult.error || emailResult.message || 'Email delivery failed';
+      if (showToast) showToast(`✕ Failed to re-send email to ${staffMember.email}: ${errorMsg}`, 'error');
     }
   };
 
