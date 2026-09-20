@@ -14,12 +14,14 @@ export default function ActionPopover({ items = [], actions = [] }) {
     if (!isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
-      const popoverHeight = Math.min(menuItems.length * 36 + 16, 320);
-      const openUpward = rect.bottom + popoverHeight > viewportHeight;
+      const popoverHeight = Math.min(menuItems.length * 36 + 24, 360);
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const openUpward = spaceBelow < popoverHeight && spaceAbove > spaceBelow;
 
       setCoords({
-        top: openUpward ? Math.max(10, rect.top - popoverHeight) : rect.bottom + 4,
-        left: Math.max(10, rect.right - 192)
+        top: openUpward ? Math.max(10, rect.top - popoverHeight) : Math.min(rect.bottom + 4, viewportHeight - popoverHeight - 10),
+        left: Math.max(10, Math.min(rect.right - 224, window.innerWidth - 234))
       });
     }
     setIsOpen(!isOpen);
@@ -36,13 +38,21 @@ export default function ActionPopover({ items = [], actions = [] }) {
         setIsOpen(false);
       }
     };
+
+    const handleScroll = (e) => {
+      if (popoverRef.current && popoverRef.current.contains(e.target)) {
+        return; // Don't close if scrolling inside popover menu!
+      }
+      setIsOpen(false);
+    };
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('scroll', () => setIsOpen(false), true);
+      window.addEventListener('scroll', handleScroll, true);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', () => setIsOpen(false), true);
+      window.removeEventListener('scroll', handleScroll, true);
     };
   }, [isOpen]);
 
@@ -60,7 +70,7 @@ export default function ActionPopover({ items = [], actions = [] }) {
       {isOpen && (
         <div
           ref={popoverRef}
-          className="fixed z-[9999] w-48 bg-white rounded-xl shadow-2xl border border-slate-200 py-1.5 text-xs animate-in fade-in-0 zoom-in-95 duration-150 max-h-80 overflow-y-auto"
+          className="fixed z-[9999] w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 text-xs animate-in fade-in-0 zoom-in-95 duration-150 max-h-[340px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300"
           style={{
             top: `${coords.top}px`,
             left: `${coords.left}px`

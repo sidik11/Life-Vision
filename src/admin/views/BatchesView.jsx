@@ -667,7 +667,28 @@ export default function BatchesView({
                           <div className="text-3xs text-slate-500 font-mono">{s.id} • {s.phone}</div>
                         </div>
                       </div>
-                      <StatusBadge status={s.status} />
+                      <div className="flex items-center space-x-3">
+                        <StatusBadge status={s.status} />
+                        <ActionPopover
+                          items={[
+                            { label: 'View Student Profile', icon: Eye, onClick: () => onNavigate && onNavigate('students', { studentId: s.id }) },
+                            { label: 'View Attendance Record', icon: Calendar, onClick: () => onNavigate && onNavigate('attendance', { studentId: s.id }) },
+                            { label: 'View Assessment Marks', icon: Award, onClick: () => onNavigate && onNavigate('assessments', { studentId: s.id }) },
+                            { label: 'View Certificate', icon: FileText, onClick: () => onNavigate && onNavigate('certificates', { studentId: s.id }) },
+                            { divider: true },
+                            { 
+                              label: 'Unenroll from Batch', 
+                              icon: Trash2, 
+                              danger: true, 
+                              onClick: () => {
+                                if (window.confirm(`Remove ${s.name} from batch ${selectedBatch.id}?`)) {
+                                  notify(`Removed ${s.name} from batch ${selectedBatch.id}`, 'info');
+                                }
+                              } 
+                            }
+                          ]}
+                        />
+                      </div>
                     </div>
                   ))
                 )}
