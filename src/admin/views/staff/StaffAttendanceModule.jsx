@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { 
   Calendar, CheckCircle2, Clock, XCircle, Users, Search, 
-  Filter, Building, Save, AlertCircle, Check, X, FileText 
+  Filter, Building, Save, AlertCircle, Check, X, FileText, MoreVertical
 } from 'lucide-react';
+import ActionPopover from '../../components/Common/ActionPopover';
 import { db, collection, addDoc, updateDoc, doc, serverTimestamp } from '../../../firebase';
 
 export default function StaffAttendanceModule({ 
@@ -32,8 +33,43 @@ export default function StaffAttendanceModule({
     'Finance',
     'Management',
     'IT & Support',
-    ...departments.map(d => d.departmentName).filter(Boolean)
+    ...departments.map(d => d.departmentName || d.name).filter(Boolean)
   ]));
+
+  // Three-dot View Options items for switching attendance views
+  const viewMenuItems = [
+    {
+      label: '📅 Daily Attendance Log',
+      icon: Calendar,
+      onClick: () => setActiveTab('daily')
+    },
+    {
+      label: '📆 Monthly Attendance Sheet',
+      icon: FileText,
+      onClick: () => setActiveTab('monthly')
+    },
+    {
+      label: '👥 Staff-wise Attendance Stats',
+      icon: Users,
+      onClick: () => setActiveTab('staff-wise')
+    },
+    {
+      label: '🏢 Department-wise Stats',
+      icon: Building,
+      onClick: () => setActiveTab('dept-wise')
+    }
+  ];
+
+  // Helper label for active view mode
+  const getActiveViewLabel = () => {
+    switch (activeTab) {
+      case 'daily': return '📅 Daily Log';
+      case 'monthly': return '📆 Monthly Sheet';
+      case 'staff-wise': return '👥 Staff-wise Stats';
+      case 'dept-wise': return '🏢 Dept-wise Stats';
+      default: return '📅 Daily Log';
+    }
+  };
 
   // Filter staff members
   const filteredStaff = staffList.filter(s => {
@@ -183,7 +219,7 @@ export default function StaffAttendanceModule({
   return (
     <div className="space-y-6">
       
-      {/* Header Banner & Date/Department Controls */}
+      {/* Header Banner & Controls with Three-Dot View Menu */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -197,24 +233,12 @@ export default function StaffAttendanceModule({
             </p>
           </div>
 
-          {/* Sub-view switcher */}
-          <div className="flex items-center space-x-1.5 bg-slate-100 p-1 rounded-xl shrink-0">
-            {[
-              { id: 'daily', label: '📅 Daily Log' },
-              { id: 'monthly', label: '📆 Monthly Sheet' },
-              { id: 'staff-wise', label: '👥 Staff-wise' },
-              { id: 'dept-wise', label: '🏢 Dept-wise' }
-            ].map(t => (
-              <button
-                key={t.id}
-                onClick={() => setActiveTab(t.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === t.id ? 'bg-[#123B5D] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+          {/* Three-Dot View Options Menu (Strictly As Requested) */}
+          <div className="flex items-center space-x-2 shrink-0 self-start md:self-center">
+            <span className="px-3 py-1.5 bg-[#123B5D] text-white text-xs font-bold rounded-xl shadow-xs">
+              {getActiveViewLabel()}
+            </span>
+            <ActionPopover items={viewMenuItems} />
           </div>
         </div>
 
