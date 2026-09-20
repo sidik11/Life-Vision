@@ -72,14 +72,17 @@ export default function StaffView({ staffList: propStaffList = [], setStaffList:
       avatar: photoPreview || '/image/logo.png'
     };
 
-    if (propSetStaffList) {
-      propSetStaffList(prev => [created, ...prev]);
-    }
-
     try {
       await saveToFirestore('staff', created, 'lvs_new_staff');
     } catch (err) {
       console.warn("Firestore add staff notice:", err);
+      if (propSetStaffList) {
+        propSetStaffList(prev => {
+          const exists = prev.some(p => p.id === created.id);
+          if (exists) return prev;
+          return [created, ...prev];
+        });
+      }
     }
 
     setShowAddModal(false);

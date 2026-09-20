@@ -292,12 +292,6 @@ export default function AdminApp() {
             for (const item of deleted) {
               if (item.firestoreId) await deleteDoc(doc(db, "staff", item.firestoreId));
             }
-          } else if (next.length > prev.length) {
-            const added = next.filter(n => !n.firestoreId && !prev.some(p => p.id === n.id));
-            for (const item of added) {
-              const cleanItem = JSON.parse(JSON.stringify(item));
-              await addDoc(collection(db, "staff"), cleanItem);
-            }
           }
         } catch (e) { console.warn("Firestore staff sync notice:", e); }
       })();
@@ -506,7 +500,14 @@ export default function AdminApp() {
       const q = collection(db, "staff");
       const unsub = onSnapshot(q, (snapshot) => {
         const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
-        setStaff(items);
+        const map = new Map();
+        items.forEach(item => {
+          const key = item.id || item.firestoreId;
+          if (key && !map.has(key)) {
+            map.set(key, item);
+          }
+        });
+        setStaff(Array.from(map.values()));
       }, (error) => console.warn("Firestore staff sync notice:", error));
       unsubscribes.push(unsub);
     } catch (err) { }
