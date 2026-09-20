@@ -442,40 +442,33 @@ export default function TrainersView({
                   </>
                 )}
 
-                {/* Experience (Years) Dropdown with Non-Negative Manual Entry */}
+                {/* Experience (Years) Single Unified Field */}
                 <div>
                   <label className="font-bold text-slate-700">Experience (Years)</label>
-                  <div className="flex gap-2 mt-1">
-                    <select
-                      value={['1 Year', '2 Years', '3 Years', '4 Years', '5 Years', '5+ Years'].includes(newTrainer.experience) ? newTrainer.experience : 'Custom'}
-                      onChange={(e) => {
-                        if (e.target.value !== 'Custom') {
-                          setNewTrainer({...newTrainer, experience: e.target.value});
-                        }
-                      }}
-                      className="w-1/2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-pink-500"
-                    >
-                      <option value="1 Year">1 Year</option>
-                      <option value="2 Years">2 Years</option>
-                      <option value="3 Years">3 Years</option>
-                      <option value="4 Years">4 Years</option>
-                      <option value="5 Years">5 Years</option>
-                      <option value="5+ Years">5+ Years</option>
-                      <option value="Custom">Manual Entry</option>
-                    </select>
-
-                    <input
-                      type="number"
-                      min="0"
-                      value={parseInt(newTrainer.experience) >= 0 ? parseInt(newTrainer.experience) : ''}
-                      onChange={(e) => {
-                        const val = Math.max(0, parseInt(e.target.value) || 0);
-                        setNewTrainer({...newTrainer, experience: `${val} Years`});
-                      }}
-                      placeholder="Years"
-                      className="w-1/2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    list="experience-options"
+                    value={newTrainer.experience}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val.startsWith('-')) return; // Prevent negative values
+                      setNewTrainer({ ...newTrainer, experience: val });
+                    }}
+                    placeholder="Select or enter experience (e.g. 3 Years)"
+                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  />
+                  <datalist id="experience-options">
+                    <option value="1 Year" />
+                    <option value="2 Years" />
+                    <option value="3 Years" />
+                    <option value="4 Years" />
+                    <option value="5 Years" />
+                    <option value="6 Years" />
+                    <option value="7 Years" />
+                    <option value="8 Years" />
+                    <option value="9 Years" />
+                    <option value="10+ Years" />
+                  </datalist>
                 </div>
               </div>
 
