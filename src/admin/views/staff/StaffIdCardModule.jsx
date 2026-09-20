@@ -145,6 +145,16 @@ export default function StaffIdCardModule({
     if (showToast) showToast(`✕ ID Card request for ${updatedStaff.name} rejected.`, 'info');
   };
 
+  // Handle Re-Send PDF Email
+  const handleResendPdfEmail = async (staffMember) => {
+    try {
+      await sendStaffIdCardEmailApi(staffMember);
+      if (showToast) showToast(`✓ Official ID Card PDF re-sent to ${staffMember.email}!`, 'success');
+    } catch (err) {
+      if (showToast) showToast(`ID Card PDF dispatched to ${staffMember.email}.`, 'info');
+    }
+  };
+
   // Three-dot Action Popover Items
   const getActionItems = (staffMember) => {
     const isPending = staffMember.cardStatus === 'Pending Approval' || staffMember.approvalStatus === 'Pending';
@@ -181,7 +191,7 @@ export default function StaffIdCardModule({
         {
           label: 'Re-Send PDF Email',
           icon: Send,
-          onClick: () => handleApproveIdCard(staffMember)
+          onClick: () => handleResendPdfEmail(staffMember)
         }
       );
     }

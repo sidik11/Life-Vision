@@ -21,19 +21,28 @@ export default function AdminLogin({ onLogin }) {
   // Staff Registration State
   const [staffData, setStaffData] = useState({
     name: '',
+    parentName: '',
+    dob: '',
+    gender: 'Male',
+    bloodGroup: 'O+',
+    phone: '',
+    email: '',
+    emergencyContact: '+91 9416362914',
+    address: '',
+    city: '',
+    state: 'Odisha',
+    pinCode: '',
     role: '',
     department: 'Mobilization',
-    email: '',
-    phone: '',
-    bloodGroup: 'O+',
     joinDate: new Date().toISOString().split('T')[0],
+    employmentType: 'Full Time',
     location: '',
-    emergencyContact: '+91 9416362914',
     photoDoc: '',
     aadharDoc: '',
     extraDocs: []
   });
   const [staffPhoto, setStaffPhoto] = useState(null);
+  const [submittedStaff, setSubmittedStaff] = useState(null);
   const [generatedCard, setGeneratedCard] = useState(null);
 
   // Status & Modal States
@@ -189,29 +198,45 @@ export default function AdminLogin({ onLogin }) {
     e.preventDefault();
     setError('');
 
-    if (!staffData.name || !staffData.email || !staffData.phone || !staffData.role) {
-      setError('Please fill in all required fields (Name, Designation, Email, Phone).');
+    if (!staffData.name.trim() || !staffData.email.trim() || !staffData.phone.trim() || !staffData.role.trim() || !staffData.department) {
+      setError('Please fill in all required fields (Full Name, Designation, Department, Email, Mobile Number).');
       return;
     }
 
     const generatedId = `STF-2026-${Math.floor(100 + Math.random() * 900)}`;
     const newStaffRecord = {
       id: generatedId,
+      employeeId: generatedId,
       name: staffData.name.trim(),
-      role: staffData.role.trim(),
-      department: staffData.department,
-      email: staffData.email.trim().toLowerCase(),
-      phone: staffData.phone.trim(),
+      parentName: (staffData.parentName || '').trim(),
+      dob: staffData.dob || '',
+      gender: staffData.gender || 'Male',
       bloodGroup: staffData.bloodGroup || 'O+',
-      joinDate: staffData.joinDate || new Date().toISOString().split('T')[0],
-      location: staffData.location.trim(),
+      
+      phone: staffData.phone.trim(),
+      email: staffData.email.trim().toLowerCase(),
       emergencyContact: staffData.emergencyContact.trim() || '+91 9416362914',
+      address: (staffData.address || '').trim(),
+      city: (staffData.city || '').trim(),
+      state: (staffData.state || 'Odisha').trim(),
+      pinCode: (staffData.pinCode || '').trim(),
+
+      role: staffData.role.trim(),
+      designation: staffData.role.trim(),
+      department: staffData.department,
+      joinDate: staffData.joinDate || new Date().toISOString().split('T')[0],
+      joiningDate: staffData.joinDate || new Date().toISOString().split('T')[0],
+      employmentType: staffData.employmentType || 'Full Time',
+      location: (staffData.location || '').trim() || 'Odisha Center',
+
       avatar: staffPhoto || staffData.photoDoc || '/image/logo.png',
       photoDoc: staffPhoto || staffData.photoDoc || '',
       aadharDoc: staffData.aadharDoc || '',
       extraDocs: staffData.extraDocs || [],
+
       status: 'Pending Approval',
       approvalStatus: 'Pending',
+      cardStatus: 'Pending Approval',
       registeredAt: new Date().toISOString()
     };
 
@@ -224,7 +249,7 @@ export default function AdminLogin({ onLogin }) {
     }
 
     setLoading(false);
-    setGeneratedCard(newStaffRecord);
+    setSubmittedStaff(newStaffRecord);
   };
 
   // Printable ID Card Pop-up
@@ -562,258 +587,139 @@ export default function AdminLogin({ onLogin }) {
 
           {/* 2. STAFF REGISTRATION & ID CARD GENERATOR */}
           {selectedRole === 'staff' && (
-            <div>
-              {generatedCard ? (
-                /* DISPLAY ID CARD REQUEST SENT FOR APPROVAL STATUS */
-                <div className="space-y-4">
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-center space-y-1">
-                    <UserCheck className="w-6 h-6 text-amber-600 mx-auto animate-bounce" />
-                    <h3 className="text-xs font-black text-amber-800 uppercase tracking-wider">
-                      ID Card Approval Request Sent to Admin Portal!
-                    </h3>
-                    <p className="text-[11px] text-slate-600 leading-relaxed">
-                      Your details for <strong>{generatedCard.name}</strong> ({generatedCard.id}) have been submitted for Admin approval.
-                      Once approved in the <strong>Staff ID Approval</strong> section of the Admin Portal, your official PDF Staff ID Card will be auto-generated and emailed directly to <strong>{generatedCard.email}</strong>.
+            <div className="space-y-3">
+              {/* Header Banner with Clean Styling */}
+              <div className="p-2.5 bg-emerald-50/80 rounded-xl border border-emerald-200/80 text-xs text-[#047857] font-bold flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-[#047857]" />
+                  <span>Fill Staff Details</span>
+                </div>
+                <span className="text-[10px] bg-emerald-100/70 text-[#047857] px-2 py-0.5 rounded-full font-extrabold border border-emerald-300/60">
+                  Staff Registration
+                </span>
+              </div>
+
+              {submittedStaff ? (
+                /* DISPLAY REGISTRATION SUBMITTED SUCCESS BANNER */
+                <div className="p-5 bg-white border border-emerald-200 rounded-2xl space-y-4 text-center shadow-xs">
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-[#047857] flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 font-serif">Registration Submitted Successfully!</h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Your staff registration details for <strong className="text-slate-800">{submittedStaff.name}</strong> ({submittedStaff.id}) have been submitted to the Admin Portal.
                     </p>
                   </div>
 
-                  {/* ID CARD PREVIEW WITH PENDING BADGE */}
-                  <div className="relative w-[340px] h-[510px] mx-auto rounded-2xl overflow-hidden shadow-2xl border-2 border-amber-400 bg-slate-900 shrink-0">
-                    <img
-                      src="/Team Member/id_card_front.jpg"
-                      alt="Front ID Template"
-                      className="w-full h-full object-cover opacity-90"
-                    />
-
-                    {/* OVERLAID STAFF PHOTO */}
-                    <img
-                      src={generatedCard.avatar || '/image/logo.png'}
-                      alt={generatedCard.name}
-                      className="absolute top-[154px] left-1/2 -translate-x-1/2 w-[114px] h-[114px] rounded-[18px] object-cover border-2 border-amber-400 shadow-md bg-white z-10"
-                    />
-
-                    {/* OVERLAID NAME & ROLE */}
-                    <div className="absolute top-[275px] w-full text-center px-3 z-10">
-                      <h4 className="text-[14px] font-black text-[#021a10] truncate">{generatedCard.name}</h4>
-                    </div>
-                    <div className="absolute top-[293px] w-full text-center px-3 z-10">
-                      <p className="text-[10px] font-extrabold text-[#047857] uppercase tracking-wide truncate">{generatedCard.role}</p>
-                    </div>
-
-                    {/* DYNAMIC MANUALLY RENDERED 4 INFO ROWS WITH ICONS & PERFECT ALIGNMENT */}
-                    <div className="absolute top-[316px] left-[68px] right-[20px] z-10 flex flex-col gap-[3px] font-sans">
-                      {/* Employee ID */}
-                      <div className="flex items-center text-[9.5px] leading-none">
-                        <div className="w-[16px] h-[16px] rounded-full bg-[#047857] flex items-center justify-center shrink-0 mr-1.5">
-                          <User className="w-2.5 h-2.5 text-white" />
-                        </div>
-                        <span className="font-bold text-[#1e293b] w-[68px] shrink-0">Employee ID</span>
-                        <span className="font-bold text-[#1e293b] mr-1.5">:</span>
-                        <span className="font-extrabold text-[#0f172a] truncate max-w-[145px]">{generatedCard.id}</span>
-                      </div>
-
-                      {/* Department */}
-                      <div className="flex items-center text-[9.5px] leading-none">
-                        <div className="w-[16px] h-[16px] rounded-full bg-[#047857] flex items-center justify-center shrink-0 mr-1.5">
-                          <Mail className="w-2.5 h-2.5 text-white" />
-                        </div>
-                        <span className="font-bold text-[#1e293b] w-[68px] shrink-0">Department</span>
-                        <span className="font-bold text-[#1e293b] mr-1.5">:</span>
-                        <span className="font-extrabold text-[#0f172a] truncate max-w-[145px]">{generatedCard.department}</span>
-                      </div>
-
-                      {/* Contact No. */}
-                      <div className="flex items-center text-[9.5px] leading-none">
-                        <div className="w-[16px] h-[16px] rounded-full bg-[#0e4b55] flex items-center justify-center shrink-0 mr-1.5">
-                          <Phone className="w-2.5 h-2.5 text-white" />
-                        </div>
-                        <span className="font-bold text-[#1e293b] w-[68px] shrink-0">Contact No.</span>
-                        <span className="font-bold text-[#1e293b] mr-1.5">:</span>
-                        <span className="font-extrabold text-[#0f172a] truncate max-w-[145px]">{generatedCard.phone || '+91 9416362914'}</span>
-                      </div>
-
-                      {/* Joining Date */}
-                      <div className="flex items-center text-[9.5px] leading-none">
-                        <div className="w-[16px] h-[16px] rounded-full bg-[#047857] flex items-center justify-center shrink-0 mr-1.5">
-                          <Calendar className="w-2.5 h-2.5 text-white" />
-                        </div>
-                        <span className="font-bold text-[#1e293b] w-[68px] shrink-0">Joining Date</span>
-                        <span className="font-bold text-[#1e293b] mr-1.5">:</span>
-                        <span className="font-extrabold text-[#0f172a] truncate max-w-[145px]">{generatedCard.joinDate || '2026-01-01'}</span>
-                      </div>
-                    </div>
-
-                    {/* OVERLAY PENDING BADGE */}
-                    <div className="absolute inset-x-0 bottom-0 bg-amber-500/90 backdrop-blur-xs py-1.5 text-center z-20">
-                      <span className="text-2xs font-black text-white uppercase tracking-widest flex items-center justify-center gap-1">
-                        ⏳ Approval Status: Pending Admin Review
-                      </span>
-                    </div>
+                  <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/80 rounded-xl text-2xs text-[#047857] font-semibold text-left space-y-1.5">
+                    <p className="font-bold flex items-center gap-1 text-[#047857]">
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>Staff ID Card Email Delivery Notice</span>
+                    </p>
+                    <p className="text-slate-600 leading-relaxed">
+                      Your Staff ID Card is currently pending Admin Approval. Once approved by the Admin in the Admin Portal, your official Staff ID Card PDF will be automatically generated and delivered directly to your registered email address:
+                    </p>
+                    <p className="font-bold text-emerald-900 text-xs truncate bg-white p-2 rounded-lg border border-emerald-200">{submittedStaff.email}</p>
                   </div>
 
-                  {/* ACTION BUTTONS */}
-                  <div className="space-y-2">
+                  <div className="pt-2 border-t border-slate-100">
                     <button
                       type="button"
-                      onClick={() => setGeneratedCard(null)}
-                      className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all cursor-pointer shadow-md"
+                      onClick={() => { setSubmittedStaff(null); setGeneratedCard(null); }}
+                      className="w-full py-2.5 bg-[#047857] hover:bg-[#065F46] text-white font-bold rounded-xl text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      + Submit Another Staff ID Request
+                      <Plus className="w-4 h-4" />
+                      <span>Register Another Staff Member</span>
                     </button>
                   </div>
                 </div>
               ) : (
-                /* STAFF DETAILS FILL UP FORM */
-                <form onSubmit={handleStaffSubmit} className="space-y-2.5 text-left">
-                  <div className="p-2 bg-emerald-50 rounded-xl border border-emerald-200 text-2xs text-[#047857] font-semibold flex items-center gap-1.5">
-                    <IdCard className="w-4 h-4 shrink-0 text-[#047857]" />
-                    <span>Fill staff details below to auto-generate & download Staff ID Card.</span>
-                  </div>
+                /* STAFF DETAILS FILL UP FORM MATCHING ADMIN PORTAL LAYOUT */
+                <form onSubmit={handleStaffSubmit} className="space-y-4 text-left">
+                  
+                  {/* 1. PERSONAL DETAILS */}
+                  <div className="space-y-2.5 bg-slate-50/60 p-3 rounded-xl border border-slate-200/80">
+                    <h4 className="text-xs font-bold text-[#047857] uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+                      <User className="w-3.5 h-3.5 text-[#047857]" />
+                      <span>1. Personal Details</span>
+                    </h4>
 
-                  {/* Full Name */}
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-800 flex items-center gap-1">
-                      <User className="w-3 h-3 text-[#047857]" />
-                      <span>Staff Full Name *</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={staffData.name}
-                      onChange={(e) => setStaffData({ ...staffData, name: e.target.value })}
-                      placeholder="Enter Staff Full Name"
-                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
-                    />
-                  </div>
-
-                  {/* Role / Designation & Department */}
-                  <div className="grid grid-cols-2 gap-2">
+                    {/* Full Name */}
                     <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-800">Role / Designation *</label>
+                      <label className="text-[11px] font-bold text-slate-800">Staff Full Name *</label>
                       <input
                         type="text"
                         required
-                        value={staffData.role}
-                        onChange={(e) => setStaffData({ ...staffData, role: e.target.value })}
-                        placeholder="Enter Role Designation"
+                        value={staffData.name}
+                        onChange={(e) => setStaffData({ ...staffData, name: e.target.value })}
+                        placeholder="Enter Staff Full Name"
                         className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-800">Department *</label>
-                      <select
-                        value={staffData.department}
-                        onChange={(e) => setStaffData({ ...staffData, department: e.target.value })}
-                        className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#047857]"
-                      >
-                        <option value="Mobilization">Mobilization</option>
-                        <option value="Training">Training</option>
-                        <option value="Placement & Livelihood">Placement</option>
-                        <option value="Operations">Operations</option>
-                        <option value="Finance">Finance</option>
-                        <option value="Management">Management</option>
-                        <option value="IT & Support">IT & Support</option>
-                      </select>
-                    </div>
-                  </div>
 
-                  {/* Email & Phone */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-800">Email Address *</label>
-                      <input
-                        type="email"
-                        required
-                        value={staffData.email}
-                        onChange={(e) => setStaffData({ ...staffData, email: e.target.value })}
-                        placeholder="Enter Email Address"
-                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
-                      />
+                    {/* Parent Name & DOB */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-800">Father's / Mother's Name</label>
+                        <input
+                          type="text"
+                          value={staffData.parentName}
+                          onChange={(e) => setStaffData({ ...staffData, parentName: e.target.value })}
+                          placeholder="Enter Parent Name"
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-800">Date of Birth</label>
+                        <input
+                          type="date"
+                          value={staffData.dob}
+                          onChange={(e) => setStaffData({ ...staffData, dob: e.target.value })}
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-800">Mobile Number *</label>
-                      <input
-                        type="tel"
-                        required
-                        value={staffData.phone}
-                        onChange={(e) => setStaffData({ ...staffData, phone: e.target.value })}
-                        placeholder="Enter Mobile Number"
-                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
-                      />
-                    </div>
-                  </div>
 
-                  {/* Blood Group & Date of Joining */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-800">Blood Group</label>
-                      <select
-                        value={staffData.bloodGroup}
-                        onChange={(e) => setStaffData({ ...staffData, bloodGroup: e.target.value })}
-                        className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#047857]"
-                      >
-                        <option value="O+">O+</option>
-                        <option value="A+">A+</option>
-                        <option value="B+">B+</option>
-                        <option value="AB+">AB+</option>
-                        <option value="O-">O-</option>
-                        <option value="A-">A-</option>
-                        <option value="B-">B-</option>
-                        <option value="AB-">AB-</option>
-                      </select>
+                    {/* Gender & Blood Group */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-800">Gender</label>
+                        <select
+                          value={staffData.gender}
+                          onChange={(e) => setStaffData({ ...staffData, gender: e.target.value })}
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#047857]"
+                        >
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-800">Blood Group</label>
+                        <select
+                          value={staffData.bloodGroup}
+                          onChange={(e) => setStaffData({ ...staffData, bloodGroup: e.target.value })}
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#047857]"
+                        >
+                          <option value="O+">O+</option>
+                          <option value="A+">A+</option>
+                          <option value="B+">B+</option>
+                          <option value="AB+">AB+</option>
+                          <option value="O-">O-</option>
+                          <option value="A-">A-</option>
+                          <option value="B-">B-</option>
+                          <option value="AB-">AB-</option>
+                        </select>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-800">Date of Joining</label>
-                      <input
-                        type="date"
-                        value={staffData.joinDate}
-                        onChange={(e) => setStaffData({ ...staffData, joinDate: e.target.value })}
-                        className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
-                      />
-                    </div>
-                  </div>
 
-                  {/* Center Location & Emergency Contact */}
-                  <div className="grid grid-cols-2 gap-2">
+                    {/* Profile Photo */}
                     <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-800">Office / Center Location</label>
-                      <input
-                        type="text"
-                        value={staffData.location}
-                        onChange={(e) => setStaffData({ ...staffData, location: e.target.value })}
-                        placeholder="Enter Office / Center Location"
-                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-800">Emergency Contact</label>
-                      <input
-                        type="tel"
-                        value={staffData.emergencyContact}
-                        onChange={(e) => setStaffData({ ...staffData, emergencyContact: e.target.value })}
-                        placeholder="Enter Emergency Contact Number"
-                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Document Uploads Section: Photo, Aadhaar, Extra Docs */}
-                  <div className="space-y-2 pt-1 border-t border-slate-100">
-                    <label className="text-[11px] font-bold text-slate-800 flex items-center gap-1">
-                      <Upload className="w-3.5 h-3.5 text-[#047857]" />
-                      <span>Document Uploads</span>
-                    </label>
-
-                    {/* Staff Photo */}
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-slate-600">Photo</label>
+                      <label className="text-[11px] font-bold text-slate-800">Profile Photo</label>
                       <div className="flex items-center gap-3 bg-white p-2 border border-slate-200 rounded-xl">
                         {staffPhoto ? (
-                          <img
-                            src={staffPhoto}
-                            alt="Preview"
-                            className="w-8 h-8 rounded-lg object-cover ring-2 ring-emerald-500 shrink-0"
-                          />
+                          <img src={staffPhoto} alt="Preview" className="w-8 h-8 rounded-lg object-cover ring-2 ring-emerald-500 shrink-0" />
                         ) : (
                           <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0 font-bold text-2xs">
                             Photo
@@ -827,6 +733,183 @@ export default function AdminLogin({ onLogin }) {
                         />
                       </div>
                     </div>
+                  </div>
+
+                  {/* 2. CONTACT DETAILS */}
+                  <div className="space-y-2.5 bg-slate-50/60 p-3 rounded-xl border border-slate-200/80">
+                    <h4 className="text-xs font-bold text-[#047857] uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+                      <Mail className="w-3.5 h-3.5 text-[#047857]" />
+                      <span>2. Contact Details</span>
+                    </h4>
+
+                    {/* Mobile Number & Email Address */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-800">Mobile Number *</label>
+                        <input
+                          type="tel"
+                          required
+                          value={staffData.phone}
+                          onChange={(e) => setStaffData({ ...staffData, phone: e.target.value })}
+                          placeholder="Enter Mobile Number"
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-800">Email Address *</label>
+                        <input
+                          type="email"
+                          required
+                          value={staffData.email}
+                          onChange={(e) => setStaffData({ ...staffData, email: e.target.value })}
+                          placeholder="Enter Email Address"
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Emergency Contact */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-800">Emergency Contact Number</label>
+                      <input
+                        type="tel"
+                        value={staffData.emergencyContact}
+                        onChange={(e) => setStaffData({ ...staffData, emergencyContact: e.target.value })}
+                        placeholder="Enter Emergency Contact Number"
+                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
+                      />
+                    </div>
+
+                    {/* Residential Address */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-800">Residential Address</label>
+                      <input
+                        type="text"
+                        value={staffData.address}
+                        onChange={(e) => setStaffData({ ...staffData, address: e.target.value })}
+                        placeholder="Enter Full Address"
+                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
+                      />
+                    </div>
+
+                    {/* City, State, PIN */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-800">City</label>
+                        <input
+                          type="text"
+                          value={staffData.city}
+                          onChange={(e) => setStaffData({ ...staffData, city: e.target.value })}
+                          placeholder="City"
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-800">State</label>
+                        <input
+                          type="text"
+                          value={staffData.state}
+                          onChange={(e) => setStaffData({ ...staffData, state: e.target.value })}
+                          placeholder="Odisha"
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-800">PIN Code</label>
+                        <input
+                          type="text"
+                          value={staffData.pinCode}
+                          onChange={(e) => setStaffData({ ...staffData, pinCode: e.target.value })}
+                          placeholder="PIN Code"
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. EMPLOYMENT DETAILS */}
+                  <div className="space-y-2.5 bg-slate-50/60 p-3 rounded-xl border border-slate-200/80">
+                    <h4 className="text-xs font-bold text-[#047857] uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+                      <Building className="w-3.5 h-3.5 text-[#047857]" />
+                      <span>3. Employment Details</span>
+                    </h4>
+
+                    {/* Role & Department */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-800">Role / Designation *</label>
+                        <input
+                          type="text"
+                          required
+                          value={staffData.role}
+                          onChange={(e) => setStaffData({ ...staffData, role: e.target.value })}
+                          placeholder="Enter Role Designation"
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-800">Department *</label>
+                        <select
+                          value={staffData.department}
+                          onChange={(e) => setStaffData({ ...staffData, department: e.target.value })}
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#047857]"
+                        >
+                          <option value="Mobilization">Mobilization</option>
+                          <option value="Training">Training</option>
+                          <option value="Placement & Livelihood">Placement</option>
+                          <option value="Operations">Operations</option>
+                          <option value="Finance">Finance</option>
+                          <option value="Management">Management</option>
+                          <option value="IT & Support">IT & Support</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Date of Joining & Employment Type */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-800">Date of Joining</label>
+                        <input
+                          type="date"
+                          value={staffData.joinDate}
+                          onChange={(e) => setStaffData({ ...staffData, joinDate: e.target.value })}
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-800">Employment Type</label>
+                        <select
+                          value={staffData.employmentType}
+                          onChange={(e) => setStaffData({ ...staffData, employmentType: e.target.value })}
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#047857]"
+                        >
+                          <option value="Full Time">Full Time</option>
+                          <option value="Part Time">Part Time</option>
+                          <option value="Contractual">Contractual</option>
+                          <option value="Trainee">Trainee</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Work Location */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-800">Office / Center Location</label>
+                      <input
+                        type="text"
+                        value={staffData.location}
+                        onChange={(e) => setStaffData({ ...staffData, location: e.target.value })}
+                        placeholder="Enter Office / Center Location"
+                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 4. DOCUMENT UPLOADS */}
+                  <div className="space-y-2.5 bg-slate-50/60 p-3 rounded-xl border border-slate-200/80">
+                    <h4 className="text-xs font-bold text-[#047857] uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+                      <Upload className="w-3.5 h-3.5 text-[#047857]" />
+                      <span>4. Document Uploads</span>
+                    </h4>
 
                     {/* Aadhaar Card */}
                     <div className="space-y-1">
@@ -844,7 +927,7 @@ export default function AdminLogin({ onLogin }) {
                     {staffData.extraDocs && staffData.extraDocs.length > 0 && (
                       <div className="space-y-2 pt-1">
                         {staffData.extraDocs.map((doc, idx) => (
-                          <div key={idx} className="p-2 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 relative">
+                          <div key={idx} className="p-2 bg-white border border-slate-200 rounded-xl space-y-1.5 relative">
                             <button
                               type="button"
                               onClick={() => handleRemoveExtraDoc(idx)}
@@ -856,8 +939,8 @@ export default function AdminLogin({ onLogin }) {
                               type="text"
                               value={doc.title}
                               onChange={(e) => handleExtraDocTitleChange(idx, e.target.value)}
-                              placeholder="Enter Document Title (e.g. Qualification / Experience)"
-                              className="w-full px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
+                              placeholder="Enter Document Title"
+                              className="w-full px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
                             />
                             <input
                               type="file"
@@ -889,8 +972,8 @@ export default function AdminLogin({ onLogin }) {
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                       <>
-                        <IdCard className="w-4 h-4" />
-                        <span>Generate Staff ID Card & Register</span>
+                        <UserCheck className="w-4 h-4" />
+                        <span>Register</span>
                       </>
                     )}
                   </button>
