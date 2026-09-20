@@ -83,7 +83,7 @@ export default function TopHeader({
     // Staff
     'all-staff': ['Staff Members', 'All Staff'],
     'add-staff': ['Staff Members', 'Add Staff'],
-    'staff-id-cards': ['Staff Members', 'Staff ID Card'],
+    'staff-id-cards': ['Staff Members', 'Staff ID Cards'],
     'staff-attendance': ['Staff Members', 'Staff Attendance'],
     'leave-management': ['Staff Members', 'Leave Management'],
     'staff-documents': ['Staff Members', 'Staff Document'],

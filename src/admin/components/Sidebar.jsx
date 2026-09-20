@@ -251,8 +251,7 @@ export default function Sidebar({
       hasSubmenu: true,
       subItems: [
         { id: 'all-staff', label: 'All Staff' },
-        { id: 'add-staff', label: 'Add Staff' },
-        { id: 'staff-id-cards', label: 'Staff ID Card' },
+        { id: 'staff-id-cards', label: 'Staff ID Cards' },
         { id: 'staff-attendance', label: 'Staff Attendance' },
         { id: 'leave-management', label: 'Leave Management' },
         { id: 'staff-documents', label: 'Staff Document' },

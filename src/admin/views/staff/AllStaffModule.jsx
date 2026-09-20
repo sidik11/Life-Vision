@@ -15,42 +15,51 @@ export default function AllStaffModule({
   leaves = [], 
   staffDocuments = [],
   onNavigateTab,
-  onOpenCardModal,
-  onEditStaff,
-  onDeleteStaff,
-  onOpenAddModal
+  onViewProfile,
+  onOpenAddModal,
+  showToast
 }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDept, setSelectedDept] = useState('All');
-  const [selectedRole, setSelectedRole] = useState('All');
-  const [selectedStatus, setSelectedStatus] = useState('All');
-  const [sortBy, setSortBy] = useState('name'); // 'name' | 'id' | 'joinDate'
   
+  // Filter Dropdown state
+  const [filterCategory, setFilterCategory] = useState('All Staff'); // 'All Staff' | 'Active' | 'Inactive' | 'Department' | 'Designation' | 'Employment Type'
+  const [selectedSubValue, setSelectedSubValue] = useState('All');
+
   // Modals state
   const [viewingProfileStaff, setViewingProfileStaff] = useState(null);
+  const [editingStaff, setEditingStaff] = useState(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Department options dynamically populated from departments prop + default departments
+  // Dynamic Options
   const deptOptions = Array.from(new Set([
-    'All',
-    'Mobilization',
-    'Training',
-    'Placement & Livelihood',
-    'Operations',
-    'Finance',
-    'Management',
-    'IT & Support',
-    ...departments.map(d => d.departmentName).filter(Boolean)
+    ...departments.map(d => d.departmentName || d.name).filter(Boolean),
+    ...staffList.map(s => s.department).filter(Boolean)
   ]));
 
-  // Designation options
   const roleOptions = Array.from(new Set([
-    'All',
     ...staffList.map(s => s.role || s.designation).filter(Boolean)
   ]));
+
+  const empTypeOptions = Array.from(new Set([
+    'Full Time',
+    'Part Time',
+    'Contractual',
+    'Trainee',
+    ...staffList.map(s => s.employmentType).filter(Boolean)
+  ]));
+
+  // Delete Staff Member
+  const handleDeleteStaff = (staffMember) => {
+    if (window.confirm(`Are you sure you want to delete staff member "${staffMember.name}" (${staffMember.id || staffMember.employeeId})?`)) {
+      if (setStaffList) {
+        setStaffList(prev => prev.filter(s => s.id !== staffMember.id && s.firestoreId !== staffMember.firestoreId));
+      }
+      if (showToast) showToast(`Staff member "${staffMember.name}" deleted.`, 'info');
+    }
+  };
 
   // Filter staff records
   const filteredStaff = staffList.filter(s => {
@@ -62,79 +71,64 @@ export default function AllStaffModule({
     const roleMatch = (s.role || s.designation || '').toLowerCase().includes(term);
     const matchesSearch = nameMatch || idMatch || emailMatch || phoneMatch || roleMatch;
 
-    const matchesDept = selectedDept === 'All' || s.department === selectedDept;
-    const matchesRole = selectedRole === 'All' || (s.role || s.designation) === selectedRole;
-    
-    let matchesStatus = true;
-    if (selectedStatus === 'Active') {
-      matchesStatus = s.status === 'Active' || s.approvalStatus === 'Approved' || (!s.status && !s.approvalStatus);
-    } else if (selectedStatus === 'Inactive') {
-      matchesStatus = s.status === 'Inactive' || s.status === 'Rejected' || s.approvalStatus === 'Rejected';
-    } else if (selectedStatus === 'Pending') {
-      matchesStatus = s.status === 'Pending Approval' || s.approvalStatus === 'Pending';
+    if (!matchesSearch) return false;
+
+    if (filterCategory === 'All Staff') return true;
+    if (filterCategory === 'Active') {
+      return s.status === 'Active' || s.approvalStatus === 'Approved' || (!s.status && !s.approvalStatus);
+    }
+    if (filterCategory === 'Inactive') {
+      return s.status === 'Inactive' || s.status === 'Rejected' || s.approvalStatus === 'Rejected';
+    }
+    if (filterCategory === 'Department') {
+      return selectedSubValue === 'All' || s.department === selectedSubValue;
+    }
+    if (filterCategory === 'Designation') {
+      return selectedSubValue === 'All' || (s.role || s.designation) === selectedSubValue;
+    }
+    if (filterCategory === 'Employment Type') {
+      return selectedSubValue === 'All' || (s.employmentType || 'Full Time') === selectedSubValue;
     }
 
-    return matchesSearch && matchesDept && matchesRole && matchesStatus;
-  });
-
-  // Sorting
-  const sortedStaff = [...filteredStaff].sort((a, b) => {
-    if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
-    if (sortBy === 'id') return (a.id || a.employeeId || '').localeCompare(b.id || b.employeeId || '');
-    if (sortBy === 'joinDate') return new Date(b.joinDate || 0) - new Date(a.joinDate || 0);
-    return 0;
+    return true;
   });
 
   // Pagination
-  const totalPages = Math.ceil(sortedStaff.length / itemsPerPage) || 1;
-  const paginatedStaff = sortedStaff.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.ceil(filteredStaff.length / itemsPerPage) || 1;
+  const paginatedStaff = filteredStaff.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const getActionItems = (s) => [
     {
       label: 'View Profile',
       icon: Eye,
-      onClick: () => setViewingProfileStaff(s)
+      onClick: () => onViewProfile ? onViewProfile(s) : setViewingProfileStaff(s)
     },
     {
-      label: 'Edit Staff Details',
+      label: 'Edit Details',
       icon: Edit,
-      onClick: () => onEditStaff(s)
-    },
-    {
-      label: 'View ID Card',
-      icon: IdCard,
-      onClick: () => onOpenCardModal(s)
+      onClick: () => setEditingStaff({ ...s })
     },
     {
       label: 'View Documents',
       icon: FileText,
-      onClick: () => onNavigateTab('staff-documents', s)
-    },
-    {
-      label: 'View Attendance',
-      icon: Calendar,
-      onClick: () => onNavigateTab('staff-attendance', s)
-    },
-    {
-      label: 'View Leave',
-      icon: Clock,
-      onClick: () => onNavigateTab('leave-management', s)
+      onClick: () => onViewProfile ? onViewProfile(s) : setViewingProfileStaff(s)
     },
     { divider: true },
     {
       label: 'Delete Staff Member',
       icon: Trash2,
       danger: true,
-      onClick: () => onDeleteStaff(s)
+      onClick: () => handleDeleteStaff(s)
     }
   ];
 
   return (
     <div className="space-y-4">
-      {/* Controls Bar */}
+      {/* Controls & Filter Bar */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          {/* Search bar */}
+          
+          {/* Search Bar */}
           <div className="relative w-full md:w-80">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
             <input
@@ -147,56 +141,71 @@ export default function AllStaffModule({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Department Filter */}
-            <select
-              value={selectedDept}
-              onChange={(e) => { setSelectedDept(e.target.value); setCurrentPage(1); }}
-              className="bg-slate-50 border border-slate-200 text-xs font-bold rounded-xl px-3 py-2 text-slate-700 focus:outline-none"
-            >
-              <option value="All">All Departments</option>
-              {deptOptions.filter(d => d !== 'All').map(d => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
+            {/* Primary Category Filter Dropdown */}
+            <div className="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
+              <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <select
+                value={filterCategory}
+                onChange={(e) => {
+                  setFilterCategory(e.target.value);
+                  setSelectedSubValue('All');
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
+              >
+                <option value="All Staff">All Staff ({staffList.length})</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Department">Filter by Department</option>
+                <option value="Designation">Filter by Designation</option>
+                <option value="Employment Type">Filter by Employment Type</option>
+              </select>
+            </div>
 
-            {/* Designation Filter */}
-            <select
-              value={selectedRole}
-              onChange={(e) => { setSelectedRole(e.target.value); setCurrentPage(1); }}
-              className="bg-slate-50 border border-slate-200 text-xs font-bold rounded-xl px-3 py-2 text-slate-700 focus:outline-none"
-            >
-              <option value="All">All Designations</option>
-              {roleOptions.filter(r => r !== 'All').map(r => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
+            {/* Dynamic Value Selector (Shown if Department, Designation, or Employment Type is selected) */}
+            {filterCategory === 'Department' && (
+              <select
+                value={selectedSubValue}
+                onChange={(e) => { setSelectedSubValue(e.target.value); setCurrentPage(1); }}
+                className="bg-emerald-50 border border-emerald-200 text-xs font-bold rounded-xl px-3 py-2 text-emerald-900 focus:outline-none cursor-pointer"
+              >
+                <option value="All">All Departments</option>
+                {deptOptions.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            )}
 
-            {/* Status Filter */}
-            <select
-              value={selectedStatus}
-              onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1); }}
-              className="bg-slate-50 border border-slate-200 text-xs font-bold rounded-xl px-3 py-2 text-slate-700 focus:outline-none"
-            >
-              <option value="All">All Statuses</option>
-              <option value="Active">Active / Approved</option>
-              <option value="Pending">Pending Approval</option>
-              <option value="Inactive">Inactive / Rejected</option>
-            </select>
+            {filterCategory === 'Designation' && (
+              <select
+                value={selectedSubValue}
+                onChange={(e) => { setSelectedSubValue(e.target.value); setCurrentPage(1); }}
+                className="bg-emerald-50 border border-emerald-200 text-xs font-bold rounded-xl px-3 py-2 text-emerald-900 focus:outline-none cursor-pointer"
+              >
+                <option value="All">All Designations</option>
+                {roleOptions.map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            )}
 
-            {/* Sort Dropdown */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-xs font-bold rounded-xl px-3 py-2 text-slate-700 focus:outline-none"
-            >
-              <option value="name">Sort by Name</option>
-              <option value="id">Sort by Employee ID</option>
-              <option value="joinDate">Sort by Joining Date</option>
-            </select>
+            {filterCategory === 'Employment Type' && (
+              <select
+                value={selectedSubValue}
+                onChange={(e) => { setSelectedSubValue(e.target.value); setCurrentPage(1); }}
+                className="bg-emerald-50 border border-emerald-200 text-xs font-bold rounded-xl px-3 py-2 text-emerald-900 focus:outline-none cursor-pointer"
+              >
+                <option value="All">All Types</option>
+                {empTypeOptions.map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            )}
 
+            {/* Add Staff Button inside All Staff page */}
             <button
               onClick={onOpenAddModal}
-              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-sm transition-all cursor-pointer"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-sm transition-all cursor-pointer"
             >
               <UserPlus className="w-4 h-4" />
               <span>+ Add Staff</span>
@@ -211,11 +220,13 @@ export default function AllStaffModule({
           <table className="w-full text-left text-xs text-slate-700">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase text-[10px] font-bold tracking-wider">
               <tr>
-                <th className="p-3.5">Staff Member</th>
+                <th className="p-3.5">Staff Photo</th>
+                <th className="p-3.5">Staff Name</th>
                 <th className="p-3.5">Employee ID</th>
                 <th className="p-3.5">Designation</th>
                 <th className="p-3.5">Department</th>
-                <th className="p-3.5">Contact Details</th>
+                <th className="p-3.5">Email</th>
+                <th className="p-3.5">Contact Number</th>
                 <th className="p-3.5">Joining Date</th>
                 <th className="p-3.5">Employment Type</th>
                 <th className="p-3.5">Status</th>
@@ -225,11 +236,11 @@ export default function AllStaffModule({
             <tbody className="divide-y divide-slate-100 font-medium">
               {paginatedStaff.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="p-12 text-center text-slate-500">
+                  <td colSpan={11} className="p-12 text-center text-slate-500">
                     <Users className="w-10 h-10 text-slate-300 mx-auto mb-2" />
                     <p className="font-bold text-slate-700 font-serif">No Staff Members Found</p>
                     <p className="text-2xs text-slate-500 mt-1">
-                      No staff members match the current search or filter criteria. Add a staff member using the button above.
+                      No staff members match the selected filter ({filterCategory}). Add a staff member using the button above.
                     </p>
                   </td>
                 </tr>
@@ -237,28 +248,24 @@ export default function AllStaffModule({
                 paginatedStaff.map((staff) => (
                   <tr key={staff.id || staff.employeeId || staff.firestoreId} className="hover:bg-slate-50/80 transition-colors">
                     
-                    {/* Staff Photo & Name */}
+                    {/* Staff Photo */}
                     <td className="p-3.5">
-                      <div 
-                        className="flex items-center space-x-3 cursor-pointer group"
-                        onClick={() => setViewingProfileStaff(staff)}
+                      <img
+                        src={staff.avatar || staff.photoDoc || '/image/logo.png'}
+                        alt={staff.name}
+                        className="w-10 h-10 rounded-xl object-cover ring-2 ring-emerald-500/20 bg-white shrink-0 cursor-pointer"
+                        onClick={() => onViewProfile ? onViewProfile(staff) : setViewingProfileStaff(staff)}
+                      />
+                    </td>
+
+                    {/* Staff Name */}
+                    <td className="p-3.5 font-bold text-slate-900">
+                      <span 
+                        className="hover:text-emerald-700 cursor-pointer transition-colors"
+                        onClick={() => onViewProfile ? onViewProfile(staff) : setViewingProfileStaff(staff)}
                       >
-                        <img
-                          src={staff.avatar || staff.photoDoc || '/image/logo.png'}
-                          alt={staff.name}
-                          className="w-10 h-10 rounded-xl object-cover ring-2 ring-emerald-500/20 bg-white shrink-0 group-hover:scale-105 transition-transform"
-                        />
-                        <div>
-                          <div className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
-                            {staff.name}
-                          </div>
-                          {staff.bloodGroup && (
-                            <span className="text-[10px] font-extrabold text-rose-600 block">
-                              🩸 {staff.bloodGroup}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                        {staff.name}
+                      </span>
                     </td>
 
                     {/* Employee ID */}
@@ -278,16 +285,14 @@ export default function AllStaffModule({
                       </span>
                     </td>
 
-                    {/* Contact Details */}
-                    <td className="p-3.5 space-y-0.5">
-                      <div className="flex items-center space-x-1.5 text-2xs">
-                        <Mail className="w-3 h-3 text-slate-400 shrink-0" />
-                        <span className="truncate max-w-[140px]">{staff.email}</span>
-                      </div>
-                      <div className="flex items-center space-x-1.5 text-2xs">
-                        <Phone className="w-3 h-3 text-slate-400 shrink-0" />
-                        <span>{staff.phone}</span>
-                      </div>
+                    {/* Email */}
+                    <td className="p-3.5 text-slate-600 truncate max-w-[150px]">
+                      {staff.email}
+                    </td>
+
+                    {/* Contact Number */}
+                    <td className="p-3.5 text-slate-600 whitespace-nowrap">
+                      {staff.phone}
                     </td>
 
                     {/* Joining Date */}
@@ -296,7 +301,7 @@ export default function AllStaffModule({
                     </td>
 
                     {/* Employment Type */}
-                    <td className="p-3.5 font-medium text-slate-700">
+                    <td className="p-3.5 font-medium text-slate-700 whitespace-nowrap">
                       <span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-md text-2xs font-bold">
                         {staff.employmentType || 'Full Time'}
                       </span>
@@ -314,7 +319,7 @@ export default function AllStaffModule({
                         </span>
                       ) : (
                         <span className="px-2.5 py-0.5 bg-rose-100 text-rose-800 border border-rose-200 rounded-full font-bold text-[10px]">
-                          ✗ Inactive
+                          ✕ Inactive
                         </span>
                       )}
                     </td>
@@ -335,7 +340,7 @@ export default function AllStaffModule({
         {totalPages > 1 && (
           <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600">
             <span>
-              Showing <strong>{(currentPage - 1) * itemsPerPage + 1}</strong> to <strong>{Math.min(currentPage * itemsPerPage, sortedStaff.length)}</strong> of <strong>{sortedStaff.length}</strong> staff members
+              Showing <strong>{(currentPage - 1) * itemsPerPage + 1}</strong> to <strong>{Math.min(currentPage * itemsPerPage, filteredStaff.length)}</strong> of <strong>{filteredStaff.length}</strong> staff members
             </span>
             <div className="flex items-center space-x-2">
               <button
@@ -366,6 +371,7 @@ export default function AllStaffModule({
           attendance={attendance}
           leaves={leaves}
           staffDocuments={staffDocuments}
+          showToast={showToast}
         />
       )}
     </div>

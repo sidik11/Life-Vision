@@ -33,11 +33,17 @@ export default function StaffView({
 }) {
   const [subTab, setSubTab] = useState(activeSubTab || 'all-staff');
   const [selectedProfileStaff, setSelectedProfileStaff] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   // Sync subTab with activeSubTab prop when changed from parent / sidebar
   useEffect(() => {
     if (activeSubTab && activeSubTab !== 'staff') {
-      setSubTab(activeSubTab);
+      if (activeSubTab === 'add-staff') {
+        setSubTab('all-staff');
+        setShowAddModal(true);
+      } else {
+        setSubTab(activeSubTab);
+      }
     }
   }, [activeSubTab]);
 
@@ -48,7 +54,7 @@ export default function StaffView({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-[#123B5D] to-[#1E527B] rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-[#123B5D] to-[#1E527B] rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:hidden">
         <div>
           <div className="flex items-center space-x-2 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-1">
             <Users className="w-4 h-4" />
@@ -61,26 +67,24 @@ export default function StaffView({
         </div>
 
         <button
-          onClick={() => setSubTab('add-staff')}
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center space-x-2 shadow-md transition-all cursor-pointer"
+          onClick={() => setShowAddModal(true)}
+          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center space-x-2 shadow-md transition-all cursor-pointer shrink-0"
         >
           <UserPlus className="w-4 h-4" />
           <span>Add New Staff</span>
         </button>
       </div>
 
-      {/* Internal Sub-Nav Tabs (All 8 Modules + Approval tab) */}
-      <div className="flex items-center space-x-2 border-b border-slate-200 overflow-x-auto pb-2 scrollbar-none">
+      {/* Internal Sub-Nav Tabs (7 Options strictly as requested) */}
+      <div className="flex items-center space-x-2 border-b border-slate-200 overflow-x-auto pb-2 scrollbar-none print:hidden">
         {[
           { id: 'all-staff', label: '👥 All Staff', count: staffList.length },
-          { id: 'add-staff', label: '➕ Add Staff' },
-          { id: 'staff-id-approval', label: '⏳ Staff ID Approval', count: pendingIdApprovals },
-          { id: 'staff-id-cards', label: '🪪 Staff ID Cards' },
+          { id: 'staff-id-cards', label: '🪪 Staff ID Cards', count: pendingIdApprovals },
           { id: 'staff-attendance', label: '📅 Staff Attendance' },
           { id: 'leave-management', label: '🏖️ Leave Management', count: pendingLeaves },
-          { id: 'staff-documents', label: '📁 Staff Documents' },
-          { id: 'staff-departments', label: '🏢 Departments' },
-          { id: 'staff-reports', label: '📊 Staff Reports' }
+          { id: 'staff-documents', label: '📁 Staff Document' },
+          { id: 'staff-departments', label: '🏢 Department', count: departments.length },
+          { id: 'staff-reports', label: '📊 Staff Report' }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -109,28 +113,22 @@ export default function StaffView({
           staffList={staffList}
           setStaffList={setStaffList}
           departments={departments}
+          attendance={attendance}
+          leaves={leaves}
+          staffDocuments={staffDocuments}
           onViewProfile={(staff) => setSelectedProfileStaff(staff)}
+          onOpenAddModal={() => setShowAddModal(true)}
           showToast={showToast}
         />
       )}
 
-      {subTab === 'add-staff' && (
-        <AddStaffModule
-          departments={departments}
-          setStaffList={setStaffList}
-          showToast={showToast}
-          onSuccess={() => setSubTab('all-staff')}
-        />
-      )}
-
-      {(subTab === 'staff-id-cards' || subTab === 'staff-id-approval') && (
+      {subTab === 'staff-id-cards' && (
         <StaffIdCardModule
           staffList={staffList}
           setStaffList={setStaffList}
           staffIdCards={staffIdCards}
           setStaffIdCards={setStaffIdCards}
           showToast={showToast}
-          initialApprovalFilter={subTab === 'staff-id-approval' ? 'pending' : 'all'}
         />
       )}
 
@@ -182,6 +180,31 @@ export default function StaffView({
           staffIdCards={staffIdCards}
           showToast={showToast}
         />
+      )}
+
+      {/* ADD STAFF MODAL */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto">
+          <div className="w-full max-w-4xl bg-white rounded-3xl border border-slate-200 shadow-2xl p-6 relative my-auto">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+              <h3 className="text-lg font-bold text-slate-900 font-serif">Add New Staff Member</h3>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="p-1.5 rounded-full bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 transition-all cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <AddStaffModule
+              departments={departments}
+              staffList={staffList}
+              setStaffList={setStaffList}
+              showToast={showToast}
+              onSuccess={() => setShowAddModal(false)}
+            />
+          </div>
+        </div>
       )}
 
       {/* STAFF PROFILE MODAL */}

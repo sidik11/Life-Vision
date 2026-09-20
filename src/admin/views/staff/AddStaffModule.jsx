@@ -135,16 +135,15 @@ export default function AddStaffModule({
     }
   };
 
-  // Department options from dynamic Firestore departments prop + defaults
+  // Department options from dynamic Firestore departments prop
+  const activeDepts = (departments || [])
+    .filter(d => (d.status || 'Active') === 'Active')
+    .map(d => d.departmentName || d.name)
+    .filter(Boolean);
+
   const deptOptions = Array.from(new Set([
-    'Mobilization',
-    'Training',
-    'Placement & Livelihood',
-    'Operations',
-    'Finance',
-    'Management',
-    'IT & Support',
-    ...departments.map(d => d.departmentName).filter(Boolean)
+    ...activeDepts,
+    ...(activeDepts.length === 0 ? ['Mobilization', 'Training', 'Placement & Livelihood', 'Operations', 'Finance', 'Management', 'IT & Support'] : [])
   ]));
 
   return (

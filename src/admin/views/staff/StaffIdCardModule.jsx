@@ -14,35 +14,43 @@ export default function StaffIdCardModule({
   showToast 
 }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('Pending Approval');
+  const [selectedStatus, setSelectedStatus] = useState('All'); // 'All' | 'Pending Approval' | 'Approved' | 'Generated' | 'Rejected'
   const [selectedCardStaff, setSelectedCardStaff] = useState(null);
 
   // Combine staff records with ID card requests from Firestore
   const allRequests = staffList.map(s => {
     const cardReq = staffIdCards.find(c => c.staffId === s.id || c.staffId === s.employeeId);
+    let status = cardReq?.status || s.approvalStatus || (s.status === 'Active' ? 'Approved' : 'Pending Approval');
+    if (s.approvalStatus === 'Approved' && status !== 'Generated') {
+      status = 'Approved';
+    }
     return {
       ...s,
-      requestId: cardReq?.id || cardReq?.requestId || `REQ-${s.id}`,
-      cardStatus: cardReq?.status || s.approvalStatus || (s.status === 'Active' ? 'Approved' : 'Pending Approval'),
-      requestDate: cardReq?.requestDate || s.registeredAt || s.joinDate || '2026-01-01'
+      requestId: cardReq?.id || cardReq?.requestId || `REQ-${s.id || s.employeeId}`,
+      cardStatus: status,
+      requestDate: cardReq?.requestDate || s.registeredAt || s.joinDate || new Date().toISOString().split('T')[0]
     };
   });
 
-  // Filter staff requests
+  // Filter staff requests based on search query and status dropdown selection
   const filteredRequests = allRequests.filter(s => {
     const term = searchQuery.toLowerCase();
     const nameMatch = (s.name || '').toLowerCase().includes(term);
     const idMatch = (s.id || s.employeeId || '').toLowerCase().includes(term);
     const emailMatch = (s.email || '').toLowerCase().includes(term);
     const deptMatch = (s.department || '').toLowerCase().includes(term);
-    const matchesSearch = nameMatch || idMatch || emailMatch || deptMatch;
+    const roleMatch = (s.role || s.designation || '').toLowerCase().includes(term);
+    const matchesSearch = nameMatch || idMatch || emailMatch || deptMatch || roleMatch;
 
     if (selectedStatus === 'All') return matchesSearch;
     if (selectedStatus === 'Pending Approval') {
       return matchesSearch && (s.cardStatus === 'Pending Approval' || s.approvalStatus === 'Pending');
     }
-    if (selectedStatus === 'Approved' || selectedStatus === 'Generated') {
-      return matchesSearch && (s.cardStatus === 'Approved' || s.cardStatus === 'Generated' || s.approvalStatus === 'Approved');
+    if (selectedStatus === 'Approved') {
+      return matchesSearch && (s.cardStatus === 'Approved' || s.approvalStatus === 'Approved') && s.cardStatus !== 'Generated';
+    }
+    if (selectedStatus === 'Generated') {
+      return matchesSearch && s.cardStatus === 'Generated';
     }
     if (selectedStatus === 'Rejected') {
       return matchesSearch && (s.cardStatus === 'Rejected' || s.approvalStatus === 'Rejected');
@@ -50,7 +58,7 @@ export default function StaffIdCardModule({
     return matchesSearch;
   });
 
-  // Handle Approve (✓) -> Generate PDF -> Store Reference -> Send Email -> Update Status to Generated
+  // Handle Approve (✓) -> Update Firestore -> Auto-Email PDF to Staff given email
   const handleApproveIdCard = async (staffMember) => {
     const updatedStaff = {
       ...staffMember,
@@ -139,187 +147,197 @@ export default function StaffIdCardModule({
   return (
     <div className="space-y-6">
       
-      {/* Top Banner */}
+      {/* Top Controls Bar with Clean Filter Dropdown */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2 text-emerald-700 text-xs font-bold uppercase tracking-wider mb-1">
             <IdCard className="w-4 h-4 text-emerald-600" />
-            <span>Staff Identity Card Workflow</span>
+            <span>Staff ID Cards Management</span>
           </div>
-          <h2 className="text-xl font-bold text-slate-800 font-serif">ID Card Requests & Approval Management</h2>
+          <h2 className="text-xl font-bold text-slate-800 font-serif">Staff ID Card Requests & Approval Portal</h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Workflow: Submit Request → Pending Approval → Admin Approval (✓) → PDF Generated → Emailed to Staff.
+            Review ID Card generation requests. Click tick (✓) to approve and dispatch PDF ID card to staff email.
           </p>
         </div>
 
-        {/* Filter Badges */}
-        <div className="flex flex-wrap items-center gap-2">
-          {['Pending Approval', 'Generated', 'Rejected', 'All'].map(st => (
-            <button
-              key={st}
-              onClick={() => setSelectedStatus(st)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                selectedStatus === st
-                  ? 'bg-[#123B5D] text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
+        {/* Search & Clean Status Dropdown Filter */}
+        <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            <input
+              type="text"
+              placeholder="Search staff name, ID, department..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
+            />
+          </div>
+
+          <div className="flex items-center space-x-2 w-full sm:w-auto">
+            <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="bg-slate-50 border border-slate-200 text-xs font-bold rounded-xl px-3.5 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#123B5D] cursor-pointer w-full sm:w-auto"
             >
-              {st}
-            </button>
-          ))}
+              <option value="All">All Statuses ({allRequests.length})</option>
+              <option value="Pending Approval">Pending Approval ({allRequests.filter(s => s.cardStatus === 'Pending Approval' || s.approvalStatus === 'Pending').length})</option>
+              <option value="Approved">Approved</option>
+              <option value="Generated">Generated</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* Requests List */}
-      <div className="space-y-4">
-        {filteredRequests.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-2">
-            <IdCard className="w-12 h-12 text-slate-300 mx-auto" />
-            <h3 className="text-base font-bold text-slate-700 font-serif">No ID Card Requests Found</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              No ID card requests matching the filter criteria. New requests will appear here for Admin approval.
-            </p>
-          </div>
-        ) : (
-          filteredRequests.map(s => {
-            const isPending = s.cardStatus === 'Pending Approval' || s.approvalStatus === 'Pending';
-            const isGenerated = s.cardStatus === 'Generated' || s.cardStatus === 'Approved' || s.approvalStatus === 'Approved';
-            const isRejected = s.cardStatus === 'Rejected' || s.approvalStatus === 'Rejected';
+      {/* Staff ID Cards Requests Table */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-slate-700">
+            <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase text-[10px] font-bold tracking-wider">
+              <tr>
+                <th className="p-3.5">Staff Name</th>
+                <th className="p-3.5">Employee ID</th>
+                <th className="p-3.5">Designation</th>
+                <th className="p-3.5">Department</th>
+                <th className="p-3.5">Request Date</th>
+                <th className="p-3.5">Status</th>
+                <th className="p-3.5 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-medium">
+              {filteredRequests.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-12 text-center text-slate-500">
+                    <IdCard className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                    <p className="font-bold text-slate-700 font-serif">No Staff ID Card Requests Found</p>
+                    <p className="text-2xs text-slate-500 mt-1">
+                      No records match the selected status dropdown filter ({selectedStatus}).
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                filteredRequests.map((s) => {
+                  const isPending = s.cardStatus === 'Pending Approval' || s.approvalStatus === 'Pending';
+                  const isGenerated = s.cardStatus === 'Generated';
+                  const isApproved = s.cardStatus === 'Approved' || s.approvalStatus === 'Approved';
+                  const isRejected = s.cardStatus === 'Rejected' || s.approvalStatus === 'Rejected';
 
-            return (
-              <div
-                key={s.id || s.employeeId}
-                className={`bg-white rounded-2xl border p-5 shadow-xs transition-all relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-5 ${
-                  isPending
-                    ? 'border-amber-300 ring-1 ring-amber-200 bg-amber-50/20'
-                    : isGenerated
-                    ? 'border-emerald-200 bg-emerald-50/10'
-                    : 'border-rose-200 bg-rose-50/10'
-                }`}
-              >
-                {/* Left status accent */}
-                <div className={`w-1.5 absolute top-0 bottom-0 left-0 ${
-                  isPending ? 'bg-amber-500' : isGenerated ? 'bg-emerald-500' : 'bg-rose-500'
-                }`} />
+                  return (
+                    <tr key={s.id || s.employeeId || s.firestoreId} className="hover:bg-slate-50/80 transition-colors">
+                      
+                      {/* Staff Name & Photo */}
+                      <td className="p-3.5">
+                        <div className="flex items-center space-x-3">
+                          <img
+                            src={s.avatar || s.photoDoc || '/image/logo.png'}
+                            alt={s.name}
+                            className="w-10 h-10 rounded-xl object-cover ring-2 ring-emerald-500/20 bg-white shrink-0"
+                          />
+                          <div>
+                            <div className="font-bold text-slate-900">{s.name}</div>
+                            <div className="text-[10px] text-slate-500 font-mono truncate max-w-[140px]">{s.email}</div>
+                          </div>
+                        </div>
+                      </td>
 
-                {/* Staff Details */}
-                <div className="flex items-start space-x-4 min-w-0 flex-1 pl-2">
-                  <img
-                    src={s.avatar || s.photoDoc || '/image/logo.png'}
-                    alt={s.name}
-                    className="w-16 h-16 rounded-2xl object-cover ring-2 ring-emerald-500/30 shrink-0 bg-white shadow-sm"
-                  />
-                  
-                  <div className="space-y-1.5 min-w-0 flex-1 text-xs">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base font-bold text-slate-900 truncate">{s.name}</h3>
-                      <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 rounded-md font-mono font-black text-2xs">
-                        ID: {s.id || s.employeeId}
-                      </span>
+                      {/* Employee ID */}
+                      <td className="p-3.5 font-mono font-bold text-slate-800">
+                        {s.id || s.employeeId}
+                      </td>
 
-                      {/* Status Pills */}
-                      {isPending && (
-                        <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 border border-amber-300 rounded-full font-black text-2xs flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-amber-600 animate-spin" />
-                          <span>Pending Approval</span>
+                      {/* Designation */}
+                      <td className="p-3.5 font-bold text-emerald-800">
+                        {s.role || s.designation}
+                      </td>
+
+                      {/* Department */}
+                      <td className="p-3.5">
+                        <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded-md text-2xs font-bold text-slate-700">
+                          {s.department}
                         </span>
-                      )}
-                      {isGenerated && (
-                        <span className="px-2.5 py-0.5 bg-emerald-100 text-[#047857] border border-emerald-300 rounded-full font-black text-2xs flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 text-[#047857]" />
-                          <span>Generated & PDF Emailed</span>
-                        </span>
-                      )}
-                      {isRejected && (
-                        <span className="px-2.5 py-0.5 bg-rose-100 text-rose-800 border border-rose-300 rounded-full font-black text-2xs flex items-center gap-1">
-                          <XCircle className="w-3 h-3 text-rose-600" />
-                          <span>Request Rejected</span>
-                        </span>
-                      )}
-                    </div>
+                      </td>
 
-                    <div className="flex flex-wrap items-center gap-2 font-semibold text-slate-600">
-                      <span className="text-emerald-700 font-bold">{s.role || s.designation}</span>
-                      <span>•</span>
-                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded-md text-2xs font-bold border border-emerald-200">
-                        {s.department}
-                      </span>
-                    </div>
+                      {/* Request Date */}
+                      <td className="p-3.5 font-medium text-slate-600 whitespace-nowrap">
+                        {s.requestDate}
+                      </td>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-2xs text-slate-600">
-                      <div className="flex items-center gap-1">
-                        <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate">{s.email}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span>{s.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span>Joined: {s.joinDate || 'N/A'}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                      {/* Status */}
+                      <td className="p-3.5 whitespace-nowrap">
+                        {isPending && (
+                          <span className="px-2.5 py-1 bg-amber-100 text-amber-800 border border-amber-300 rounded-full font-black text-2xs flex items-center gap-1 w-fit animate-pulse">
+                            <Clock className="w-3 h-3 text-amber-600" />
+                            <span>⏳ Pending Approval</span>
+                          </span>
+                        )}
+                        {isGenerated && (
+                          <span className="px-2.5 py-1 bg-emerald-100 text-[#047857] border border-emerald-300 rounded-full font-black text-2xs flex items-center gap-1 w-fit">
+                            <CheckCircle2 className="w-3 h-3 text-[#047857]" />
+                            <span>✓ Generated</span>
+                          </span>
+                        )}
+                        {isApproved && !isGenerated && (
+                          <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-black text-2xs flex items-center gap-1 w-fit">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>✓ Approved</span>
+                          </span>
+                        )}
+                        {isRejected && (
+                          <span className="px-2.5 py-1 bg-rose-100 text-rose-800 border border-rose-300 rounded-full font-black text-2xs flex items-center gap-1 w-fit">
+                            <XCircle className="w-3 h-3 text-rose-600" />
+                            <span>✕ Rejected</span>
+                          </span>
+                        )}
+                      </td>
 
-                {/* Actions (✓ Approve & ✕ Reject) */}
-                <div className="flex items-center space-x-3 shrink-0 self-center border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-5 w-full md:w-auto justify-end">
-                  
-                  {/* Approve Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleApproveIdCard(s)}
-                    className={`p-3 rounded-2xl font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md ${
-                      isGenerated
-                        ? 'bg-emerald-100 text-emerald-800 border-2 border-emerald-400'
-                        : 'bg-emerald-600 hover:bg-emerald-700 text-white border-2 border-emerald-600 hover:scale-105 active:scale-95'
-                    }`}
-                    title="Approve ID Card, Generate PDF & Email to Staff"
-                  >
-                    <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                      <Check className="w-3.5 h-3.5 stroke-[3]" />
-                    </div>
-                    <span className="font-extrabold uppercase tracking-wide">
-                      {isGenerated ? '✓ Re-Generate PDF' : '✓ Approve'}
-                    </span>
-                  </button>
+                      {/* Action */}
+                      <td className="p-3.5 text-right">
+                        {isPending ? (
+                          <div className="flex items-center justify-end space-x-2">
+                            {/* Approve (✓) */}
+                            <button
+                              type="button"
+                              onClick={() => handleApproveIdCard(s)}
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-2xs flex items-center gap-1 shadow-sm transition-all cursor-pointer"
+                              title="Approve ID Card & Send PDF to Staff Email"
+                            >
+                              <Check className="w-3.5 h-3.5 stroke-[3]" />
+                              <span>✓ Approve</span>
+                            </button>
 
-                  {/* Reject Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleRejectIdCard(s)}
-                    className={`p-3 rounded-2xl font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                      isRejected
-                        ? 'bg-rose-100 text-rose-800 border-2 border-rose-300'
-                        : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-rose-200 hover:scale-105 active:scale-95'
-                    }`}
-                    title="Reject ID Card Request"
-                  >
-                    <div className="w-5 h-5 rounded-full bg-rose-200/60 flex items-center justify-center shrink-0 text-rose-700">
-                      <X className="w-3.5 h-3.5 stroke-[3]" />
-                    </div>
-                    <span className="font-extrabold uppercase tracking-wide">
-                      {isRejected ? '✕ Rejected' : '✕ Reject'}
-                    </span>
-                  </button>
+                            {/* Reject (✕) */}
+                            <button
+                              type="button"
+                              onClick={() => handleRejectIdCard(s)}
+                              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-xl text-2xs flex items-center gap-1 transition-all cursor-pointer"
+                              title="Reject Approval Request"
+                            >
+                              <X className="w-3.5 h-3.5 stroke-[3]" />
+                              <span>✕ Reject</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedCardStaff(s)}
+                              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 font-bold rounded-xl text-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-slate-600" />
+                              <span>View / Print ID Card</span>
+                            </button>
+                          </div>
+                        )}
+                      </td>
 
-                  {/* View / Print Preview Button */}
-                  <button
-                    type="button"
-                    onClick={() => setSelectedCardStaff(s)}
-                    className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-bold transition-all cursor-pointer border border-slate-200 flex items-center justify-center"
-                    title="Preview Official ID Card"
-                  >
-                    <Eye className="w-4 h-4 text-slate-600" />
-                  </button>
-
-                </div>
-
-              </div>
-            );
-          })
-        )}
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Side-by-Side Front & Back ID Card Preview Modal */}
@@ -329,7 +347,7 @@ export default function StaffIdCardModule({
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 font-serif">Official Staff Identity Card</h3>
-                <p className="text-xs text-slate-500 font-medium">{selectedCardStaff.name} ({selectedCardStaff.id})</p>
+                <p className="text-xs text-slate-500 font-medium">{selectedCardStaff.name} ({selectedCardStaff.id || selectedCardStaff.employeeId})</p>
               </div>
               <button
                 type="button"
@@ -363,7 +381,7 @@ export default function StaffIdCardModule({
                       </div>
                       <span className="font-bold text-[#1e293b] w-[68px] shrink-0">Employee ID</span>
                       <span className="font-bold text-[#1e293b] mr-1.5">:</span>
-                      <span className="font-extrabold text-[#0f172a] truncate max-w-[145px]">{selectedCardStaff.id}</span>
+                      <span className="font-extrabold text-[#0f172a] truncate max-w-[145px]">{selectedCardStaff.id || selectedCardStaff.employeeId}</span>
                     </div>
 
                     <div className="flex items-center text-[9.5px] leading-none">

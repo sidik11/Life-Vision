@@ -14,18 +14,13 @@ export default function StaffReportModule({
   showToast
 }) {
   const [dateRange, setDateRange] = useState('this-month'); // 'this-month' | 'last-month' | 'this-year' | 'custom'
-  const [startDate, setStartDate] = useState(() => {
-    const d = new Date();
-    d.setDate(1);
-    return d.toISOString().split('T')[0];
-  });
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [selectedDept, setSelectedDept] = useState('All');
   const [reportType, setReportType] = useState('summary'); // 'summary' | 'attendance' | 'leave' | 'department' | 'idcard'
 
-  // Department list fallback
+  // Department list
   const deptList = useMemo(() => {
-    if (departments.length > 0) return departments.map(d => d.name || d.departmentName);
+    const list = departments.map(d => d.departmentName || d.name).filter(Boolean);
+    if (list.length > 0) return Array.from(new Set(list));
     return ['Mobilization', 'Training', 'Placement & Livelihood', 'Operations', 'Management', 'Finance', 'IT & Support'];
   }, [departments]);
 
@@ -34,6 +29,24 @@ export default function StaffReportModule({
     if (selectedDept === 'All') return staffList;
     return staffList.filter(s => (s.department || '').toLowerCase() === selectedDept.toLowerCase());
   }, [staffList, selectedDept]);
+
+  // Filtered attendance
+  const filteredAttendance = useMemo(() => {
+    if (selectedDept === 'All') return attendance;
+    return attendance.filter(a => {
+      const targetStaff = staffList.find(s => s.id === a.staffId || s.name === a.staffName);
+      return targetStaff && (targetStaff.department || '').toLowerCase() === selectedDept.toLowerCase();
+    });
+  }, [attendance, staffList, selectedDept]);
+
+  // Filtered leaves
+  const filteredLeaves = useMemo(() => {
+    if (selectedDept === 'All') return leaves;
+    return leaves.filter(l => {
+      const targetStaff = staffList.find(s => s.id === l.staffId || s.name === l.staffName);
+      return targetStaff && (targetStaff.department || '').toLowerCase() === selectedDept.toLowerCase();
+    });
+  }, [leaves, staffList, selectedDept]);
 
   // General Metrics
   const stats = useMemo(() => {
@@ -50,17 +63,13 @@ export default function StaffReportModule({
     });
 
     // Leaves metrics
-    const totalLeaves = leaves.length;
-    const pendingLeaves = leaves.filter(l => l.status === 'Pending').length;
-    const approvedLeaves = leaves.filter(l => l.status === 'Approved').length;
-    const rejectedLeaves = leaves.filter(l => l.status === 'Rejected').length;
+    const totalLeaves = filteredLeaves.length;
+    const pendingLeaves = filteredLeaves.filter(l => l.status === 'Pending').length;
+    const approvedLeaves = filteredLeaves.filter(l => l.status === 'Approved').length;
 
     // Attendance metrics
-    const totalAttendanceLogs = attendance.length;
-    const presentCount = attendance.filter(a => a.status === 'Present').length;
-    const absentCount = attendance.filter(a => a.status === 'Absent').length;
-    const halfDayCount = attendance.filter(a => a.status === 'Half Day').length;
-    const lateCount = attendance.filter(a => a.status === 'Late').length;
+    const totalAttendanceLogs = filteredAttendance.length;
+    const presentCount = filteredAttendance.filter(a => a.status === 'Present').length;
     const attendancePercentage = totalAttendanceLogs > 0 ? Math.round((presentCount / totalAttendanceLogs) * 100) : 95;
 
     // ID Cards metrics
@@ -77,18 +86,14 @@ export default function StaffReportModule({
       totalLeaves,
       pendingLeaves,
       approvedLeaves,
-      rejectedLeaves,
       totalAttendanceLogs,
       presentCount,
-      absentCount,
-      halfDayCount,
-      lateCount,
       attendancePercentage,
       idCardApproved,
       idCardPending,
       idCardRejected
     };
-  }, [filteredStaff, leaves, attendance]);
+  }, [filteredStaff, filteredLeaves, filteredAttendance]);
 
   // Export CSV Handler
   const handleExportCSV = () => {
@@ -96,51 +101,53 @@ export default function StaffReportModule({
     let headers = [];
 
     if (reportType === 'summary' || reportType === 'department') {
-      headers = ['Employee ID', 'Name', 'Role', 'Department', 'Email', 'Phone', 'Join Date', 'Status', 'Approval Status'];
+      headers = ['Employee ID', 'Name', 'Designation', 'Department', 'Email', 'Contact Number', 'Joining Date', 'Employment Type', 'Status'];
       csvData = filteredStaff.map(s => [
-        s.id || '',
+        s.id || s.employeeId || '',
         `"${s.name || ''}"`,
-        `"${s.role || ''}"`,
+        `"${s.role || s.designation || ''}"`,
         `"${s.department || ''}"`,
         s.email || '',
         s.phone || '',
         s.joinDate || '',
-        s.status || 'Active',
-        s.approvalStatus || 'Approved'
+        s.employmentType || 'Full Time',
+        s.status || 'Active'
       ]);
     } else if (reportType === 'leave') {
-      headers = ['Leave ID', 'Staff ID', 'Staff Name', 'Leave Type', 'Start Date', 'End Date', 'Days', 'Status', 'Reason'];
-      csvData = leaves.map(l => [
+      headers = ['Leave ID', 'Staff Name', 'Employee ID', 'Department', 'Leave Type', 'Start Date', 'End Date', 'Total Days', 'Status'];
+      csvData = filteredLeaves.map(l => [
         l.id || '',
-        l.staffId || '',
         `"${l.staffName || ''}"`,
+        l.staffId || '',
+        `"${l.department || ''}"`,
         l.leaveType || '',
         l.startDate || '',
         l.endDate || '',
         l.totalDays || 1,
-        l.status || 'Pending',
-        `"${(l.reason || '').replace(/"/g, '""')}"`
+        l.status || 'Pending'
       ]);
     } else if (reportType === 'attendance') {
-      headers = ['Log ID', 'Staff ID', 'Staff Name', 'Date', 'Check In', 'Check Out', 'Status'];
-      csvData = attendance.map(a => [
+      headers = ['Log ID', 'Staff Name', 'Employee ID', 'Department', 'Date', 'Check In', 'Check Out', 'Working Hours', 'Status'];
+      csvData = filteredAttendance.map(a => [
         a.id || '',
-        a.staffId || '',
         `"${a.staffName || ''}"`,
+        a.staffId || '',
+        `"${a.department || ''}"`,
         a.date || '',
         a.checkIn || '',
         a.checkOut || '',
+        '8h 00m',
         a.status || 'Present'
       ]);
     } else if (reportType === 'idcard') {
-      headers = ['Employee ID', 'Name', 'Department', 'Email', 'ID Status', 'Approval Status'];
+      headers = ['Employee ID', 'Staff Name', 'Designation', 'Department', 'Email', 'ID Status'];
       csvData = filteredStaff.map(s => [
-        s.id || '',
+        s.id || s.employeeId || '',
         `"${s.name || ''}"`,
+        `"${s.role || s.designation || ''}"`,
         `"${s.department || ''}"`,
         s.email || '',
-        s.status || 'Active',
-        s.approvalStatus || 'Approved'
+        s.approvalStatus || s.status || 'Active'
       ]);
     }
 
@@ -148,7 +155,7 @@ export default function StaffReportModule({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Staff_${reportType.toUpperCase()}_Report_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `LifeVision_Staff_${reportType.toUpperCase()}_Report_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -161,9 +168,21 @@ export default function StaffReportModule({
     window.print();
   };
 
+  const getReportTitle = () => {
+    switch (reportType) {
+      case 'summary': return 'OFFICIAL STAFF MEMBER DIRECTORY REPORT';
+      case 'attendance': return 'STAFF ATTENDANCE LOG REPORT';
+      case 'leave': return 'STAFF LEAVE MANAGEMENT REPORT';
+      case 'department': return 'DEPARTMENTAL STAFF DISTRIBUTION REPORT';
+      case 'idcard': return 'STAFF ID CARD APPROVAL & STATUS REPORT';
+      default: return 'STAFF MANAGEMENT REPORT';
+    }
+  };
+
   return (
-    <div className="space-y-6 print:p-0">
-      {/* Top Banner / Filter Controls */}
+    <div className="space-y-6">
+      
+      {/* 1. ON-SCREEN BANNER & CONTROLS (Hidden in Print) */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:hidden">
         <div>
           <div className="flex items-center space-x-2 text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">
@@ -197,16 +216,16 @@ export default function StaffReportModule({
         </div>
       </div>
 
-      {/* Filter Toolbar */}
+      {/* Filter Toolbar (Hidden in Print) */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4 print:hidden">
-        {/* Report Tabs */}
+        {/* Report Category Tabs */}
         <div className="flex items-center space-x-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-none">
           {[
-            { id: 'summary', label: '👥 Overview Summary' },
-            { id: 'attendance', label: '📅 Attendance' },
-            { id: 'leave', label: '🏖️ Leaves' },
-            { id: 'department', label: '🏢 Departments' },
-            { id: 'idcard', label: '🪪 ID Cards' }
+            { id: 'summary', label: '👥 Staff Directory Summary' },
+            { id: 'attendance', label: '📅 Attendance Report' },
+            { id: 'leave', label: '🏖️ Leave Report' },
+            { id: 'department', label: '🏢 Department Breakdown' },
+            { id: 'idcard', label: '🪪 Staff ID Cards Report' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -253,8 +272,8 @@ export default function StaffReportModule({
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* KPI Cards Grid (Hidden in Print) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 print:hidden">
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs relative overflow-hidden">
           <div className="h-1 bg-blue-500 absolute top-0 left-0 right-0" />
           <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
@@ -275,7 +294,7 @@ export default function StaffReportModule({
           </div>
           <div className="text-2xl font-black text-emerald-700 mt-2 font-mono">{stats.attendancePercentage}%</div>
           <div className="text-[11px] text-slate-500 mt-1 font-semibold">
-            {stats.presentCount} Present logs logged
+            {stats.presentCount} Present logs
           </div>
         </div>
 
@@ -294,7 +313,7 @@ export default function StaffReportModule({
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs relative overflow-hidden">
           <div className="h-1 bg-teal-500 absolute top-0 left-0 right-0" />
           <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
-            <span>ID Card Approvals</span>
+            <span>ID Cards Approved</span>
             <IdCard className="w-4 h-4 text-teal-500" />
           </div>
           <div className="text-2xl font-black text-slate-900 mt-2 font-mono">{stats.idCardApproved}</div>
@@ -304,129 +323,141 @@ export default function StaffReportModule({
         </div>
       </div>
 
-      {/* REPORT CONTENT DEPENDING ON TAB */}
-
-      {/* 1. OVERVIEW SUMMARY */}
-      {reportType === 'summary' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Department Staff Distribution */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-800 font-serif flex items-center gap-2">
-                <Building className="w-4 h-4 text-emerald-600" />
-                <span>Department Staff Distribution</span>
-              </h3>
-              <span className="text-xs text-slate-500 font-semibold">{Object.keys(stats.deptCounts).length} Departments</span>
-            </div>
-
-            <div className="space-y-3">
-              {Object.entries(stats.deptCounts).map(([dept, count], idx) => {
-                const percentage = stats.total > 0 ? Math.round((count / stats.total) * 100) : 0;
-                return (
-                  <div key={idx} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs font-semibold">
-                      <span className="text-slate-700">{dept}</span>
-                      <span className="text-slate-900 font-mono font-bold">{count} ({percentage}%)</span>
-                    </div>
-                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                      <div
-                        className="bg-emerald-600 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+      {/* 2. DEDICATED PROFESSIONAL PRINT-READY CONTAINER */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs print:p-0 print:border-none print:shadow-none print:rounded-none">
+        
+        {/* NGO BRANDED PRINT HEADER (Visible in Print & On-Screen) */}
+        <div className="border-b-2 border-slate-900 pb-4 mb-6 flex items-start justify-between">
+          <div className="flex items-center space-x-4">
+            <img src="/image/logo.png" alt="Life Vision Society Logo" className="w-16 h-16 object-contain" />
+            <div>
+              <h1 className="text-xl font-black text-slate-900 tracking-wide font-serif uppercase">LIFE VISION SOCIETY</h1>
+              <p className="text-xs font-bold text-emerald-800">Regd. NGO | Empowering Skill Development & Livelihood in Odisha</p>
+              <p className="text-[11px] text-slate-600 font-medium">Head Office: Plot No. 124, Saheed Nagar, Bhubaneswar, Odisha - 751007</p>
+              <p className="text-[11px] text-slate-600 font-medium">Phone: +91 9416362914 | Email: support.lifevision@gmail.com</p>
             </div>
           </div>
 
-          {/* Quick Staff Directory Summary */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-800 font-serif flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#123B5D]" />
-                <span>Recent Staff Records</span>
-              </h3>
-              <span className="text-xs text-slate-500 font-semibold">Showing {Math.min(5, filteredStaff.length)} of {filteredStaff.length}</span>
+          <div className="text-right space-y-1">
+            <div className="px-3 py-1 bg-slate-100 text-slate-900 border border-slate-300 rounded-lg text-2xs font-bold uppercase font-mono">
+              OFFICIAL REPORT
             </div>
-
-            <div className="divide-y divide-slate-100">
-              {filteredStaff.slice(0, 5).map((s) => (
-                <div key={s.id} className="py-3 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src={s.avatar || '/image/logo.png'}
-                      alt={s.name}
-                      className="w-9 h-9 rounded-xl object-cover ring-1 ring-slate-200 bg-white shrink-0"
-                    />
-                    <div>
-                      <div className="text-xs font-bold text-slate-800">{s.name}</div>
-                      <div className="text-[10px] text-slate-500 font-semibold">{s.role} • {s.department}</div>
-                    </div>
-                  </div>
-                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                    s.approvalStatus === 'Approved' || (s.status === 'Active' && !s.approvalStatus)
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : s.approvalStatus === 'Pending' || s.status === 'Pending Approval'
-                      ? 'bg-amber-100 text-amber-800'
-                      : 'bg-rose-100 text-rose-800'
-                  }`}>
-                    {s.approvalStatus || s.status || 'Active'}
-                  </span>
-                </div>
-              ))}
-            </div>
+            <div className="text-xs text-slate-500 font-medium">Generated Date:</div>
+            <div className="text-xs font-bold text-slate-900 font-mono">{new Date().toLocaleString('en-IN')}</div>
           </div>
         </div>
-      )}
 
-      {/* 2. ATTENDANCE REPORT */}
-      {reportType === 'attendance' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div>
-              <h3 className="text-base font-bold text-slate-800 font-serif">Detailed Attendance Logs</h3>
-              <p className="text-xs text-slate-500">Record of daily staff check-ins and check-outs across Odisha training centers.</p>
-            </div>
-            <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200">
-              {stats.totalAttendanceLogs} Logs Found
+        {/* REPORT METADATA STRIP */}
+        <div className="bg-slate-50 border border-slate-300 rounded-xl p-3 mb-6 flex flex-wrap items-center justify-between text-xs font-bold text-slate-800">
+          <div>
+            <span className="text-slate-500 font-semibold uppercase text-[10px] block">Report Title:</span>
+            <span className="text-emerald-900 text-sm font-black font-serif">{getReportTitle()}</span>
+          </div>
+          <div>
+            <span className="text-slate-500 font-semibold uppercase text-[10px] block">Department Filter:</span>
+            <span className="font-mono text-slate-900">{selectedDept}</span>
+          </div>
+          <div>
+            <span className="text-slate-500 font-semibold uppercase text-[10px] block">Period Range:</span>
+            <span className="font-mono text-slate-900 capitalize">{dateRange.replace('-', ' ')}</span>
+          </div>
+          <div>
+            <span className="text-slate-500 font-semibold uppercase text-[10px] block">Total Records:</span>
+            <span className="font-mono text-slate-900">
+              {reportType === 'leave' ? filteredLeaves.length : reportType === 'attendance' ? filteredAttendance.length : filteredStaff.length} Records
             </span>
           </div>
+        </div>
 
-          <div className="overflow-x-auto border border-slate-200 rounded-xl">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] border-b border-slate-200">
-                <tr>
-                  <th className="p-3">Log ID</th>
-                  <th className="p-3">Staff Name</th>
-                  <th className="p-3">Date</th>
-                  <th className="p-3">Check In</th>
-                  <th className="p-3">Check Out</th>
-                  <th className="p-3">Work Hours</th>
-                  <th className="p-3">Status</th>
+        {/* 1. STAFF DIRECTORY SUMMARY REPORT */}
+        {(reportType === 'summary' || reportType === 'department') && (
+          <div className="space-y-4">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-800 text-white font-bold uppercase text-[10px] tracking-wider">
+                  <th className="p-3 border border-slate-700">Staff Name</th>
+                  <th className="p-3 border border-slate-700">Employee ID</th>
+                  <th className="p-3 border border-slate-700">Designation</th>
+                  <th className="p-3 border border-slate-700">Department</th>
+                  <th className="p-3 border border-slate-700">Email</th>
+                  <th className="p-3 border border-slate-700">Contact Number</th>
+                  <th className="p-3 border border-slate-700">Joining Date</th>
+                  <th className="p-3 border border-slate-700">Employment Type</th>
+                  <th className="p-3 border border-slate-700">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {attendance.length === 0 ? (
+              <tbody className="divide-y divide-slate-300 font-medium text-slate-800">
+                {filteredStaff.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-slate-400">
-                      No attendance logs recorded for this period yet.
+                    <td colSpan={9} className="p-6 text-center text-slate-500 border border-slate-200">
+                      No staff records available for the selected department.
                     </td>
                   </tr>
                 ) : (
-                  attendance.map((a, idx) => (
-                    <tr key={a.id || idx} className="hover:bg-slate-50">
-                      <td className="p-3 font-mono text-slate-500">{a.id || `ATT-${idx + 1}`}</td>
-                      <td className="p-3 font-bold text-slate-800">{a.staffName || 'Staff Member'}</td>
-                      <td className="p-3">{a.date || new Date().toISOString().split('T')[0]}</td>
-                      <td className="p-3 font-mono text-emerald-700">{a.checkIn || '09:30 AM'}</td>
-                      <td className="p-3 font-mono text-slate-500">{a.checkOut || '05:30 PM'}</td>
-                      <td className="p-3 font-mono">8h 00m</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                          a.status === 'Present' ? 'bg-emerald-100 text-emerald-800' :
-                          a.status === 'Absent' ? 'bg-rose-100 text-rose-800' :
-                          a.status === 'Half Day' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                  filteredStaff.map((staff, idx) => (
+                    <tr key={staff.id || idx} className="hover:bg-slate-50 border border-slate-200">
+                      <td className="p-2.5 font-bold text-slate-900">{staff.name}</td>
+                      <td className="p-2.5 font-mono font-bold text-slate-800">{staff.id || staff.employeeId}</td>
+                      <td className="p-2.5 font-semibold text-emerald-800">{staff.role || staff.designation}</td>
+                      <td className="p-2.5 font-medium">{staff.department}</td>
+                      <td className="p-2.5 font-mono text-[11px] text-slate-600">{staff.email}</td>
+                      <td className="p-2.5 font-mono text-slate-700">{staff.phone}</td>
+                      <td className="p-2.5 font-medium">{staff.joinDate || 'N/A'}</td>
+                      <td className="p-2.5 font-semibold">{staff.employmentType || 'Full Time'}</td>
+                      <td className="p-2.5 font-bold">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] ${
+                          staff.status === 'Active' || staff.approvalStatus === 'Approved' ? 'bg-emerald-100 text-emerald-900' : 'bg-rose-100 text-rose-900'
+                        }`}>
+                          {staff.status || 'Active'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* 2. ATTENDANCE LOGS REPORT */}
+        {reportType === 'attendance' && (
+          <div className="space-y-4">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-800 text-white font-bold uppercase text-[10px] tracking-wider">
+                  <th className="p-3 border border-slate-700">Log ID</th>
+                  <th className="p-3 border border-slate-700">Staff Name</th>
+                  <th className="p-3 border border-slate-700">Employee ID</th>
+                  <th className="p-3 border border-slate-700">Department</th>
+                  <th className="p-3 border border-slate-700">Date</th>
+                  <th className="p-3 border border-slate-700">Check In</th>
+                  <th className="p-3 border border-slate-700">Check Out</th>
+                  <th className="p-3 border border-slate-700">Working Hours</th>
+                  <th className="p-3 border border-slate-700">Attendance Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-300 font-medium text-slate-800">
+                {filteredAttendance.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="p-6 text-center text-slate-500 border border-slate-200">
+                      No attendance log entries found for this report period.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredAttendance.map((a, idx) => (
+                    <tr key={a.id || idx} className="hover:bg-slate-50 border border-slate-200">
+                      <td className="p-2.5 font-mono text-slate-500">{a.id || `ATT-${idx + 1}`}</td>
+                      <td className="p-2.5 font-bold text-slate-900">{a.staffName || 'Staff Member'}</td>
+                      <td className="p-2.5 font-mono font-bold text-slate-800">{a.staffId || '-'}</td>
+                      <td className="p-2.5 font-medium">{a.department || '-'}</td>
+                      <td className="p-2.5 font-medium">{a.date || new Date().toISOString().split('T')[0]}</td>
+                      <td className="p-2.5 font-mono text-emerald-800">{a.checkIn || '09:30 AM'}</td>
+                      <td className="p-2.5 font-mono text-slate-600">{a.checkOut || '05:30 PM'}</td>
+                      <td className="p-2.5 font-mono">8h 00m</td>
+                      <td className="p-2.5 font-bold">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] ${
+                          a.status === 'Present' ? 'bg-emerald-100 text-emerald-900' :
+                          a.status === 'Absent' ? 'bg-rose-100 text-rose-900' : 'bg-amber-100 text-amber-900'
                         }`}>
                           {a.status || 'Present'}
                         </span>
@@ -437,55 +468,47 @@ export default function StaffReportModule({
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 3. LEAVE REPORT */}
-      {reportType === 'leave' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div>
-              <h3 className="text-base font-bold text-slate-800 font-serif">Staff Leave Management Report</h3>
-              <p className="text-xs text-slate-500">Historical summary of leave applications, approvals, and rejections.</p>
-            </div>
-            <span className="px-3 py-1 bg-amber-50 text-amber-800 text-xs font-bold rounded-full border border-amber-200">
-              {leaves.length} Applications
-            </span>
-          </div>
-
-          <div className="overflow-x-auto border border-slate-200 rounded-xl">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] border-b border-slate-200">
-                <tr>
-                  <th className="p-3">Leave ID</th>
-                  <th className="p-3">Staff Name</th>
-                  <th className="p-3">Leave Type</th>
-                  <th className="p-3">Start Date</th>
-                  <th className="p-3">End Date</th>
-                  <th className="p-3">Total Days</th>
-                  <th className="p-3">Status</th>
+        {/* 3. LEAVE REPORT */}
+        {reportType === 'leave' && (
+          <div className="space-y-4">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-800 text-white font-bold uppercase text-[10px] tracking-wider">
+                  <th className="p-3 border border-slate-700">Leave ID</th>
+                  <th className="p-3 border border-slate-700">Staff Name</th>
+                  <th className="p-3 border border-slate-700">Employee ID</th>
+                  <th className="p-3 border border-slate-700">Department</th>
+                  <th className="p-3 border border-slate-700">Leave Type</th>
+                  <th className="p-3 border border-slate-700">From Date</th>
+                  <th className="p-3 border border-slate-700">To Date</th>
+                  <th className="p-3 border border-slate-700">Number of Days</th>
+                  <th className="p-3 border border-slate-700">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {leaves.length === 0 ? (
+              <tbody className="divide-y divide-slate-300 font-medium text-slate-800">
+                {filteredLeaves.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-slate-400">
-                      No leave applications found.
+                    <td colSpan={9} className="p-6 text-center text-slate-500 border border-slate-200">
+                      No leave applications found for this report period.
                     </td>
                   </tr>
                 ) : (
-                  leaves.map((l, idx) => (
-                    <tr key={l.id || idx} className="hover:bg-slate-50">
-                      <td className="p-3 font-mono text-slate-500">{l.id || `LV-${idx + 1}`}</td>
-                      <td className="p-3 font-bold text-slate-800">{l.staffName || 'Staff Member'}</td>
-                      <td className="p-3 font-semibold text-emerald-700">{l.leaveType || 'Casual Leave'}</td>
-                      <td className="p-3">{l.startDate || '-'}</td>
-                      <td className="p-3">{l.endDate || '-'}</td>
-                      <td className="p-3 font-mono font-bold">{l.totalDays || 1} day(s)</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                          l.status === 'Approved' ? 'bg-emerald-100 text-emerald-800' :
-                          l.status === 'Rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                  filteredLeaves.map((l, idx) => (
+                    <tr key={l.id || idx} className="hover:bg-slate-50 border border-slate-200">
+                      <td className="p-2.5 font-mono text-slate-500">{l.id || `LV-${idx + 1}`}</td>
+                      <td className="p-2.5 font-bold text-slate-900">{l.staffName || 'Staff Member'}</td>
+                      <td className="p-2.5 font-mono font-bold text-slate-800">{l.staffId || '-'}</td>
+                      <td className="p-2.5 font-medium">{l.department || '-'}</td>
+                      <td className="p-2.5 font-semibold text-emerald-800">{l.leaveType || 'Casual Leave'}</td>
+                      <td className="p-2.5 font-medium">{l.startDate || '-'}</td>
+                      <td className="p-2.5 font-medium">{l.endDate || '-'}</td>
+                      <td className="p-2.5 font-mono font-bold">{l.totalDays || 1} day(s)</td>
+                      <td className="p-2.5 font-bold">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] ${
+                          l.status === 'Approved' ? 'bg-emerald-100 text-emerald-900' :
+                          l.status === 'Rejected' ? 'bg-rose-100 text-rose-900' : 'bg-amber-100 text-amber-900'
                         }`}>
                           {l.status || 'Pending'}
                         </span>
@@ -496,78 +519,43 @@ export default function StaffReportModule({
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 4. DEPARTMENT REPORT */}
-      {reportType === 'department' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div>
-              <h3 className="text-base font-bold text-slate-800 font-serif">Departmental Operational Breakdown</h3>
-              <p className="text-xs text-slate-500">Distribution of active staff across Life Vision Society departments.</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {deptList.map((dName, idx) => {
-              const count = staffList.filter(s => (s.department || '').toLowerCase() === dName.toLowerCase()).length;
-              return (
-                <div key={idx} className="bg-slate-50 rounded-2xl border border-slate-200 p-5 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-800">{dName}</span>
-                    <Building className="w-4 h-4 text-emerald-600" />
-                  </div>
-                  <div className="text-2xl font-black text-slate-900 font-mono">{count} Staff</div>
-                  <p className="text-[11px] text-slate-500 font-medium">Assigned active staff members</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* 5. ID CARD REPORT */}
-      {reportType === 'idcard' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div>
-              <h3 className="text-base font-bold text-slate-800 font-serif">Official ID Card Approval & Status Report</h3>
-              <p className="text-xs text-slate-500">Track approved, pending, and rejected staff ID cards.</p>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto border border-slate-200 rounded-xl">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] border-b border-slate-200">
-                <tr>
-                  <th className="p-3">Staff ID</th>
-                  <th className="p-3">Staff Name</th>
-                  <th className="p-3">Department</th>
-                  <th className="p-3">Email</th>
-                  <th className="p-3">Approval Status</th>
-                  <th className="p-3">ID Card Document</th>
+        {/* 4. ID CARDS REPORT */}
+        {reportType === 'idcard' && (
+          <div className="space-y-4">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-800 text-white font-bold uppercase text-[10px] tracking-wider">
+                  <th className="p-3 border border-slate-700">Employee ID</th>
+                  <th className="p-3 border border-slate-700">Staff Name</th>
+                  <th className="p-3 border border-slate-700">Designation</th>
+                  <th className="p-3 border border-slate-700">Department</th>
+                  <th className="p-3 border border-slate-700">Email Address</th>
+                  <th className="p-3 border border-slate-700">Approval Status</th>
+                  <th className="p-3 border border-slate-700">ID Card Document Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {filteredStaff.map((s) => {
+              <tbody className="divide-y divide-slate-300 font-medium text-slate-800">
+                {filteredStaff.map((s, idx) => {
                   const isApproved = s.approvalStatus === 'Approved' || (s.status === 'Active' && !s.approvalStatus);
                   const isPending = s.approvalStatus === 'Pending' || s.status === 'Pending Approval';
                   return (
-                    <tr key={s.id} className="hover:bg-slate-50">
-                      <td className="p-3 font-mono font-bold text-slate-900">{s.id}</td>
-                      <td className="p-3 font-bold text-slate-800">{s.name}</td>
-                      <td className="p-3 font-semibold text-emerald-700">{s.department}</td>
-                      <td className="p-3 text-slate-500">{s.email}</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                          isApproved ? 'bg-emerald-100 text-emerald-800' :
-                          isPending ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
+                    <tr key={s.id || idx} className="hover:bg-slate-50 border border-slate-200">
+                      <td className="p-2.5 font-mono font-bold text-slate-900">{s.id || s.employeeId}</td>
+                      <td className="p-2.5 font-bold text-slate-900">{s.name}</td>
+                      <td className="p-2.5 font-semibold text-emerald-800">{s.role || s.designation}</td>
+                      <td className="p-2.5 font-medium">{s.department}</td>
+                      <td className="p-2.5 font-mono text-[11px] text-slate-600">{s.email}</td>
+                      <td className="p-2.5 font-bold">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] ${
+                          isApproved ? 'bg-emerald-100 text-emerald-900' :
+                          isPending ? 'bg-amber-100 text-amber-900' : 'bg-rose-100 text-rose-900'
                         }`}>
-                          {isApproved ? '✓ Approved' : isPending ? '⏳ Pending' : '✗ Rejected'}
+                          {isApproved ? '✓ Approved' : isPending ? '⏳ Pending' : '✕ Rejected'}
                         </span>
                       </td>
-                      <td className="p-3 font-mono text-[11px] text-slate-500">
+                      <td className="p-2.5 font-mono text-2xs text-slate-600">
                         {isApproved ? 'Generated & Emailed' : 'Awaiting Approval'}
                       </td>
                     </tr>
@@ -576,8 +564,23 @@ export default function StaffReportModule({
               </tbody>
             </table>
           </div>
+        )}
+
+        {/* PRINT FOOTER */}
+        <div className="mt-8 pt-4 border-t border-slate-300 flex items-center justify-between text-[10px] text-slate-500 font-medium">
+          <div>
+            <span>Confidential | Life Vision Society HR Portal</span>
+          </div>
+          <div>
+            <span>Page 1 of 1</span>
+          </div>
+          <div>
+            <span>Authorized Signatory: _______________________</span>
+          </div>
         </div>
-      )}
+
+      </div>
+
     </div>
   );
 }
