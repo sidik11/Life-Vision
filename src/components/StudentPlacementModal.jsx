@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, Send, GraduationCap, User, Phone, Mail, BookOpen, MapPin, Award, Briefcase, Share2, Loader2 } from 'lucide-react';
+import { X, CheckCircle2, Send, GraduationCap, User, Phone, Mail, BookOpen, MapPin, Award, Briefcase, Share2, Loader2, Upload, Plus, FileText } from 'lucide-react';
 import { saveToFirestore } from '../utils/firebaseSave';
 
 export default function StudentPlacementModal({ isOpen, onClose }) {
@@ -33,6 +33,78 @@ export default function StudentPlacementModal({ isOpen, onClose }) {
     hearAboutUs: 'Website',
   });
 
+  // Document Uploads State
+  const [photoDoc, setPhotoDoc] = useState('');
+  const [aadharDoc, setAadharDoc] = useState('');
+  const [extraDocs, setExtraDocs] = useState([]);
+  const [docError, setDocError] = useState('');
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setDocError('File size exceeds the allowed limit.');
+        return;
+      }
+      setDocError('');
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoDoc(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAadharUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setDocError('File size exceeds the allowed limit.');
+        return;
+      }
+      setDocError('');
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAadharDoc(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddExtraDoc = () => {
+    setExtraDocs(prev => [...prev, { title: '', file: '', fileName: '' }]);
+  };
+
+  const handleExtraDocTitleChange = (index, title) => {
+    setExtraDocs(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], title };
+      return updated;
+    });
+  };
+
+  const handleExtraDocFileChange = (index, file) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setDocError('File size exceeds the allowed limit.');
+      return;
+    }
+    setDocError('');
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setExtraDocs(prev => {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], file: reader.result, fileName: file.name };
+        return updated;
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveExtraDoc = (index) => {
+    setExtraDocs(prev => prev.filter((_, i) => i !== index));
+  };
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -65,7 +137,10 @@ export default function StudentPlacementModal({ isOpen, onClose }) {
       jobRole: formData.supportType || 'Higher Education Placement',
       location: `${formData.district || 'Bhubaneswar'}, ${formData.state || 'Odisha'}`,
       joiningDate: new Date().toISOString().split('T')[0],
-      salary: 'Scholarship Requested'
+      salary: 'Scholarship Requested',
+      photoDoc: photoDoc || '',
+      aadharDoc: aadharDoc || '',
+      extraDocs: extraDocs || []
     };
 
     await saveToFirestore('placements', newPlacement, 'lvs_new_placement');
@@ -508,6 +583,88 @@ export default function StudentPlacementModal({ isOpen, onClose }) {
                     <option value="Other">Other</option>
                   </select>
                 </div>
+              </div>
+
+              {/* 7. UPLOAD DOCUMENTS */}
+              <div className="space-y-4 pt-3 border-t border-slate-100">
+                <h4 className="text-xs font-black text-slate-800 tracking-wider flex items-center gap-2 font-serif">
+                  <Upload className="w-4 h-4 text-[#C52B75]" />
+                  <span>7. Upload Student Documents</span>
+                </h4>
+
+                {docError && (
+                  <div className="p-2.5 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl">
+                    {docError}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Photo Upload */}
+                  <div className="space-y-1.5 bg-slate-50 p-3 border border-slate-200 rounded-xl">
+                    <label className="block text-xs font-bold text-slate-700">Passport Photo</label>
+                    <div className="flex items-center gap-3">
+                      {photoDoc ? (
+                        <img src={photoDoc} alt="Photo Preview" className="w-9 h-9 rounded-lg object-cover ring-2 ring-pink-500 shrink-0" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-lg bg-pink-100/70 text-[#6B1D52] font-bold text-2xs flex items-center justify-center shrink-0">Photo</div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        className="text-xs text-slate-600 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-2xs file:font-bold file:bg-pink-100 file:text-[#6B1D52] hover:file:bg-pink-200 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Aadhaar Upload */}
+                  <div className="space-y-1.5 bg-slate-50 p-3 border border-slate-200 rounded-xl">
+                    <label className="block text-xs font-bold text-slate-700">Aadhaar Card Document</label>
+                    <input
+                      type="file"
+                      onChange={handleAadharUpload}
+                      className="text-xs text-slate-600 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-2xs file:font-bold file:bg-pink-100 file:text-[#6B1D52] hover:file:bg-pink-200 cursor-pointer w-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Extra Documents */}
+                {extraDocs && extraDocs.length > 0 && (
+                  <div className="space-y-2 pt-1">
+                    {extraDocs.map((doc, idx) => (
+                      <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 relative">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveExtraDoc(idx)}
+                          className="absolute top-2 right-2 text-red-500 hover:text-red-700 font-bold p-1 cursor-pointer"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                        <input
+                          type="text"
+                          value={doc.title}
+                          onChange={(e) => handleExtraDocTitleChange(idx, e.target.value)}
+                          placeholder="Enter Document Title (e.g. 10th Marksheet / Income Certificate)"
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-pink-500"
+                        />
+                        <input
+                          type="file"
+                          onChange={(e) => handleExtraDocFileChange(idx, e.target.files[0])}
+                          className="text-xs text-slate-600 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-2xs file:font-bold file:bg-pink-100 file:text-[#6B1D52] hover:file:bg-pink-200 cursor-pointer"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleAddExtraDoc}
+                  className="w-full py-2 px-3 bg-pink-50 hover:bg-pink-100 text-[#6B1D52] border border-pink-200 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 text-[#C52B75]" />
+                  <span>Add More Document</span>
+                </button>
               </div>
 
               {/* Submit Button */}

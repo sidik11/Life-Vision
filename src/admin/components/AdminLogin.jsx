@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Lock, Mail, Eye, EyeOff, ShieldCheck, LogIn,
   GraduationCap, Users, Sprout, Handshake, X,
-  IdCard, Upload, Printer, CheckCircle2, Heart,
+  IdCard, Upload, Printer, CheckCircle2, Heart, Plus,
   Phone, MapPin, Building, Calendar, UserCheck, ChevronDown, User
 } from 'lucide-react';
 import { auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from '../../firebase';
@@ -28,7 +28,10 @@ export default function AdminLogin({ onLogin }) {
     bloodGroup: 'O+',
     joinDate: new Date().toISOString().split('T')[0],
     location: '',
-    emergencyContact: '+91 9416362914'
+    emergencyContact: '+91 9416362914',
+    photoDoc: '',
+    aadharDoc: '',
+    extraDocs: []
   });
   const [staffPhoto, setStaffPhoto] = useState(null);
   const [generatedCard, setGeneratedCard] = useState(null);
@@ -114,16 +117,71 @@ export default function AdminLogin({ onLogin }) {
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 3 * 1024 * 1024) {
-        setError('Photo size should be less than 3MB.');
+      if (file.size > 5 * 1024 * 1024) {
+        setError('File size exceeds the allowed limit.');
         return;
       }
       const reader = new FileReader();
       reader.onloadend = () => {
         setStaffPhoto(reader.result);
+        setStaffData(prev => ({ ...prev, photoDoc: reader.result }));
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleAadharChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError('File size exceeds the allowed limit.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setStaffData(prev => ({ ...prev, aadharDoc: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddExtraDoc = () => {
+    setStaffData(prev => ({
+      ...prev,
+      extraDocs: [...(prev.extraDocs || []), { title: '', file: '', fileName: '' }]
+    }));
+  };
+
+  const handleExtraDocTitleChange = (index, title) => {
+    setStaffData(prev => {
+      const updated = [...(prev.extraDocs || [])];
+      updated[index] = { ...updated[index], title };
+      return { ...prev, extraDocs: updated };
+    });
+  };
+
+  const handleExtraDocFileChange = (index, file) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File size exceeds the allowed limit.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setStaffData(prev => {
+        const updated = [...(prev.extraDocs || [])];
+        updated[index] = { ...updated[index], file: reader.result, fileName: file.name };
+        return { ...prev, extraDocs: updated };
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveExtraDoc = (index) => {
+    setStaffData(prev => ({
+      ...prev,
+      extraDocs: prev.extraDocs.filter((_, i) => i !== index)
+    }));
   };
 
   // Handle Staff Form Submission
@@ -148,7 +206,10 @@ export default function AdminLogin({ onLogin }) {
       joinDate: staffData.joinDate || new Date().toISOString().split('T')[0],
       location: staffData.location.trim(),
       emergencyContact: staffData.emergencyContact.trim() || '+91 9416362914',
-      avatar: staffPhoto || '/image/logo.png',
+      avatar: staffPhoto || staffData.photoDoc || '/image/logo.png',
+      photoDoc: staffPhoto || staffData.photoDoc || '',
+      aadharDoc: staffData.aadharDoc || '',
+      extraDocs: staffData.extraDocs || [],
       status: 'Active',
       registeredAt: new Date().toISOString()
     };
@@ -664,31 +725,86 @@ export default function AdminLogin({ onLogin }) {
                     </div>
                   </div>
 
-                  {/* Staff Photo Upload */}
-                  <div className="space-y-1">
+                  {/* Document Uploads Section: Photo, Aadhaar, Extra Docs */}
+                  <div className="space-y-2 pt-1 border-t border-slate-100">
                     <label className="text-[11px] font-bold text-slate-800 flex items-center gap-1">
                       <Upload className="w-3.5 h-3.5 text-[#047857]" />
-                      <span>Staff Photo (For ID Card)</span>
+                      <span>Document Uploads</span>
                     </label>
-                    <div className="flex items-center gap-3 bg-white p-2 border border-slate-200 rounded-xl">
-                      {staffPhoto ? (
-                        <img
-                          src={staffPhoto}
-                          alt="Preview"
-                          className="w-10 h-10 rounded-lg object-cover ring-2 ring-emerald-500 shrink-0"
+
+                    {/* Staff Photo */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-semibold text-slate-600">Photo</label>
+                      <div className="flex items-center gap-3 bg-white p-2 border border-slate-200 rounded-xl">
+                        {staffPhoto ? (
+                          <img
+                            src={staffPhoto}
+                            alt="Preview"
+                            className="w-8 h-8 rounded-lg object-cover ring-2 ring-emerald-500 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0 font-bold text-2xs">
+                            Photo
+                          </div>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePhotoChange}
+                          className="text-xs text-slate-600 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-2xs file:font-bold file:bg-emerald-100 file:text-[#047857] hover:file:bg-emerald-200 cursor-pointer"
                         />
-                      ) : (
-                        <div className="w-10 h-10 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0 font-bold text-xs">
-                          Photo
-                        </div>
-                      )}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePhotoChange}
-                        className="text-xs text-slate-600 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-2xs file:font-bold file:bg-emerald-100 file:text-[#047857] hover:file:bg-emerald-200 cursor-pointer"
-                      />
+                      </div>
                     </div>
+
+                    {/* Aadhaar Card */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-semibold text-slate-600">Aadhaar Card</label>
+                      <div className="flex items-center gap-3 bg-white p-2 border border-slate-200 rounded-xl">
+                        <input
+                          type="file"
+                          onChange={handleAadharChange}
+                          className="text-xs text-slate-600 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-2xs file:font-bold file:bg-emerald-100 file:text-[#047857] hover:file:bg-emerald-200 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Extra Documents */}
+                    {staffData.extraDocs && staffData.extraDocs.length > 0 && (
+                      <div className="space-y-2 pt-1">
+                        {staffData.extraDocs.map((doc, idx) => (
+                          <div key={idx} className="p-2 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 relative">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveExtraDoc(idx)}
+                              className="absolute top-2 right-2 text-red-500 hover:text-red-700 font-bold p-0.5"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                            <input
+                              type="text"
+                              value={doc.title}
+                              onChange={(e) => handleExtraDocTitleChange(idx, e.target.value)}
+                              placeholder="Enter Document Title (e.g. Qualification / Experience)"
+                              className="w-full px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#047857]"
+                            />
+                            <input
+                              type="file"
+                              onChange={(e) => handleExtraDocFileChange(idx, e.target.files[0])}
+                              className="text-xs text-slate-600 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-2xs file:font-bold file:bg-emerald-100 file:text-[#047857] hover:file:bg-emerald-200 cursor-pointer"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleAddExtraDoc}
+                      className="w-full py-1.5 px-3 bg-emerald-50 hover:bg-emerald-100 text-[#047857] border border-emerald-200 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add More Document</span>
+                    </button>
                   </div>
 
                   {/* Submit Button */}
