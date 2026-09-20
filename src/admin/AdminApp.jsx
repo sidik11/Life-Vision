@@ -104,6 +104,10 @@ export default function AdminApp() {
   const [certificates, setCertificates] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [staff, setStaff] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [leaves, setLeaves] = useState([]);
+  const [staffDocuments, setStaffDocuments] = useState([]);
+  const [staffIdCards, setStaffIdCards] = useState([]);
   const [documents, setDocuments] = useState(initialDocuments);
 
   // Firestore Direct CRUD Handlers
@@ -512,6 +516,46 @@ export default function AdminApp() {
       unsubscribes.push(unsub);
     } catch (err) { }
 
+    // 14. Departments (departments)
+    try {
+      const q = collection(db, "departments");
+      const unsub = onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
+        setDepartments(items);
+      }, (error) => console.warn("Firestore departments sync notice:", error));
+      unsubscribes.push(unsub);
+    } catch (err) { }
+
+    // 15. Leaves (leaves)
+    try {
+      const q = collection(db, "leaves");
+      const unsub = onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
+        setLeaves(items);
+      }, (error) => console.warn("Firestore leaves sync notice:", error));
+      unsubscribes.push(unsub);
+    } catch (err) { }
+
+    // 16. Staff Documents (staffDocuments)
+    try {
+      const q = collection(db, "staffDocuments");
+      const unsub = onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
+        setStaffDocuments(items);
+      }, (error) => console.warn("Firestore staffDocuments sync notice:", error));
+      unsubscribes.push(unsub);
+    } catch (err) { }
+
+    // 17. Staff ID Cards (staffIdCards)
+    try {
+      const q = collection(db, "staffIdCards");
+      const unsub = onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs.map(docSnap => ({ ...docSnap.data(), firestoreId: docSnap.id }));
+        setStaffIdCards(items);
+      }, (error) => console.warn("Firestore staffIdCards sync notice:", error));
+      unsubscribes.push(unsub);
+    } catch (err) { }
+
     return () => {
       unsubscribes.forEach(unsub => unsub && unsub());
     };
@@ -792,7 +836,24 @@ export default function AdminApp() {
       case 'staff-documents':
       case 'staff-departments':
       case 'staff-reports':
-        return <StaffView staffList={staff} setStaffList={handleSetStaff} activeSubTab={activeTab} showToast={showToast} />;
+        return (
+          <StaffView 
+            staffList={staff} 
+            setStaffList={handleSetStaff} 
+            departments={departments}
+            setDepartments={setDepartments}
+            attendance={attendance}
+            setAttendance={setAttendance}
+            leaves={leaves}
+            setLeaves={setLeaves}
+            staffDocuments={staffDocuments}
+            setStaffDocuments={setStaffDocuments}
+            staffIdCards={staffIdCards}
+            setStaffIdCards={setStaffIdCards}
+            activeSubTab={activeTab} 
+            showToast={showToast} 
+          />
+        );
 
       // 🙋 VOLUNTEERS
       case 'volunteers':

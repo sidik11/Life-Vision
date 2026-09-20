@@ -5,6 +5,7 @@ import {
   serverTimestamp, doc, updateDoc, deleteDoc, onSnapshot 
 } from "firebase/firestore";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "firebase/auth";
+import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -24,12 +25,14 @@ const app = initializeApp(firebaseConfig);
 const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 const db = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
 
 export { 
   app, 
   analytics, 
   db, 
   auth,
+  storage,
   collection, 
   addDoc, 
   getDocs, 
@@ -40,6 +43,10 @@ export {
   updateDoc,
   deleteDoc,
   onSnapshot,
+  ref,
+  uploadString,
+  getDownloadURL,
+  deleteObject,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,

@@ -252,13 +252,12 @@ export default function Sidebar({
       subItems: [
         { id: 'all-staff', label: 'All Staff' },
         { id: 'add-staff', label: 'Add Staff' },
-        { id: 'staff-id-approval', label: 'Staff ID Approval' },
-        { id: 'staff-id-cards', label: 'Staff ID Cards' },
+        { id: 'staff-id-cards', label: 'Staff ID Card' },
         { id: 'staff-attendance', label: 'Staff Attendance' },
         { id: 'leave-management', label: 'Leave Management' },
-        { id: 'staff-documents', label: 'Staff Documents' },
-        { id: 'staff-departments', label: 'Departments' },
-        { id: 'staff-reports', label: 'Staff Reports' }
+        { id: 'staff-documents', label: 'Staff Document' },
+        { id: 'staff-departments', label: 'Department' },
+        { id: 'staff-reports', label: 'Staff Report' }
       ]
     },
 

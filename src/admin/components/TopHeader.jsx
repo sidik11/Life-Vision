@@ -83,13 +83,12 @@ export default function TopHeader({
     // Staff
     'all-staff': ['Staff Members', 'All Staff'],
     'add-staff': ['Staff Members', 'Add Staff'],
-    'staff-id-approval': ['Staff Members', 'Staff ID Approval'],
-    'staff-id-cards': ['Staff Members', 'Staff ID Cards'],
+    'staff-id-cards': ['Staff Members', 'Staff ID Card'],
     'staff-attendance': ['Staff Members', 'Staff Attendance'],
     'leave-management': ['Staff Members', 'Leave Management'],
-    'staff-documents': ['Staff Members', 'Staff Documents'],
-    'staff-departments': ['Staff Members', 'Departments'],
-    'staff-reports': ['Staff Members', 'Staff Reports'],
+    'staff-documents': ['Staff Members', 'Staff Document'],
+    'staff-departments': ['Staff Members', 'Department'],
+    'staff-reports': ['Staff Members', 'Staff Report'],
 
     // Volunteers
     'all-volunteers': ['Volunteers', 'All Volunteers'],
