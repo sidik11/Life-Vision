@@ -1,8 +1,35 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-// Staff ID Card PDF Generation & Email Dispatch Utility
-// Handles generating official Staff ID Card PDFs and emailing them to staff members
+// Email API Configuration Helpers
+export const getEmailApiConfig = () => {
+  try {
+    const saved = localStorage.getItem('lvs_email_api_config');
+    if (saved) return JSON.parse(saved);
+  } catch (e) {}
+  return {
+    provider: 'emailjs',
+    serviceId: '',
+    templateId: '',
+    publicKey: '',
+    apiUrl: 'https://api.emailjs.com/api/v1.0/email/send'
+  };
+};
+
+export const saveEmailApiConfig = (config) => {
+  try {
+    localStorage.setItem('lvs_email_api_config', JSON.stringify(config));
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
+// SVG Icon Strings for ID Cards (Employee ID, Department, Contact, Joining Date)
+const svgUserIcon = `<svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+const svgDeptIcon = `<svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>`;
+const svgPhoneIcon = `<svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+const svgCalendarIcon = `<svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
 
 export const generateStaffIdCardHtml = (staffMember) => {
   const frontImgSrc = '/Team Member/id_card_front.jpg';
@@ -16,6 +43,12 @@ export const generateStaffIdCardHtml = (staffMember) => {
         <title>Staff ID Card - ${staffMember.name}</title>
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&display=swap');
+          * { 
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important; 
+            color-adjust: exact !important; 
+            box-sizing: border-box; 
+          }
           body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
             background: #0f172a; 
@@ -36,6 +69,8 @@ export const generateStaffIdCardHtml = (staffMember) => {
             overflow: hidden; 
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); 
             background: #fff; 
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important; 
           }
           .card-bg { 
             width: 100%; 
@@ -108,9 +143,11 @@ export const generateStaffIdCardHtml = (staffMember) => {
             justify-content: center; 
             margin-right: 6px; 
             flex-shrink: 0; 
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important; 
           }
-          .bg-emerald { background: #047857; }
-          .bg-teal { background: #0e4b55; }
+          .bg-emerald { background: #047857 !important; }
+          .bg-teal { background: #0e4b55 !important; }
           .info-label { 
             font-weight: 700; 
             color: #1e293b; 
@@ -135,8 +172,9 @@ export const generateStaffIdCardHtml = (staffMember) => {
           }
 
           @media print {
-            body { background: transparent; padding: 0; gap: 20px; }
-            .card-container { page-break-after: always; box-shadow: none; border: 1px solid #ddd; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            body { background: transparent !important; padding: 0 !important; gap: 20px !important; }
+            .card-container { page-break-after: always; box-shadow: none !important; border: 1px solid #ddd !important; }
           }
         </style>
       </head>
@@ -146,20 +184,20 @@ export const generateStaffIdCardHtml = (staffMember) => {
           <img src="${frontImgSrc}" class="card-bg" alt="Front ID Template" />
           <img src="${staffMember.avatar || staffMember.photoDoc || '/image/logo.png'}" class="photo-box" alt="Staff Photo" />
           <div class="staff-name">${staffMember.name}</div>
-          <div class="staff-role">${staffMember.role}</div>
+          <div class="staff-role">${staffMember.role || staffMember.designation || 'Staff'}</div>
           
           <div class="info-section">
             <div class="info-row">
               <div class="icon-circle bg-emerald">
-                <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                ${svgUserIcon}
               </div>
               <span class="info-label">Employee ID</span>
               <span class="colon">:</span>
-              <span class="info-value">${staffMember.id}</span>
+              <span class="info-value">${staffMember.id || staffMember.employeeId}</span>
             </div>
             <div class="info-row">
               <div class="icon-circle bg-emerald">
-                <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                ${svgDeptIcon}
               </div>
               <span class="info-label">Department</span>
               <span class="colon">:</span>
@@ -167,7 +205,7 @@ export const generateStaffIdCardHtml = (staffMember) => {
             </div>
             <div class="info-row">
               <div class="icon-circle bg-teal">
-                <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                ${svgPhoneIcon}
               </div>
               <span class="info-label">Contact No.</span>
               <span class="colon">:</span>
@@ -175,11 +213,11 @@ export const generateStaffIdCardHtml = (staffMember) => {
             </div>
             <div class="info-row">
               <div class="icon-circle bg-emerald">
-                <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                ${svgCalendarIcon}
               </div>
               <span class="info-label">Joining Date</span>
               <span class="colon">:</span>
-              <span class="info-value">${staffMember.joinDate || '2026-01-01'}</span>
+              <span class="info-value">${staffMember.joinDate || staffMember.joiningDate || '2026-01-01'}</span>
             </div>
           </div>
         </div>
@@ -193,24 +231,75 @@ export const generateStaffIdCardHtml = (staffMember) => {
   `;
 };
 
-// Send email with PDF to staff member's email via backend API
+// Direct Email API Integration Dispatcher
 export const sendStaffIdCardEmailApi = async (staffMember) => {
-  try {
-    const cardHtml = generateStaffIdCardHtml(staffMember);
-    const response = await fetch('/api/staff/send-id-card-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        staff: staffMember,
-        cardHtml: cardHtml
-      })
-    });
-    const result = await response.json();
-    return result;
-  } catch (err) {
-    console.warn("Backend send email notice:", err);
-    return { success: true, message: `ID Card PDF prepared & dispatched to ${staffMember.email}` };
+  if (!staffMember || !staffMember.email) {
+    return { success: false, error: 'Staff member email address is missing' };
   }
+
+  const config = getEmailApiConfig();
+  const cardHtml = generateStaffIdCardHtml(staffMember);
+
+  // 1. Send via configured EmailJS REST API if credentials exist
+  if (config.serviceId && config.templateId && config.publicKey) {
+    try {
+      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_id: config.serviceId,
+          template_id: config.templateId,
+          user_id: config.publicKey,
+          template_params: {
+            to_email: staffMember.email,
+            to_name: staffMember.name,
+            staff_name: staffMember.name,
+            employee_id: staffMember.id || staffMember.employeeId,
+            department: staffMember.department,
+            phone: staffMember.phone || '',
+            joining_date: staffMember.joinDate || '2026-01-01',
+            message: `Dear ${staffMember.name},\n\nYour Staff ID Card has been approved by the administration.\n\nPlease find your official Staff ID details attached.\n\nRegards,\nLife Vision Society Administration`
+          }
+        })
+      });
+
+      if (response.ok) {
+        return { success: true, message: `Staff ID Card email sent via EmailJS API to ${staffMember.email}` };
+      } else {
+        const errText = await response.text();
+        return { success: false, error: `EmailJS API error (${response.status}): ${errText}` };
+      }
+    } catch (err) {
+      return { success: false, error: `Network error sending email: ${err.message}` };
+    }
+  }
+
+  // 2. Fallback to custom Webhook / Backend API endpoint if configured
+  if (config.apiUrl && config.apiUrl !== 'https://api.emailjs.com/api/v1.0/email/send') {
+    try {
+      const response = await fetch(config.apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: staffMember.email,
+          staff: staffMember,
+          subject: 'Staff ID Card – Approved',
+          cardHtml: cardHtml
+        })
+      });
+      if (response.ok) {
+        return { success: true, message: `ID Card email dispatched to ${staffMember.email}` };
+      }
+    } catch (err) {
+      // Custom endpoint failed
+    }
+  }
+
+  // 3. Fallback notice prompting user to add API credentials in Admin Settings
+  return { 
+    success: false, 
+    error: `Email API keys not configured. Please add your EmailJS Service ID, Template ID & Public Key in Admin Settings → Email API Setup.` 
+  };
 };
 
 // Direct Download High-Resolution PDF File of Exact View ID Card Design
@@ -254,25 +343,25 @@ export const downloadStaffIdCardPdf = async (staffMember) => {
 
       <div style="position: absolute; top: 316px; left: 68px; right: 20px; z-index: 10; display: flex; flex-direction: column; gap: 3px; font-family: 'Plus Jakarta Sans', sans-serif;">
         <div style="display: flex; align-items: center; font-size: 9.5px; line-height: 1;">
-          <div style="width: 16px; height: 16px; border-radius: 50%; background: #047857; display: flex; align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0; color: white; font-weight: bold; font-size: 8px;">ID</div>
+          <div style="width: 16px; height: 16px; border-radius: 50%; background: #047857; display: flex; align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0;">${svgUserIcon}</div>
           <span style="font-weight: 700; color: #1e293b; width: 68px; flex-shrink: 0;">Employee ID</span>
           <span style="font-weight: 700; color: #1e293b; margin-right: 6px;">:</span>
           <span style="font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 145px;">${empId}</span>
         </div>
         <div style="display: flex; align-items: center; font-size: 9.5px; line-height: 1;">
-          <div style="width: 16px; height: 16px; border-radius: 50%; background: #047857; display: flex; align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0; color: white; font-weight: bold; font-size: 8px;">DP</div>
+          <div style="width: 16px; height: 16px; border-radius: 50%; background: #047857; display: flex; align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0;">${svgDeptIcon}</div>
           <span style="font-weight: 700; color: #1e293b; width: 68px; flex-shrink: 0;">Department</span>
           <span style="font-weight: 700; color: #1e293b; margin-right: 6px;">:</span>
           <span style="font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 145px;">${dept}</span>
         </div>
         <div style="display: flex; align-items: center; font-size: 9.5px; line-height: 1;">
-          <div style="width: 16px; height: 16px; border-radius: 50%; background: #0e4b55; display: flex; align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0; color: white; font-weight: bold; font-size: 8px;">PH</div>
+          <div style="width: 16px; height: 16px; border-radius: 50%; background: #0e4b55; display: flex; align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0;">${svgPhoneIcon}</div>
           <span style="font-weight: 700; color: #1e293b; width: 68px; flex-shrink: 0;">Contact No.</span>
           <span style="font-weight: 700; color: #1e293b; margin-right: 6px;">:</span>
           <span style="font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 145px;">${phone}</span>
         </div>
         <div style="display: flex; align-items: center; font-size: 9.5px; line-height: 1;">
-          <div style="width: 16px; height: 16px; border-radius: 50%; background: #047857; display: flex; align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0; color: white; font-weight: bold; font-size: 8px;">DT</div>
+          <div style="width: 16px; height: 16px; border-radius: 50%; background: #047857; display: flex; align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0;">${svgCalendarIcon}</div>
           <span style="font-weight: 700; color: #1e293b; width: 68px; flex-shrink: 0;">Joining Date</span>
           <span style="font-weight: 700; color: #1e293b; margin-right: 6px;">:</span>
           <span style="font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 145px;">${joinDate}</span>

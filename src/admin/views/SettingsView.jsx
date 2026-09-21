@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, Bell, Settings as SettingsIcon, Building, Save, CheckCircle2, ShieldCheck, Camera, Sparkles } from 'lucide-react';
+import { User, Lock, Bell, Settings as SettingsIcon, Building, Save, CheckCircle2, ShieldCheck, Camera, Sparkles, Mail, Send } from 'lucide-react';
+import { getEmailApiConfig, saveEmailApiConfig, sendStaffIdCardEmailApi } from '../../utils/staffIdPdfHelper';
 
 export default function SettingsView({ adminUser, setAdminUser, showToast, onShowToast }) {
   const notify = showToast || onShowToast || (() => {});
@@ -25,6 +26,14 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [smsAlerts, setSmsAlerts] = useState(true);
 
+  // Email API Form State
+  const [emailProvider, setEmailProvider] = useState('emailjs');
+  const [serviceId, setServiceId] = useState('');
+  const [templateId, setTemplateId] = useState('');
+  const [publicKey, setPublicKey] = useState('');
+  const [apiUrl, setApiUrl] = useState('https://api.emailjs.com/api/v1.0/email/send');
+  const [testSending, setTestSending] = useState(false);
+
   useEffect(() => {
     if (adminUser) {
       setName(adminUser.name || 'Life Vision Society');
@@ -33,6 +42,12 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
       setPhone(adminUser.phone || '+91 98610 12345');
       setAvatar(adminUser.avatar || '/image/logo.png');
     }
+    const apiConf = getEmailApiConfig();
+    setEmailProvider(apiConf.provider || 'emailjs');
+    setServiceId(apiConf.serviceId || '');
+    setTemplateId(apiConf.templateId || '');
+    setPublicKey(apiConf.publicKey || '');
+    setApiUrl(apiConf.apiUrl || 'https://api.emailjs.com/api/v1.0/email/send');
   }, [adminUser]);
 
   const handleProfileSave = (e) => {
@@ -70,6 +85,45 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
     notify('NGO Organization details saved successfully!', 'success');
   };
 
+  const handleEmailApiSave = (e) => {
+    e.preventDefault();
+    const config = {
+      provider: emailProvider,
+      serviceId: serviceId.trim(),
+      templateId: templateId.trim(),
+      publicKey: publicKey.trim(),
+      apiUrl: apiUrl.trim()
+    };
+    saveEmailApiConfig(config);
+    notify('Email API credentials saved successfully!', 'success');
+  };
+
+  const handleTestEmailApi = async () => {
+    if (!serviceId || !templateId || !publicKey) {
+      notify('Please enter your EmailJS Service ID, Template ID & Public Key first!', 'error');
+      return;
+    }
+    setTestSending(true);
+    const dummyStaff = {
+      name: name || 'Test Staff Member',
+      email: email || 'support.lifevision@gmail.com',
+      id: 'TEST-STF-001',
+      employeeId: 'TEST-STF-001',
+      department: 'Administration',
+      phone: phone || '+91 9416362914',
+      joinDate: '2026-01-01',
+      role: 'Staff Member'
+    };
+    const res = await sendStaffIdCardEmailApi(dummyStaff);
+    setTestSending(false);
+
+    if (res.success) {
+      notify(`✓ Test email sent successfully to ${dummyStaff.email}!`, 'success');
+    } else {
+      notify(`✕ Test email failed: ${res.error}`, 'error');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -77,11 +131,11 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
         <div>
           <div className="flex items-center space-x-2 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-1">
             <SettingsIcon className="w-4 h-4" />
-            <span>Admin Control Panel & Profile</span>
+            <span>Admin Control Panel & Settings</span>
           </div>
           <h1 className="text-2xl font-bold font-serif">Admin System & Profile Settings</h1>
           <p className="text-slate-200 text-xs mt-1">
-            Manage your Super Admin credentials, security preferences, notification alerts & NGO organization profile.
+            Manage your Super Admin credentials, security preferences, notification alerts, Email API setup & NGO profile.
           </p>
         </div>
 
@@ -112,6 +166,15 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
           }`}
         >
           <span>🔐 Password & Security</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('email_api')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 ${
+            activeTab === 'email_api' ? 'bg-[#123B5D] text-white shadow-md' : 'text-slate-600 hover:bg-slate-100 bg-white border border-slate-200'
+          }`}
+        >
+          <span>📧 Email API Setup</span>
         </button>
 
         <button
@@ -259,7 +322,125 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
         </form>
       )}
 
-      {/* 3. Notifications Tab */}
+      {/* 3. Email API Setup Tab */}
+      {activeTab === 'email_api' && (
+        <form onSubmit={handleEmailApiSave} className="p-6 rounded-2xl bg-white border border-slate-200 space-y-5 max-w-2xl shadow-sm text-slate-900">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 font-serif flex items-center gap-2">
+                <Mail className="w-5 h-5 text-emerald-600" />
+                <span>Staff ID Card Email API Configuration</span>
+              </h3>
+              <p className="text-xs text-slate-500">Connect your EmailJS or Webhook Email API to automatically send ID Cards to staff emails upon approval</p>
+            </div>
+            <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-extrabold">
+              Direct API Connector
+            </span>
+          </div>
+
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 text-xs text-emerald-900 space-y-1.5">
+            <div className="font-bold flex items-center gap-1.5 text-emerald-800">
+              <Sparkles className="w-4 h-4 text-emerald-600" />
+              <span>How to setup EmailJS (Free & Takes 2 minutes):</span>
+            </div>
+            <ol className="list-decimal list-inside space-y-1 text-[11px] text-emerald-800 font-medium">
+              <li>Create a free account at <a href="https://www.emailjs.com" target="_blank" rel="noreferrer" className="underline font-bold">emailjs.com</a></li>
+              <li>Add an Email Service (e.g., Gmail) and copy your <strong>Service ID</strong></li>
+              <li>Create an Email Template and copy your <strong>Template ID</strong></li>
+              <li>Go to Account → API Keys and copy your <strong>Public Key</strong></li>
+              <li>Paste the credentials below and click <strong>Save Email API Credentials</strong></li>
+            </ol>
+          </div>
+
+          <div className="space-y-4 text-xs">
+            <div>
+              <label className="font-bold text-slate-700">Email Service Provider</label>
+              <select
+                value={emailProvider}
+                onChange={(e) => setEmailProvider(e.target.value)}
+                className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
+              >
+                <option value="emailjs">EmailJS (Client-Side REST API - Recommended)</option>
+                <option value="custom_webhook">Custom Webhook / REST API Endpoint</option>
+              </select>
+            </div>
+
+            {emailProvider === 'emailjs' ? (
+              <>
+                <div>
+                  <label className="font-bold text-slate-700">EmailJS Service ID</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. service_lifevision"
+                    value={serviceId}
+                    onChange={(e) => setServiceId(e.target.value)}
+                    className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700">EmailJS Template ID</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. template_id_card"
+                    value={templateId}
+                    onChange={(e) => setTemplateId(e.target.value)}
+                    className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700">EmailJS Public Key (User ID)</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. user_pk_983172xxxx"
+                    value={publicKey}
+                    onChange={(e) => setPublicKey(e.target.value)}
+                    className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
+                  />
+                </div>
+              </>
+            ) : (
+              <div>
+                <label className="font-bold text-slate-700">Custom Webhook / REST API URL</label>
+                <input
+                  type="url"
+                  required
+                  placeholder="https://your-api-domain.com/send-email"
+                  value={apiUrl}
+                  onChange={(e) => setApiUrl(e.target.value)}
+                  className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center space-x-3 pt-2">
+            <button
+              type="submit"
+              className="px-6 py-3 bg-[#16A34A] hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow-md flex items-center space-x-2 cursor-pointer transition-all uppercase tracking-wider"
+            >
+              <Save className="w-4 h-4 text-white" />
+              <span>Save Email API Credentials</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleTestEmailApi}
+              disabled={testSending}
+              className="px-4 py-3 bg-[#123B5D] hover:bg-[#0E2F4A] text-white rounded-xl text-xs font-bold shadow-md flex items-center space-x-2 cursor-pointer transition-all"
+            >
+              <Send className="w-4 h-4 text-white" />
+              <span>{testSending ? 'Sending Test...' : 'Send Test Email'}</span>
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* 4. Notifications Tab */}
       {activeTab === 'notifications' && (
         <div className="p-6 rounded-2xl bg-white border border-slate-200 space-y-5 max-w-2xl shadow-sm text-slate-900">
           <div className="border-b border-slate-100 pb-3">
@@ -304,7 +485,7 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
         </div>
       )}
 
-      {/* 4. Organization Info Tab */}
+      {/* 5. Organization Info Tab */}
       {activeTab === 'organization' && (
         <form onSubmit={handleOrgSave} className="p-6 rounded-2xl bg-white border border-slate-200 space-y-5 max-w-2xl shadow-sm text-slate-900">
           <div className="border-b border-slate-100 pb-3">
