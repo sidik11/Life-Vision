@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, FileSpreadsheet, Download, Calendar, 
   CheckCircle2, TrendingUp, Users, GraduationCap, 
@@ -15,6 +15,12 @@ export default function ReportsView({
   showToast 
 }) {
   const [subTab, setSubTab] = useState(activeSubTab);
+
+  useEffect(() => {
+    if (activeSubTab && activeSubTab !== 'reports') {
+      setSubTab(activeSubTab);
+    }
+  }, [activeSubTab]);
   const [dateRange, setDateRange] = useState('2026-Q3');
 
   const reportTabs = [

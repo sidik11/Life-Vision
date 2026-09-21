@@ -9,6 +9,7 @@ export default function DashboardView({
   applications = [], 
   placements = [],
   partners = [],
+  volunteers = [],
   donations = [],
   contacts = [],
   programs = [],
@@ -28,6 +29,8 @@ export default function DashboardView({
   const activeBatchesCount = batches.length;
   const placementCount = placements.length;
   const partnersCount = partners.length;
+  const volunteersCount = volunteers.length;
+  const pendingVolunteersCount = volunteers.filter(v => v.status?.toLowerCase().includes('pending') || v.status?.toLowerCase().includes('new')).length;
   
   // Calculate total donation sum
   const totalDonationAmount = donations.reduce((sum, d) => {
@@ -163,8 +166,8 @@ export default function DashboardView({
         </div>
       </div>
 
-      {/* 2. Real KPI Cards Row (5 Cards) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+      {/* 2. Real KPI Cards Row (6 Cards) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         
         {/* Card 1: Total Students */}
         <div 
@@ -258,6 +261,25 @@ export default function DashboardView({
           </div>
           <div className="flex items-center text-[10px] font-extrabold text-slate-400 font-medium">
             CSR / Alliances
+          </div>
+        </div>
+
+        {/* Card 6: Volunteers */}
+        <div 
+          onClick={() => onNavigate && onNavigate('volunteer-applications')}
+          className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3"
+        >
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center shrink-0">
+              <Heart className="w-5 h-5 fill-teal-200" />
+            </div>
+            <div>
+              <div className="text-[11px] font-bold text-slate-500 leading-tight">Volunteers</div>
+              <div className="text-xl font-extrabold text-slate-900 mt-0.5">{volunteersCount}</div>
+            </div>
+          </div>
+          <div className="flex items-center text-[10px] font-extrabold text-emerald-600">
+            <span>{pendingVolunteersCount} Pending Applications</span>
           </div>
         </div>
       </div>
@@ -405,7 +427,7 @@ export default function DashboardView({
         <div className="lg:col-span-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-900">Upcoming Livelihood & Training Activities</h3>
-            <button onClick={() => onNavigate && onNavigate('events')} className="text-[11px] font-bold text-blue-600 hover:underline">
+            <button onClick={() => onNavigate && onNavigate('content-events')} className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer">
               View All Activities
             </button>
           </div>
@@ -417,7 +439,7 @@ export default function DashboardView({
               { date: '28', month: 'Sep', title: 'Community Health Camp', location: 'Puri District' },
               { date: '02', month: 'Oct', title: 'Skill Convocation Day', location: 'Khordha Center' }
             ].map((act, idx) => (
-              <div key={idx} className="p-2.5 rounded-xl bg-slate-50/80 hover:bg-slate-100 transition-colors flex items-center justify-between group cursor-pointer border border-slate-200/60">
+              <div key={idx} onClick={() => onNavigate && onNavigate('content-events')} className="p-2.5 rounded-xl bg-slate-50/80 hover:bg-slate-100 transition-colors flex items-center justify-between group cursor-pointer border border-slate-200/60">
                 <div className="flex items-center space-x-3">
                   <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex flex-col items-center justify-center shrink-0 border border-purple-100">
                     <span className="text-xs font-black leading-none">{act.date}</span>
@@ -441,7 +463,7 @@ export default function DashboardView({
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-900">Recent Student Applications from Website ({applications.length})</h3>
-            <button onClick={() => onNavigate && onNavigate('applications')} className="text-[11px] font-bold text-blue-600 hover:underline">
+            <button onClick={() => onNavigate && onNavigate('app-training')} className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer">
               View All Applications
             </button>
           </div>

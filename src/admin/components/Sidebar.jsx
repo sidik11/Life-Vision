@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutDashboard, GraduationCap, Briefcase, Building2, 
-  Heart, Star, Users, UserCheck, Inbox, 
+  Heart, Star, Users, UserCheck, Inbox, PhoneCall,
   Newspaper, BarChart3, Settings as SettingsIcon, LogOut, 
   ChevronDown, ChevronRight, X
 } from 'lucide-react';
@@ -43,6 +43,16 @@ export default function Sidebar({
     setActivePopover(null);
     setHoveredTooltip(null);
   }, [isCollapsed, activeTab]);
+
+  // Auto-expand parent section when activeTab changes to any of its sub-items
+  useEffect(() => {
+    if (activeTab) {
+      const parentModule = navItems.find(item => item.hasSubmenu && item.subItems?.some(sub => sub.id === activeTab));
+      if (parentModule) {
+        setExpandedSections(prev => ({ ...prev, [parentModule.id]: true }));
+      }
+    }
+  }, [activeTab]);
 
   // Click outside and Escape key listeners
   useEffect(() => {
@@ -149,7 +159,14 @@ export default function Sidebar({
       setActivePopover(prev => (prev === item.id ? null : item.id));
       setHoveredTooltip(null);
     } else {
+      const isCurrentlyExpanded = expandedSections[item.id];
       toggleSection(item.id);
+      if (item.subItems && item.subItems.length > 0) {
+        const isChildActive = item.subItems.some(sub => sub.id === activeTab);
+        if (!isCurrentlyExpanded || !isChildActive) {
+          setActiveTab(item.subItems[0].id);
+        }
+      }
     }
   };
 
@@ -171,18 +188,19 @@ export default function Sidebar({
         { id: 'attendance', label: 'Attendance' },
         { id: 'assessments', label: 'Assessments' },
         { id: 'certificates', label: 'Certificates' },
+        { id: 'app-training', label: 'Training Applications' },
         { id: 'training-reports', label: 'Training Reports' }
       ]
     },
 
-    // 💼 PLACEMENT
+    // 💼 PLACEMENT SUPPORT
     {
       id: 'placement',
       label: 'Placement Support',
       icon: Briefcase,
       hasSubmenu: true,
       subItems: [
-        { id: 'placement-applications', label: 'Placement Applications' }
+        { id: 'placement-applications', label: 'Support Applications' }
       ]
     },
 
@@ -261,23 +279,20 @@ export default function Sidebar({
       hasSubmenu: true,
       subItems: [
         { id: 'all-volunteers', label: 'All Volunteers' },
-        { id: 'volunteer-new-apps', label: 'New Applications' },
+        { id: 'volunteer-applications', label: 'Volunteer Applications' },
         { id: 'active-volunteers', label: 'Active Volunteers' },
         { id: 'volunteer-projects', label: 'Volunteer Projects' },
         { id: 'volunteer-reports', label: 'Volunteer Reports' }
       ]
     },
 
-    // 📩 APPLICATIONS
+    // 📞 CONTACT DETAILS
     {
-      id: 'applications',
-      label: 'Applications',
-      icon: Inbox,
+      id: 'contact-details',
+      label: 'Contact Details',
+      icon: PhoneCall,
       hasSubmenu: true,
       subItems: [
-        { id: 'app-training', label: 'Training Applications' },
-        { id: 'app-partner', label: 'Partner Applications' },
-        { id: 'app-volunteer', label: 'Volunteer Applications' },
         { id: 'app-contact', label: 'Contact Enquiries' }
       ]
     },
@@ -321,12 +336,8 @@ export default function Sidebar({
       icon: SettingsIcon,
       hasSubmenu: true,
       subItems: [
-        { id: 'admin-users-roles', label: 'Users & Roles' },
-        { id: 'admin-notifications', label: 'Notifications' },
-        { id: 'admin-documents', label: 'Documents' },
-        { id: 'admin-settings', label: 'Settings' },
-        { id: 'admin-scanner', label: 'Scanner' },
-        { id: 'admin-activity-logs', label: 'Activity Logs' }
+        { id: 'admin-scanner', label: 'Official NGO Scanner' },
+        { id: 'admin-settings', label: 'Settings' }
       ]
     }
   ];

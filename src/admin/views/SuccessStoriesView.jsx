@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import StatusBadge from '../components/Common/StatusBadge';
 import { Plus, Edit, Trash2, Eye, Sparkles, Image as ImageIcon } from 'lucide-react';
 
 export default function SuccessStoriesView({ stories = [], setStories, onAddStory, onDeleteStory, showToast, onShowToast, activeSubTab = 'all-stories' }) {
   const notify = showToast || onShowToast || (() => {});
   const [subTab, setSubTab] = useState(activeSubTab);
+
+  useEffect(() => {
+    if (activeSubTab && activeSubTab !== 'stories') {
+      setSubTab(activeSubTab);
+    }
+  }, [activeSubTab]);
 
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');

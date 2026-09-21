@@ -1,16 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import StatusBadge from '../components/Common/StatusBadge';
 import { Newspaper, Calendar, Image as ImageIcon, Plus, Edit, Trash2, Home, Globe } from 'lucide-react';
 
 export default function ContentCmsView({ showToast, onShowToast, activeSubTab = 'content-news-blog' }) {
   const notify = showToast || onShowToast || (() => {});
   const [activeTab, setActiveTab] = useState(() => {
-    if (activeSubTab === 'content-events') return 'events';
+    if (activeSubTab === 'content-events' || activeSubTab === 'events') return 'events';
     if (activeSubTab === 'content-gallery') return 'gallery';
     if (activeSubTab === 'content-homepage') return 'homepage';
     if (activeSubTab === 'content-website-sections') return 'sections';
     return 'news';
   });
+
+  useEffect(() => {
+    if (activeSubTab === 'content-events' || activeSubTab === 'events') setActiveTab('events');
+    else if (activeSubTab === 'content-gallery') setActiveTab('gallery');
+    else if (activeSubTab === 'content-homepage') setActiveTab('homepage');
+    else if (activeSubTab === 'content-website-sections') setActiveTab('sections');
+    else if (activeSubTab === 'content-news-blog' || activeSubTab === 'content') setActiveTab('news');
+  }, [activeSubTab]);
 
   const eventsList = [
     { id: 1, title: 'Odisha Rural Skill Convocation 2026', date: '2026-09-15', location: 'Cuttack Main Hub', status: 'Published' },

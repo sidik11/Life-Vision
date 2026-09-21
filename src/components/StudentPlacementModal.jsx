@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, Send, GraduationCap, User, Phone, Mail, BookOpen, MapPin, Award, Briefcase, Share2, Loader2, Upload, Plus, FileText } from 'lucide-react';
 import { saveToFirestore } from '../utils/firebaseSave';
 import { sendWebsiteFormEmail } from '../utils/emailHelper';
+import { ALL_INDIAN_STATES, getDistrictsForState } from '../utils/indiaLocationData';
 
 export default function StudentPlacementModal({ isOpen, onClose }) {
   const [submitted, setSubmitted] = useState(false);
@@ -128,22 +129,58 @@ export default function StudentPlacementModal({ isOpen, onClose }) {
     e.preventDefault();
     setIsSubmitting(true);
 
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    const generatedAppId = `LV-PLC-2026-${randomNum}`;
+    const generatedStuId = `STU-2026-${randomNum}`;
+    const currentDateStr = new Date().toISOString().split('T')[0];
+    const displayDateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
     const newPlacement = {
-      id: `PLC-OD-${Math.floor(100 + Math.random() * 900)}`,
+      id: generatedAppId,
+      applicationId: generatedAppId,
+      studentId: generatedStuId,
       student: formData.fullName,
+      studentName: formData.fullName,
       course: formData.higherCourse,
+      trainingCentre: formData.collegeName || 'Bhubaneswar Main Centre',
       mobile: formData.phone,
+      phone: formData.phone,
       email: formData.email,
-      trainingCompleted: 'Requested Placement',
-      placementStatus: 'Applied',
-      employer: formData.collegeName,
+      preferredJobRole: formData.supportType,
       jobRole: formData.supportType,
+      preferredLocation: formData.district ? `${formData.district}, ${formData.state}` : formData.state,
       location: formData.district ? `${formData.district}, ${formData.state}` : formData.state,
-      joiningDate: new Date().toISOString().split('T')[0],
-      salary: 'Pending Assessment',
+      appliedDate: currentDateStr,
+      applicationDate: currentDateStr,
+      joiningDate: currentDateStr,
+      placementStatus: 'Applied',
+      status: 'Applied',
+      assignedStaff: 'Unassigned',
+      dob: formData.dob || '',
+      gender: formData.gender || 'Female',
+      guardianName: formData.guardianName || '',
+      address: formData.fullAddress || (formData.villageCity ? `${formData.villageCity}, ${formData.district}` : formData.state),
+      district: formData.district || '',
+      state: formData.state || 'Odisha',
       photoDoc: photoDoc || '',
       aadharDoc: aadharDoc || '',
-      extraDocs: extraDocs || []
+      extraDocs: extraDocs || [],
+      remarks: [
+        {
+          remark: 'Student placement application received via website modal.',
+          date: displayDateStr,
+          addedBy: 'System / Student'
+        }
+      ],
+      activityHistory: [
+        {
+          action: 'Application Submitted',
+          date: new Date().toISOString(),
+          admin: 'System / Student',
+          remark: 'Initial application submitted from public website modal'
+        }
+      ],
+      followUps: []
     };
 
     await saveToFirestore('placements', newPlacement, 'lvs_new_placement');
@@ -356,39 +393,20 @@ export default function StudentPlacementModal({ isOpen, onClose }) {
                       name="state"
                       required
                       value={formData.state}
-                      onChange={handleChange}
-                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none font-medium bg-white"
+                      onChange={(e) => {
+                        const newSt = e.target.value;
+                        const districts = getDistrictsForState(newSt);
+                        setFormData(prev => ({
+                          ...prev,
+                          state: newSt,
+                          district: districts[0] || ''
+                        }));
+                      }}
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none font-medium bg-white text-slate-800"
                     >
-                      <option value="Odisha">Odisha</option>
-                      <option value="Chhattisgarh">Chhattisgarh</option>
-                      <option value="Jharkhand">Jharkhand</option>
-                      <option value="Bihar">Bihar</option>
-                      <option value="West Bengal">West Bengal</option>
-                      <option value="Assam">Assam</option>
-                      <option value="Madhya Pradesh">Madhya Pradesh</option>
-                      <option value="Rajasthan">Rajasthan</option>
-                      <option value="Haryana">Haryana</option>
-                      <option value="Kerala">Kerala</option>
-                      <option value="Karnataka">Karnataka</option>
-                      <option value="Tamil Nadu">Tamil Nadu</option>
-                      <option value="Arunachal Pradesh">Arunachal Pradesh</option>
-                      <option value="Manipur">Manipur</option>
-                      <option value="Meghalaya">Meghalaya</option>
-                      <option value="Mizoram">Mizoram</option>
-                      <option value="Nagaland">Nagaland</option>
-                      <option value="Tripura">Tripura</option>
-                      <option value="Sikkim">Sikkim</option>
-                      <option value="Andhra Pradesh">Andhra Pradesh</option>
-                      <option value="Telangana">Telangana</option>
-                      <option value="Maharashtra">Maharashtra</option>
-                      <option value="Gujarat">Gujarat</option>
-                      <option value="Punjab">Punjab</option>
-                      <option value="Uttar Pradesh">Uttar Pradesh</option>
-                      <option value="Uttarakhand">Uttarakhand</option>
-                      <option value="Himachal Pradesh">Himachal Pradesh</option>
-                      <option value="Goa">Goa</option>
-                      <option value="Delhi / NCR">Delhi / NCR</option>
-                      <option value="Other State / UT">Other State / UT</option>
+                      {ALL_INDIAN_STATES.map(st => (
+                        <option key={st} value={st}>{st}</option>
+                      ))}
                     </select>
                   </div>
 
@@ -397,15 +415,17 @@ export default function StudentPlacementModal({ isOpen, onClose }) {
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       District *
                     </label>
-                    <input
-                      type="text"
+                    <select
                       name="district"
                       required
-                      placeholder="e.g. Khordha, Cuttack, Puri"
-                      value={formData.district}
+                      value={formData.district || (getDistrictsForState(formData.state)[0] || '')}
                       onChange={handleChange}
-                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none font-medium"
-                    />
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none font-medium bg-white text-slate-800"
+                    >
+                      {getDistrictsForState(formData.state).map(dt => (
+                        <option key={dt} value={dt}>{dt}</option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Block / Municipality */}

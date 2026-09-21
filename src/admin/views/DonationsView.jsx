@@ -1,21 +1,84 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import StatCard from '../components/Common/StatCard';
 import StatusBadge from '../components/Common/StatusBadge';
+import ActionPopover from '../components/Common/ActionPopover';
 import { 
   Heart, DollarSign, Download, CheckCircle2, Clock, 
-  XCircle, Search, Filter, Calendar, Eye, EyeOff, FileText, Printer, FileSpreadsheet, ShieldCheck
+  XCircle, Search, Filter, Calendar, Eye, EyeOff, FileText, Printer, FileSpreadsheet, ShieldCheck, Edit, Trash2, X
 } from 'lucide-react';
 
 export default function DonationsView({ donations = [], setDonations, showToast, onShowToast, activeSubTab = 'donation-overview' }) {
   const notify = showToast || onShowToast || (() => {});
   const [subTab, setSubTab] = useState(activeSubTab);
+
+  useEffect(() => {
+    if (activeSubTab && activeSubTab !== 'donations') {
+      setSubTab(activeSubTab);
+    }
+  }, [activeSubTab]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [dateFilter, setDateFilter] = useState('ALL');
   
   const [selectedDonation, setSelectedDonation] = useState(null);
+  const [editingDonation, setEditingDonation] = useState(null);
+  const [editForm, setEditForm] = useState({
+    donor: '',
+    email: '',
+    mobile: '',
+    amount: '',
+    purpose: '',
+    status: 'Successful',
+    pan: ''
+  });
   const [showFullPan, setShowFullPan] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
+
+  const handleOpenEdit = (don) => {
+    setEditingDonation(don);
+    setEditForm({
+      donor: don.donor || '',
+      email: don.email || '',
+      mobile: don.mobile || '',
+      amount: don.amount || '',
+      purpose: don.purpose || don.campaign || 'General Welfare Support',
+      status: don.status || 'Successful',
+      pan: don.pan || ''
+    });
+  };
+
+  const handleSaveEdit = (e) => {
+    e.preventDefault();
+    if (!editForm.donor.trim()) {
+      notify('Please enter donor name', 'error');
+      return;
+    }
+    const updated = {
+      ...editingDonation,
+      donor: editForm.donor,
+      email: editForm.email,
+      mobile: editForm.mobile,
+      amount: editForm.amount,
+      purpose: editForm.purpose,
+      campaign: editForm.purpose,
+      status: editForm.status,
+      pan: editForm.pan
+    };
+    if (setDonations) {
+      setDonations(prev => prev.map(d => d.id === editingDonation.id ? updated : d));
+    }
+    setEditingDonation(null);
+    notify(`✓ Updated donation record for ${editForm.donor}!`, 'success');
+  };
+
+  const handleDeleteDonation = (don) => {
+    if (window.confirm(`Are you sure you want to delete donation ${don.id} from "${don.donor}"?`)) {
+      if (setDonations) {
+        setDonations(prev => prev.filter(d => d.id !== don.id));
+      }
+      notify(`Deleted donation record ${don.id}.`, 'info');
+    }
+  };
 
   // Compute Metrics strictly from live donations dataset
   const successfulDonations = donations.filter(d => 
@@ -139,43 +202,30 @@ export default function DonationsView({ donations = [], setDonations, showToast,
         </button>
       </div>
 
-      {/* Sub-Navigation Tabs */}
-      <div className="flex items-center space-x-2 border-b border-slate-200 overflow-x-auto pb-2 scrollbar-none">
-        {[
-          { id: 'donation-overview', label: '📊 Overview', count: donations.length },
-          { id: 'all-donations', label: '💳 All Donations' },
-          { id: 'successful-donations', label: '✅ Successful', count: successfulDonations.length },
-          { id: 'pending-donations', label: '⏳ Pending', count: pendingDonations.length },
-          { id: 'failed-donations', label: '🔄 Failed / Refunded', count: failedDonations.length },
-          { id: 'donation-receipts', label: '🧾 80G Receipts' }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setSubTab(tab.id)}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer ${
-              subTab === tab.id 
-                ? 'bg-[#123B5D] text-white shadow-xs' 
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
-          >
-            {tab.label} {tab.count !== undefined && <span className="ml-1 opacity-75">({tab.count})</span>}
-          </button>
-        ))}
-      </div>
-
-      {/* Requirement 6: KPI Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard title="Total Donations" value={`${donations.length}`} change="All Recorded" isPositive={donations.length > 0} icon={Heart} color="pink" />
-        <StatCard title="Successful" value={`${successfulDonations.length}`} change="Verified Payments" isPositive={successfulDonations.length > 0} icon={CheckCircle2} color="emerald" />
-        <StatCard title="Total Amount Received" value={`₹ ${totalAmountReceived.toLocaleString('en-IN')}`} change="Verified Revenue" isPositive={totalAmountReceived > 0} icon={DollarSign} color="amber" />
-        <StatCard title="Pending" value={`${pendingDonations.length}`} change="Awaiting Gateway" isPositive={pendingDonations.length === 0} icon={Clock} color="purple" />
-        <StatCard title="Failed / Cancelled" value={`${failedDonations.length}`} change="Not Charged" isPositive={failedDonations.length === 0} icon={XCircle} color="red" />
-      </div>
-
-      {/* Requirement 6: Search & Filter Toolbar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+      {/* Filter Dropdown Bar */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
         
-        {/* Search Bar */}
+        {/* Left Side: Donation View / Status Filter Dropdown */}
+        <div className="flex items-center space-x-2 w-full sm:w-auto">
+          <div className="flex items-center space-x-2 bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs shadow-2xs w-full sm:w-auto">
+            <Filter className="w-4 h-4 text-[#123B5D]" />
+            <span className="font-bold text-slate-700 whitespace-nowrap">Donation View Filter:</span>
+            <select
+              value={subTab}
+              onChange={(e) => setSubTab(e.target.value)}
+              className="bg-transparent font-extrabold text-[#123B5D] outline-none cursor-pointer text-xs pr-2"
+            >
+              <option value="donation-overview">📊 Overview ({donations.length})</option>
+              <option value="all-donations">💳 All Donations</option>
+              <option value="successful-donations">✅ Successful ({successfulDonations.length})</option>
+              <option value="pending-donations">⏳ Pending ({pendingDonations.length})</option>
+              <option value="failed-donations">🔄 Failed / Refunded ({failedDonations.length})</option>
+              <option value="donation-receipts">🧾 80G Receipts</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Right Side: Search Bar */}
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
           <input
@@ -190,24 +240,15 @@ export default function DonationsView({ donations = [], setDonations, showToast,
           )}
         </div>
 
-        {/* Filter Dropdowns */}
-        <div className="flex items-center space-x-2 w-full sm:w-auto">
-          <div className="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs">
-            <Filter className="w-3.5 h-3.5 text-slate-500" />
-            <span className="font-bold text-slate-600">Status:</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-transparent font-bold text-slate-900 outline-none cursor-pointer"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="SUCCESS">Successful</option>
-              <option value="PENDING">Pending</option>
-              <option value="FAILED">Failed / Refunded</option>
-            </select>
-          </div>
-        </div>
+      </div>
 
+      {/* Requirement 6: KPI Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <StatCard title="Total Donations" value={`${donations.length}`} change="All Recorded" isPositive={donations.length > 0} icon={Heart} color="pink" />
+        <StatCard title="Successful" value={`${successfulDonations.length}`} change="Verified Payments" isPositive={successfulDonations.length > 0} icon={CheckCircle2} color="emerald" />
+        <StatCard title="Total Amount Received" value={`₹ ${totalAmountReceived.toLocaleString('en-IN')}`} change="Verified Revenue" isPositive={totalAmountReceived > 0} icon={DollarSign} color="amber" />
+        <StatCard title="Pending" value={`${pendingDonations.length}`} change="Awaiting Gateway" isPositive={pendingDonations.length === 0} icon={Clock} color="purple" />
+        <StatCard title="Failed / Cancelled" value={`${failedDonations.length}`} change="Not Charged" isPositive={failedDonations.length === 0} icon={XCircle} color="red" />
       </div>
 
       {/* Requirement 6: Main Donations Table */}
@@ -271,26 +312,17 @@ export default function DonationsView({ donations = [], setDonations, showToast,
 
                     <td className="p-4 text-slate-500 font-medium">{don.date}</td>
 
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        <button
-                          onClick={() => handleOpenDetails(don)}
-                          className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold flex items-center space-x-1 cursor-pointer transition-colors"
-                          title="View Donation Details"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Details</span>
-                        </button>
-
-                        <button
-                          onClick={() => handlePrintReceipt(don)}
-                          className="px-2.5 py-1.5 bg-[#123B5D] hover:bg-[#0E2F4A] text-white rounded-lg font-bold flex items-center space-x-1 cursor-pointer shadow-2xs transition-colors"
-                          title="Generate 80G Receipt"
-                        >
-                          <Download className="w-3.5 h-3.5 text-emerald-300" />
-                          <span>80G Receipt</span>
-                        </button>
-                      </div>
+                    {/* Actions 3-dot menu */}
+                    <td className="p-4 text-right whitespace-nowrap">
+                      <ActionPopover
+                        items={[
+                          { label: 'View Details', icon: Eye, onClick: () => handleOpenDetails(don) },
+                          { label: 'Edit Donation', icon: Edit, onClick: () => handleOpenEdit(don) },
+                          { label: 'Print 80G Receipt', icon: Printer, onClick: () => handlePrintReceipt(don) },
+                          { divider: true },
+                          { label: 'Delete Donation', icon: Trash2, danger: true, onClick: () => handleDeleteDonation(don) }
+                        ]}
+                      />
                     </td>
                   </tr>
                 ))
@@ -498,7 +530,118 @@ export default function DonationsView({ donations = [], setDonations, showToast,
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
 
+      {/* EDIT DONATION MODAL */}
+      {editingDonation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs">
+          <div className="w-full max-w-lg bg-white rounded-3xl p-6 border border-slate-200 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 font-serif">Edit Donation Record</h3>
+                <p className="text-xs text-slate-500 font-mono">ID: {editingDonation.id}</p>
+              </div>
+              <button onClick={() => setEditingDonation(null)} className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-slate-700">Donor Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.donor}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, donor: e.target.value }))}
+                  className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700">Email Address</label>
+                  <input
+                    type="email"
+                    value={editForm.email}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">Mobile Number</label>
+                  <input
+                    type="text"
+                    value={editForm.mobile}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, mobile: e.target.value }))}
+                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700">Donation Amount</label>
+                  <input
+                    type="text"
+                    value={editForm.amount}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, amount: e.target.value }))}
+                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-emerald-700"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">Payment Status</label>
+                  <select
+                    value={editForm.status}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
+                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                  >
+                    <option value="Successful">Successful</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Failed">Failed</option>
+                    <option value="Refunded">Refunded</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700">Donor PAN Card</label>
+                <input
+                  type="text"
+                  value={editForm.pan}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, pan: e.target.value }))}
+                  className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono uppercase font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700">Purpose / Campaign</label>
+                <input
+                  type="text"
+                  value={editForm.purpose}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, purpose: e.target.value }))}
+                  className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingDonation(null)}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

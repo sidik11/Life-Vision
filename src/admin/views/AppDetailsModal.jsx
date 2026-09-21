@@ -316,13 +316,25 @@ export default function AppDetailsModal({ application, onClose, onUpdateStatus, 
         <div className="p-6 bg-[#FAF6EE] border-t border-[#E5DDD0] flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => onUpdateStatus(application.id, 'Shortlisted', 3)}
+              onClick={() => {
+                if (application.status === 'Shortlisted') {
+                  alert("⚠️ Student already exists / Candidate is already shortlisted!");
+                  return;
+                }
+                onUpdateStatus(application.id, 'Shortlisted', 3);
+              }}
               className="px-4 py-2.5 bg-[#F3E8FF] hover:bg-[#E9D5FF] text-[#6B21A8] border border-[#DDD6FE] rounded-xl text-xs font-bold transition-all cursor-pointer"
             >
-              [ Shortlist ]
+              [ Shortlist Candidate ]
             </button>
             <button
-              onClick={() => onUpdateStatus(application.id, 'Selected', 4)}
+              onClick={() => {
+                if (application.status === 'Selected') {
+                  alert("⚠️ Student already exists / Candidate is already selected!");
+                  return;
+                }
+                onUpdateStatus(application.id, 'Selected', 4);
+              }}
               className="px-4 py-2.5 bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#047857] border border-[#A7F3D0] rounded-xl text-xs font-bold transition-all cursor-pointer"
             >
               [ Select Candidate ]

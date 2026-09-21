@@ -1,39 +1,61 @@
 import React, { useState, useMemo } from 'react';
 import StatusBadge from '../components/Common/StatusBadge';
+import ActionPopover from '../components/Common/ActionPopover';
 import { 
   Search, Filter, Download, Plus, Eye, Edit, Trash2, 
   ChevronLeft, ChevronRight, ArrowUpDown, Calendar, MapPin
 } from 'lucide-react';
 
 export default function TrainingAppsView({ 
-  applications, 
+  applications = [], 
   onViewApp, 
   onDeleteApp, 
-  onShowToast 
+  onShowToast,
+  activeTab = 'app-training'
 }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState(() => {
+    if (activeTab === 'app-volunteer') return 'Volunteer';
+    if (activeTab === 'app-partner') return 'Partner';
+    if (activeTab === 'app-contact') return 'Contact';
+    return 'All';
+  });
   const [courseFilter, setCourseFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [locationFilter, setLocationFilter] = useState('All');
   const [sortField, setSortField] = useState('applicationDate');
   const [sortOrder, setSortOrder] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   const filteredApps = useMemo(() => {
     return (applications || []).filter(app => {
       if (!app) return false;
+      
+      const appType = String(app.type || app.applicationType || '').toLowerCase();
+      const appCourse = String(app.course || '').toLowerCase();
+
+      // Category matching
+      if (categoryFilter === 'Volunteer' || activeTab === 'app-volunteer') {
+        if (!appType.includes('volunteer') && !appCourse.includes('volunteer')) return false;
+      } else if (categoryFilter === 'Partner' || activeTab === 'app-partner') {
+        if (!appType.includes('partner') && !appCourse.includes('partner')) return false;
+      } else if (categoryFilter === 'Contact' || activeTab === 'app-contact') {
+        if (!appType.includes('contact')) return false;
+      } else if (categoryFilter === 'Training' || activeTab === 'app-training') {
+        if (appType.includes('volunteer') || appType.includes('partner') || appType.includes('contact')) return false;
+      }
+
       const appName = String(app.name || app.fullName || '').toLowerCase();
       const appId = String(app.id || '').toLowerCase();
       const appMobile = String(app.mobile || app.phone || '');
-      const appCourse = String(app.course || '');
       const appStatus = String(app.status || 'New');
       const appLocation = String(app.location || app.address || app.district || '');
 
       const matchesSearch = appName.includes(searchTerm.toLowerCase()) ||
                             appId.includes(searchTerm.toLowerCase()) ||
                             appMobile.includes(searchTerm);
-      const matchesCourse = courseFilter === 'All' || appCourse.includes(courseFilter);
+      const matchesCourse = courseFilter === 'All' || appCourse.includes(courseFilter.toLowerCase());
       const matchesStatus = statusFilter === 'All' || appStatus === statusFilter;
       const matchesLocation = locationFilter === 'All' || appLocation.toLowerCase().includes(locationFilter.toLowerCase());
 
@@ -44,7 +66,7 @@ export default function TrainingAppsView({
       if (sortOrder === 'asc') return aVal > bVal ? 1 : -1;
       return aVal < bVal ? 1 : -1;
     });
-  }, [applications, searchTerm, courseFilter, statusFilter, locationFilter, sortField, sortOrder]);
+  }, [applications, activeTab, categoryFilter, searchTerm, courseFilter, statusFilter, locationFilter, sortField, sortOrder]);
 
   const totalPages = Math.ceil(filteredApps.length / itemsPerPage) || 1;
   const paginatedApps = filteredApps.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -184,24 +206,14 @@ export default function TrainingAppsView({
                     <td className="p-4">
                       <StatusBadge status={app.status} />
                     </td>
-                    <td className="p-4 text-right space-x-1">
-                      {/* Secondary Action: Blue #2563EB */}
-                      <button
-                        onClick={() => onViewApp(app)}
-                        className="px-3 py-1.5 bg-[#2563EB] hover:bg-blue-700 text-white rounded-lg font-bold transition-colors cursor-pointer shadow-xs inline-flex items-center space-x-1"
-                        title="View Application Details"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>View</span>
-                      </button>
-                      {/* Danger Button: Red #DC2626 */}
-                      <button
-                        onClick={() => onDeleteApp(app.id)}
-                        className="p-1.5 text-[#DC2626] hover:bg-rose-50 rounded-lg transition-colors cursor-pointer inline-flex"
-                        title="Delete Application"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <td className="p-4 text-right whitespace-nowrap">
+                      <ActionPopover
+                        items={[
+                          { label: 'View Application Details', icon: Eye, onClick: () => onViewApp(app) },
+                          { divider: true },
+                          { label: 'Delete Application', icon: Trash2, danger: true, onClick: () => onDeleteApp(app.id) }
+                        ]}
+                      />
                     </td>
                   </tr>
                 ))

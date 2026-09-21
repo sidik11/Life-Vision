@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, Send, GraduationCap, User, Phone, Mail, BookOpen, MapPin, Calendar, Briefcase, Award, Share2, FileCheck, Upload, Loader2 } from 'lucide-react';
 import { saveToFirestore } from '../utils/firebaseSave';
 import { sendWebsiteFormEmail } from '../utils/emailHelper';
+import { ALL_INDIAN_STATES, getDistrictsForState } from '../utils/indiaLocationData';
 
 export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
   const [submitted, setSubmitted] = useState(false);
@@ -440,39 +441,20 @@ Skill Development & Training Team`;
                       name="state"
                       required
                       value={formData.state}
-                      onChange={handleChange}
-                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none font-medium bg-white"
+                      onChange={(e) => {
+                        const newSt = e.target.value;
+                        const districts = getDistrictsForState(newSt);
+                        setFormData(prev => ({
+                          ...prev,
+                          state: newSt,
+                          district: districts[0] || ''
+                        }));
+                      }}
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none font-medium bg-white text-slate-800"
                     >
-                      <option value="Odisha">Odisha</option>
-                      <option value="Chhattisgarh">Chhattisgarh</option>
-                      <option value="Jharkhand">Jharkhand</option>
-                      <option value="Bihar">Bihar</option>
-                      <option value="West Bengal">West Bengal</option>
-                      <option value="Assam">Assam</option>
-                      <option value="Madhya Pradesh">Madhya Pradesh</option>
-                      <option value="Rajasthan">Rajasthan</option>
-                      <option value="Haryana">Haryana</option>
-                      <option value="Kerala">Kerala</option>
-                      <option value="Karnataka">Karnataka</option>
-                      <option value="Tamil Nadu">Tamil Nadu</option>
-                      <option value="Arunachal Pradesh">Arunachal Pradesh</option>
-                      <option value="Manipur">Manipur</option>
-                      <option value="Meghalaya">Meghalaya</option>
-                      <option value="Mizoram">Mizoram</option>
-                      <option value="Nagaland">Nagaland</option>
-                      <option value="Tripura">Tripura</option>
-                      <option value="Sikkim">Sikkim</option>
-                      <option value="Andhra Pradesh">Andhra Pradesh</option>
-                      <option value="Telangana">Telangana</option>
-                      <option value="Maharashtra">Maharashtra</option>
-                      <option value="Gujarat">Gujarat</option>
-                      <option value="Punjab">Punjab</option>
-                      <option value="Uttar Pradesh">Uttar Pradesh</option>
-                      <option value="Uttarakhand">Uttarakhand</option>
-                      <option value="Himachal Pradesh">Himachal Pradesh</option>
-                      <option value="Goa">Goa</option>
-                      <option value="Delhi / NCR">Delhi / NCR</option>
-                      <option value="Other State / UT">Other State / UT</option>
+                      {ALL_INDIAN_STATES.map(st => (
+                        <option key={st} value={st}>{st}</option>
+                      ))}
                     </select>
                   </div>
 
@@ -481,15 +463,17 @@ Skill Development & Training Team`;
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       District *
                     </label>
-                    <input
-                      type="text"
+                    <select
                       name="district"
                       required
-                      placeholder="e.g. Khordha, Cuttack, Puri"
-                      value={formData.district}
+                      value={formData.district || (getDistrictsForState(formData.state)[0] || '')}
                       onChange={handleChange}
-                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none font-medium"
-                    />
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none font-medium bg-white text-slate-800"
+                    >
+                      {getDistrictsForState(formData.state).map(dt => (
+                        <option key={dt} value={dt}>{dt}</option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Block / Municipality */}

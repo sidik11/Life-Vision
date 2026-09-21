@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Menu, Bell, Search, ChevronDown, User, Settings, 
-  HelpCircle, LogOut, CheckCircle2, X, Command, Phone, Mail, Shield
+  LogOut, CheckCheck, X, Command, Phone, Mail, 
+  GraduationCap, Briefcase, Heart, MessageSquare, Handshake, CheckCircle2, ArrowRight
 } from 'lucide-react';
 
 export default function TopHeader({ 
@@ -12,7 +13,13 @@ export default function TopHeader({
   setMobileOpen,
   user,
   onLogout,
-  unreadCount = 0
+  applications = [],
+  placements = [],
+  volunteers = [],
+  contacts = [],
+  partners = [],
+  programs = [],
+  centers = []
 }) {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -22,7 +29,17 @@ export default function TopHeader({
   const profileRef = useRef(null);
   const notificationsRef = useRef(null);
 
-  // Click Outside Listener for Profile Dropdown & Notifications
+  // Read notifications tracked in localStorage
+  const [readIds, setReadIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lvs_read_notification_ids');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  // Click Outside Listener
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
@@ -41,6 +58,7 @@ export default function TopHeader({
     };
   }, []);
 
+  // Keyboard shortcut Ctrl+K / Cmd+K
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -64,19 +82,20 @@ export default function TopHeader({
     'attendance': ['Training', 'Attendance'],
     'assessments': ['Training', 'Assessments'],
     'certificates': ['Training', 'Certificates'],
+    'app-training': ['Training', 'Training Applications'],
     'training-reports': ['Training', 'Training Reports'],
 
-    // Placement
-    'placement': ['Placement Support', 'Placement Applications'],
-    'placement-applications': ['Placement Support', 'Placement Applications'],
-    'placement-overview': ['Placement Support', 'Placement Applications'],
-    'students-seeking-jobs': ['Placement Support', 'Placement Applications'],
-    'job-opportunities': ['Placement Support', 'Placement Applications'],
-    'interviews': ['Placement Support', 'Placement Applications'],
-    'selected-students': ['Placement Support', 'Placement Applications'],
-    'employed-students': ['Placement Support', 'Placement Applications'],
-    'self-employed': ['Placement Support', 'Placement Applications'],
-    'placement-reports': ['Placement Support', 'Placement Applications'],
+    // Placement Support / Support Applications
+    'placement': ['Placement Support', 'Support Applications'],
+    'placement-applications': ['Placement Support', 'Support Applications'],
+    'placement-overview': ['Placement Support', 'Support Applications'],
+    'students-seeking-jobs': ['Placement Support', 'Support Applications'],
+    'job-opportunities': ['Placement Support', 'Support Applications'],
+    'interviews': ['Placement Support', 'Support Applications'],
+    'selected-students': ['Placement Support', 'Support Applications'],
+    'employed-students': ['Placement Support', 'Support Applications'],
+    'self-employed': ['Placement Support', 'Support Applications'],
+    'placement-reports': ['Placement Support', 'Support Applications'],
 
     // Partners
     'all-partners': ['Partners', 'All Partners'],
@@ -116,16 +135,15 @@ export default function TopHeader({
 
     // Volunteers
     'all-volunteers': ['Volunteers', 'All Volunteers'],
-    'volunteer-new-apps': ['Volunteers', 'New Applications'],
+    'volunteer-applications': ['Volunteers', 'Volunteer Applications'],
+    'volunteer-new-apps': ['Volunteers', 'Volunteer Applications'],
     'active-volunteers': ['Volunteers', 'Active Volunteers'],
     'volunteer-projects': ['Volunteers', 'Volunteer Projects'],
     'volunteer-reports': ['Volunteers', 'Volunteer Reports'],
 
-    // Applications
-    'app-training': ['Applications', 'Training Applications'],
-    'app-partner': ['Applications', 'Partner Applications'],
-    'app-volunteer': ['Applications', 'Volunteer Applications'],
-    'app-contact': ['Applications', 'Contact Enquiries'],
+    // Contact Details
+    'contact-details': ['Contact Details', 'Contact Enquiries'],
+    'app-contact': ['Contact Details', 'Contact Enquiries'],
 
     // Content
     'content-news-blog': ['Content', 'News & Blogs'],
@@ -144,24 +162,111 @@ export default function TopHeader({
     'report-impact': ['Reports', 'Impact Reports'],
 
     // Administration
-    'admin-users-roles': ['Administration', 'Users & Roles'],
     'admin-notifications': ['Administration', 'Notifications'],
-    'admin-documents': ['Administration', 'Documents'],
     'admin-settings': ['Administration', 'Settings'],
-    'admin-scanner': ['Administration', 'NGO Scanner'],
+    'admin-scanner': ['Administration', 'Scanner'],
     'admin-activity-logs': ['Administration', 'Activity Logs']
   };
 
   const breadcrumbs = breadcrumbMap[activeTab] || ['Dashboard', 'Overview'];
 
-  const notifications = [
-    { id: 1, title: 'New Public Training Application', desc: 'Sunita Sahu applied for Tailoring & Stitching (Bhubaneswar Hub)', time: '10 mins ago', type: 'app', unread: true },
-    { id: 2, title: 'CSR Grant Sanctioned', desc: 'HDFC Parivartan released ₹45,00,000 for women empowerment', time: '2 hours ago', type: 'grant', unread: true },
-    { id: 3, title: 'Batch Completed & Certified', desc: 'BATCH-2026-T1 completed graduation with 96% pass rate', time: 'Yesterday', type: 'batch', unread: false }
+  // Build Real Notifications from all 5 application sections
+  const realNotifications = [
+    ...applications.map(item => ({
+      id: `train-${item.id || item.firestoreId}`,
+      type: 'training',
+      badgeLabel: 'Training App',
+      icon: GraduationCap,
+      color: 'bg-emerald-100 text-emerald-700',
+      title: item.studentName || item.fullName || item.name || 'New Training Student',
+      desc: `Applied for ${item.courseName || item.program || item.trade || 'Training Program'} (${item.district || item.state || 'Odisha'})`,
+      time: item.appliedDate || item.appliedAt || item.createdAt || 'Recent',
+      tab: 'app-training'
+    })),
+    ...placements.map(item => ({
+      id: `place-${item.id || item.firestoreId}`,
+      type: 'placement',
+      badgeLabel: 'Placement Support',
+      icon: Briefcase,
+      color: 'bg-purple-100 text-purple-700',
+      title: item.studentName || item.student || item.fullName || item.name || 'New Placement Applicant',
+      desc: `${item.supportType || item.preferredJobRole || 'Tuition Fee Sponsorship & Placement'} • ${item.district || item.state || 'Odisha'}`,
+      time: item.appliedDate || item.applicationDate || item.appliedAt || 'Recent',
+      tab: 'placement-applications'
+    })),
+    ...volunteers.map(item => ({
+      id: `vol-${item.id || item.firestoreId}`,
+      type: 'volunteer',
+      badgeLabel: 'Volunteer App',
+      icon: Heart,
+      color: 'bg-pink-100 text-pink-700',
+      title: item.fullName || item.name || 'New Volunteer Applicant',
+      desc: `Volunteer for ${item.role || item.area || 'Social Support Work'} (${item.city || item.state || 'Location'})`,
+      time: item.appliedDate || item.appliedAt || item.date || 'Recent',
+      tab: 'volunteer-applications'
+    })),
+    ...contacts.map(item => ({
+      id: `contact-${item.id || item.firestoreId}`,
+      type: 'contact',
+      badgeLabel: 'Contact Enquiry',
+      icon: MessageSquare,
+      color: 'bg-blue-100 text-blue-700',
+      title: item.name || item.fullName || 'New Contact Inquiry',
+      desc: `${item.subject || item.message || 'General Website Contact Inquiry'}`,
+      time: item.date || item.appliedAt || item.createdAt || 'Recent',
+      tab: 'contact-details'
+    })),
+    ...partners.map(item => ({
+      id: `part-${item.id || item.firestoreId}`,
+      type: 'partner',
+      badgeLabel: 'Partner App',
+      icon: Handshake,
+      color: 'bg-amber-100 text-amber-800',
+      title: item.orgName || item.organizationName || item.name || 'New Partner Applicant',
+      desc: `${item.partnerType || item.type || 'CSR / Corporate Partnership Collaboration'}`,
+      time: item.date || item.appliedAt || item.createdAt || 'Recent',
+      tab: 'partner-applications'
+    }))
   ];
+
+  // Calculate Unread Count
+  const unreadCount = realNotifications.filter(n => !readIds.includes(n.id)).length;
+
+  const handleMarkAllRead = () => {
+    const allIds = realNotifications.map(n => n.id);
+    setReadIds(allIds);
+    try {
+      localStorage.setItem('lvs_read_notification_ids', JSON.stringify(allIds));
+    } catch (e) {}
+  };
+
+  const handleNotificationClick = (item) => {
+    if (!readIds.includes(item.id)) {
+      const nextRead = [...readIds, item.id];
+      setReadIds(nextRead);
+      try {
+        localStorage.setItem('lvs_read_notification_ids', JSON.stringify(nextRead));
+      } catch (e) {}
+    }
+    setActiveTab(item.tab);
+    setShowNotifications(false);
+  };
+
+  // Real Search Filtering across real records
+  const searchResults = realNotifications.filter(n => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return false;
+    return (
+      n.title.toLowerCase().includes(query) ||
+      n.desc.toLowerCase().includes(query) ||
+      n.badgeLabel.toLowerCase().includes(query) ||
+      (n.id && n.id.toLowerCase().includes(query))
+    );
+  });
 
   return (
     <header className="h-20 bg-white border-b border-[#E2E8F0] px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+      
       {/* Left side: Toggle & Breadcrumb */}
       <div className="flex items-center space-x-3 sm:space-x-4">
         <button
@@ -188,6 +293,7 @@ export default function TopHeader({
 
       {/* Right side: Global Search, Notifications, Profile */}
       <div className="flex items-center space-x-2 sm:space-x-4">
+        
         {/* Search button */}
         <button
           onClick={() => setShowSearchModal(true)}
@@ -209,7 +315,7 @@ export default function TopHeader({
           <Search className="w-5 h-5" />
         </button>
 
-        {/* Notifications */}
+        {/* Notifications Dropdown */}
         <div className="relative" ref={notificationsRef}>
           <button
             onClick={() => {
@@ -217,55 +323,98 @@ export default function TopHeader({
               setShowProfileDropdown(false);
             }}
             className="p-2 rounded-xl text-[#2563EB] hover:bg-[#F8FAFC] transition-colors relative cursor-pointer"
+            title="Notifications"
           >
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-[#F59E0B] rounded-full ring-2 ring-white animate-pulse" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[10px] font-black bg-rose-600 text-white rounded-full ring-2 ring-white animate-pulse min-w-[18px] text-center">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white border border-[#E2E8F0] rounded-2xl shadow-xl z-50 overflow-hidden">
-              <div className="p-4 bg-[#123B5D] border-b border-[#123B5D] flex items-center justify-between text-white">
-                <h3 className="text-xs font-bold uppercase tracking-wider">System Notifications</h3>
-                <span className="px-2.5 py-0.5 text-[10px] font-bold bg-[#F59E0B] text-slate-950 rounded-full">
-                  {unreadCount > 0 ? `${unreadCount} Unread` : 'Notifications'}
+            <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white border border-[#E2E8F0] rounded-2xl shadow-2xl z-50 overflow-hidden">
+              
+              {/* Header */}
+              <div className="p-4 bg-[#123B5D] text-white flex items-center justify-between border-b border-[#123B5D]">
+                <div className="flex items-center space-x-2">
+                  <Bell className="w-4 h-4 text-pink-300" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider">Live System Notifications</h3>
+                </div>
+                
+                {unreadCount > 0 ? (
+                  <button
+                    onClick={handleMarkAllRead}
+                    className="px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                    title="Mark all notifications as read"
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" />
+                    <span>Mark All Read</span>
+                  </button>
+                ) : (
+                  <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                    All Read
+                  </span>
+                )}
+              </div>
+
+              {/* Notification List */}
+              <div className="max-h-80 overflow-y-auto divide-y divide-[#E2E8F0]">
+                {realNotifications.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-slate-500 space-y-1">
+                    <p className="font-bold">No Applications Yet</p>
+                    <p className="text-[11px]">When users apply on the main website, notifications will appear here.</p>
+                  </div>
+                ) : (
+                  realNotifications.map((n) => {
+                    const IconComp = n.icon;
+                    const isUnread = !readIds.includes(n.id);
+                    return (
+                      <div 
+                        key={n.id} 
+                        onClick={() => handleNotificationClick(n)}
+                        className={`p-3.5 hover:bg-[#F8FAFC] transition-colors cursor-pointer flex items-start space-x-3 ${
+                          isUnread ? 'bg-blue-50/70 font-semibold' : 'opacity-85'
+                        }`}
+                      >
+                        <div className={`p-2.5 rounded-xl ${n.color} shrink-0 mt-0.5`}>
+                          <IconComp className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md border border-slate-200">
+                              {n.badgeLabel}
+                            </span>
+                            <span className="text-[10px] text-slate-400 shrink-0 font-medium">{n.time}</span>
+                          </div>
+                          <h4 className="text-xs font-bold text-[#1E293B] truncate mt-1">{n.title}</h4>
+                          <p className="text-[11px] text-[#64748B] mt-0.5 line-clamp-2 leading-relaxed">{n.desc}</p>
+                        </div>
+                        {isUnread && (
+                          <span className="w-2 h-2 bg-blue-600 rounded-full shrink-0 mt-2" title="Unread" />
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-3 bg-[#F8FAFC] border-t border-[#E2E8F0] flex items-center justify-between">
+                <button
+                  onClick={handleMarkAllRead}
+                  className="text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <CheckCheck className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Mark All Read</span>
+                </button>
+                
+                <span className="text-[10px] font-medium text-slate-400">
+                  {realNotifications.length} Total Applications
                 </span>
               </div>
-              <div className="max-h-80 overflow-y-auto divide-y divide-[#E2E8F0]">
-                {notifications.map((n) => (
-                  <div 
-                    key={n.id} 
-                    onClick={() => {
-                      setActiveTab('admin-notifications');
-                      setShowNotifications(false);
-                    }}
-                    className={`p-3.5 hover:bg-[#F8FAFC] transition-colors cursor-pointer flex items-start space-x-3 ${
-                      n.unread ? 'bg-blue-50/60 font-semibold' : ''
-                    }`}
-                  >
-                    <div className="p-2 rounded-xl bg-blue-100 text-[#2563EB] shrink-0">
-                      <Bell className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-bold text-[#1E293B] truncate">{n.title}</h4>
-                        <span className="text-[10px] text-[#64748B] shrink-0">{n.time}</span>
-                      </div>
-                      <p className="text-[11px] text-[#64748B] mt-0.5 line-clamp-2">{n.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="p-3 bg-[#F8FAFC] border-t border-[#E2E8F0] text-center">
-                <button
-                  onClick={() => {
-                    setActiveTab('admin-notifications');
-                    setShowNotifications(false);
-                  }}
-                  className="text-xs font-bold text-[#2563EB] hover:underline transition-colors"
-                >
-                  View All Notifications →
-                </button>
-              </div>
+
             </div>
           )}
         </div>
@@ -296,7 +445,6 @@ export default function TopHeader({
 
           {showProfileDropdown && (
             <div className="absolute right-0 mt-3 w-64 bg-white border border-[#E2E8F0] rounded-2xl shadow-xl z-50 py-2 overflow-hidden">
-              {/* Detailed Header Info */}
               <div className="px-4 py-3.5 border-b border-[#E2E8F0] bg-slate-50 space-y-1.5">
                 <div className="flex items-center space-x-2.5">
                   <img src={user?.avatar || "/image/logo.png"} alt="Avatar" className="w-8 h-8 rounded-lg object-contain bg-white p-0.5 ring-2 ring-emerald-500 shrink-0" />
@@ -348,12 +496,15 @@ export default function TopHeader({
             </div>
           )}
         </div>
+
       </div>
 
-      {/* Global Search Modal */}
+      {/* Global Real Data Search Modal */}
       {showSearchModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-[#123B5D]/60 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-4 bg-[#123B5D]/60 backdrop-blur-xs">
           <div className="w-full max-w-2xl bg-white border border-[#E2E8F0] rounded-2xl shadow-2xl overflow-hidden">
+            
+            {/* Search Input Bar */}
             <div className="p-4 border-b border-[#E2E8F0] flex items-center space-x-3 bg-[#F8FAFC]">
               <Search className="w-5 h-5 text-[#64748B] shrink-0" />
               <input
@@ -361,31 +512,63 @@ export default function TopHeader({
                 autoFocus
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search real applications, programs, Odisha centers, certificates..."
+                placeholder="Search real applications (Training, Placement, Volunteer, Contact, Partner)..."
                 className="w-full bg-transparent text-sm text-[#1E293B] font-medium placeholder-[#64748B] focus:outline-none"
               />
-              <button onClick={() => setShowSearchModal(false)} className="p-1 text-[#64748B] hover:text-[#1E293B]">
+              <button onClick={() => setShowSearchModal(false)} className="p-1 text-[#64748B] hover:text-[#1E293B] cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
+            {/* Search Results List */}
             <div className="p-4 max-h-96 overflow-y-auto space-y-2 text-xs">
-              <p className="text-[11px] font-semibold text-[#64748B] uppercase">Search Results</p>
-              
-              <div 
-                onClick={() => { setActiveTab('app-training'); setShowSearchModal(false); }}
-                className="p-3 bg-[#F8FAFC] hover:bg-slate-100 border border-[#E2E8F0] rounded-xl flex items-center justify-between cursor-pointer"
-              >
-                <div>
-                  <div className="font-bold text-[#1E293B]">Sunita Sahu - Fashion Boutique Application</div>
-                  <div className="text-[11px] text-[#64748B]">ID: APP-LVS-2026-001 • Bhubaneswar Hub</div>
+              <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
+                {searchQuery ? `Search Results (${searchResults.length})` : 'Recent Submissions across Admin Sections'}
+              </p>
+
+              {(searchQuery ? searchResults : realNotifications.slice(0, 8)).length === 0 ? (
+                <div className="py-8 text-center text-slate-500 text-xs">
+                  No matching application records found for "{searchQuery}".
                 </div>
-                <span className="px-2.5 py-0.5 bg-emerald-100 text-[#16A34A] rounded-md font-bold text-[10px]">Selected</span>
-              </div>
+              ) : (
+                (searchQuery ? searchResults : realNotifications.slice(0, 8)).map(n => {
+                  const IconComp = n.icon;
+                  return (
+                    <div 
+                      key={n.id}
+                      onClick={() => handleNotificationClick(n)}
+                      className="p-3 bg-[#F8FAFC] hover:bg-blue-50/70 border border-[#E2E8F0] hover:border-blue-200 rounded-xl flex items-center justify-between cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center space-x-3 min-w-0">
+                        <div className={`p-2 rounded-xl ${n.color} shrink-0`}>
+                          <IconComp className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-[#1E293B] text-xs truncate">{n.title}</div>
+                          <div className="text-[11px] text-[#64748B] truncate">{n.desc}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 shrink-0">
+                        <span className="px-2.5 py-0.5 bg-slate-100 text-slate-700 border border-slate-200 rounded-md font-bold text-[10px] uppercase">
+                          {n.badgeLabel}
+                        </span>
+                        <ArrowRight className="w-4 h-4 text-slate-400" />
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
+
+            <div className="p-3 bg-[#F8FAFC] border-t border-[#E2E8F0] text-center text-[11px] text-slate-500 font-medium">
+              Click any application to jump directly to its management view.
+            </div>
+
           </div>
         </div>
       )}
+
     </header>
   );
 }

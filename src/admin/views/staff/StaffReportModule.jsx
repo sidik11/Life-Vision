@@ -333,7 +333,7 @@ export default function StaffReportModule({
             <div>
               <h1 className="text-xl font-black text-slate-900 tracking-wide font-serif uppercase">LIFE VISION SOCIETY</h1>
               <p className="text-xs font-bold text-emerald-800">Regd. NGO | Empowering Skill Development & Livelihood in Odisha</p>
-              <p className="text-[11px] text-slate-600 font-medium">Head Office: Plot No. 124, Saheed Nagar, Bhubaneswar, Odisha - 751007</p>
+              <p className="text-[11px] text-slate-600 font-medium">Head Office: Unit No. 423, Tower-A, Spez I-Tech Park, Sohna Rd, Sector-49, Gurugram 122018</p>
               <p className="text-[11px] text-slate-600 font-medium">Phone: +91 9416362914 | Email: support.lifevision@gmail.com</p>
             </div>
           </div>

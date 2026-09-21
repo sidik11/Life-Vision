@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { GraduationCap, User, Phone, Mail, MapPin, CheckCircle2, Send, BookOpen, Award, Briefcase, Share2, Loader2, Upload, Plus, X, FileText } from 'lucide-react';
 import { saveToFirestore } from '../utils/firebaseSave';
 import { sendWebsiteFormEmail } from '../utils/emailHelper';
+import { ALL_INDIAN_STATES, getDistrictsForState } from '../utils/indiaLocationData';
 
 export default function StudentPlacementForm() {
   const [submitted, setSubmitted] = useState(false);
@@ -118,32 +119,68 @@ export default function StudentPlacementForm() {
     e.preventDefault();
     setIsSubmitting(true);
 
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    const generatedAppId = `LV-PLC-2026-${randomNum}`;
+    const generatedStuId = `STU-2026-${randomNum}`;
+    const currentDateStr = new Date().toISOString().split('T')[0];
+    const displayDateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
     const newApplication = {
-      id: `APP-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: `APP-2026-${randomNum}`,
       ...formData,
       photoDoc: photoDoc || '',
       aadharDoc: aadharDoc || '',
       extraDocs: extraDocs || [],
       status: 'Pending',
-      appliedAt: new Date().toISOString().split('T')[0]
+      appliedAt: currentDateStr
     };
 
     const newPlacement = {
-      id: `PLC-OD-${Math.floor(100 + Math.random() * 900)}`,
+      id: generatedAppId,
+      applicationId: generatedAppId,
+      studentId: generatedStuId,
       student: formData.fullName,
+      studentName: formData.fullName,
       course: formData.higherCourse,
+      trainingCentre: formData.collegeName || 'Bhubaneswar Main Centre',
       mobile: formData.phone,
+      phone: formData.phone,
       email: formData.email,
-      trainingCompleted: 'Requested Placement',
-      placementStatus: 'Applied',
-      employer: formData.collegeName,
+      preferredJobRole: formData.supportType,
       jobRole: formData.supportType,
+      preferredLocation: formData.district ? `${formData.district}, ${formData.state}` : formData.state,
       location: formData.district ? `${formData.district}, ${formData.state}` : formData.state,
-      joiningDate: new Date().toISOString().split('T')[0],
-      salary: 'Pending Assessment',
+      appliedDate: currentDateStr,
+      applicationDate: currentDateStr,
+      joiningDate: currentDateStr,
+      placementStatus: 'Applied',
+      status: 'Applied',
+      assignedStaff: 'Unassigned',
+      dob: formData.dob || '',
+      gender: formData.gender || 'Female',
+      guardianName: formData.guardianName || '',
+      address: formData.fullAddress || (formData.villageCity ? `${formData.villageCity}, ${formData.district}` : formData.state),
+      district: formData.district || '',
+      state: formData.state || 'Odisha',
       photoDoc: photoDoc || '',
       aadharDoc: aadharDoc || '',
-      extraDocs: extraDocs || []
+      extraDocs: extraDocs || [],
+      remarks: [
+        {
+          remark: 'Student placement application received via website.',
+          date: displayDateStr,
+          addedBy: 'System / Student'
+        }
+      ],
+      activityHistory: [
+        {
+          action: 'Application Submitted',
+          date: new Date().toISOString(),
+          admin: 'System / Student',
+          remark: 'Initial application submitted from public portal'
+        }
+      ],
+      followUps: []
     };
 
     // 1. Save to Firestore Collections with fast timeout & Admin Events
@@ -407,16 +444,41 @@ export default function StudentPlacementForm() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">State *</label>
+                <select
+                  required
+                  name="state"
+                  value={formData.state}
+                  onChange={(e) => {
+                    const newSt = e.target.value;
+                    const districts = getDistrictsForState(newSt);
+                    setFormData(prev => ({
+                      ...prev,
+                      state: newSt,
+                      district: districts[0] || ''
+                    }));
+                  }}
+                  className="w-full px-4 py-3 text-xs border border-pink-100 bg-[#FFF7F6]/50 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-medium text-slate-800"
+                >
+                  {ALL_INDIAN_STATES.map(st => (
+                    <option key={st} value={st}>{st}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">District *</label>
-                <input
-                  type="text"
+                <select
                   required
                   name="district"
-                  placeholder="e.g. Khordha / Cuttack"
-                  value={formData.district}
+                  value={formData.district || (getDistrictsForState(formData.state)[0] || '')}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 text-xs border border-pink-100 bg-[#FFF7F6]/50 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none"
-                />
+                  className="w-full px-4 py-3 text-xs border border-pink-100 bg-[#FFF7F6]/50 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-medium text-slate-800"
+                >
+                  {getDistrictsForState(formData.state).map(dt => (
+                    <option key={dt} value={dt}>{dt}</option>
+                  ))}
+                </select>
               </div>
 
               <div>

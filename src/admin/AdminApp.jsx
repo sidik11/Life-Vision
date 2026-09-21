@@ -30,6 +30,7 @@ import StaffView from './views/StaffView';
 import TrainersView from './views/TrainersView';
 import ReportsView from './views/ReportsView';
 import ScannerView from './views/ScannerView';
+import SettingsView from './views/SettingsView';
 
 // Real Data fetched directly from Public Website
 import {
@@ -736,6 +737,7 @@ export default function AdminApp({ user: authUser, onLogout }) {
         );
 
       // 📚 TRAINING
+      case 'training':
       case 'programs':
         return (
           <TrainingProgramsView
@@ -801,11 +803,44 @@ export default function AdminApp({ user: authUser, onLogout }) {
         return <AssessmentView batches={batches} centers={centers} students={students} setStudents={handleSetStudents} showToast={showToast} />;
       case 'certificates':
         return <CertificatesView certificates={certificates} setCertificates={handleSetCertificates} students={students} showToast={showToast} />;
+      case 'applications':
+      case 'app-training':
+        return (
+          <TrainingAppsView
+            applications={applications}
+            setApplications={setApplications}
+            onViewApp={(app) => setSelectedApp(app)}
+            onDeleteApp={async (appId) => {
+              if (window.confirm('Are you sure you want to delete this candidate application?')) {
+                const targetApp = applications.find(a => a.id === appId);
+                setApplications(prev => {
+                  const updated = prev.filter(a => a.id !== appId);
+                  try {
+                    localStorage.setItem('lvs_submitted_applications', JSON.stringify(updated));
+                  } catch (e) { }
+                  return updated;
+                });
+
+                if (targetApp && targetApp.firestoreId) {
+                  try {
+                    await deleteDoc(doc(db, "training_applications", targetApp.firestoreId));
+                  } catch (err) {
+                    console.warn("Firebase document delete notice:", err);
+                  }
+                }
+                showToast('Candidate application deleted.', 'info');
+              }
+            }}
+            showToast={showToast}
+            activeTab={activeTab}
+          />
+        );
       case 'training-reports':
         return <ReportsView centers={centers} batches={batches} students={students} trainers={trainers} certificates={certificates} activeSubTab="report-training" showToast={showToast} />;
 
       // 💼 PLACEMENT
       case 'placement':
+      case 'placement-applications':
       case 'placement-overview':
       case 'students-seeking-jobs':
       case 'job-opportunities':
@@ -813,7 +848,7 @@ export default function AdminApp({ user: authUser, onLogout }) {
       case 'selected-students':
       case 'employed-students':
       case 'self-employed':
-        return <PlacementView placements={placements} setPlacements={setPlacements} showToast={showToast} activeSubTab={activeTab} />;
+        return <PlacementView placements={placements} setPlacements={setPlacements} staff={staff} adminUser={adminUser} showToast={showToast} activeSubTab={activeTab} />;
       case 'placement-reports':
         return <ReportsView activeSubTab="report-placement" showToast={showToast} />;
 
@@ -882,52 +917,23 @@ export default function AdminApp({ user: authUser, onLogout }) {
       // 🙋 VOLUNTEERS
       case 'volunteers':
       case 'all-volunteers':
+      case 'volunteer-applications':
       case 'volunteer-new-apps':
       case 'active-volunteers':
       case 'volunteer-projects':
       case 'volunteer-reports':
         return <VolunteersView volunteers={volunteers} setVolunteers={setVolunteers} showToast={showToast} activeSubTab={activeTab} />;
 
-      // 📩 APPLICATIONS
-      case 'applications':
-      case 'app-training':
-      case 'app-partner':
-      case 'app-volunteer':
+      // 📞 CONTACT DETAILS
+      case 'contact-details':
       case 'app-contact':
-        return (
-          <TrainingAppsView
-            applications={applications}
-            setApplications={setApplications}
-            onViewApp={(app) => setSelectedApp(app)}
-            onDeleteApp={async (appId) => {
-              if (window.confirm('Are you sure you want to delete this candidate application?')) {
-                const targetApp = applications.find(a => a.id === appId);
-                setApplications(prev => {
-                  const updated = prev.filter(a => a.id !== appId);
-                  try {
-                    localStorage.setItem('lvs_submitted_applications', JSON.stringify(updated));
-                  } catch (e) { }
-                  return updated;
-                });
-
-                if (targetApp && targetApp.firestoreId) {
-                  try {
-                    await deleteDoc(doc(db, "training_applications", targetApp.firestoreId));
-                  } catch (err) {
-                    console.warn("Firebase document delete notice:", err);
-                  }
-                }
-                showToast('Candidate application deleted.', 'info');
-              }
-            }}
-            showToast={showToast}
-            activeTab={activeTab}
-          />
-        );
+      case 'contact-inquiries':
+        return <NotificationsView contacts={contacts} setContacts={setContacts} showToast={showToast} activeSubTab="contacts" />;
 
       // 📰 CONTENT
       case 'content':
       case 'content-news-blog':
+      case 'events':
       case 'content-events':
       case 'content-gallery':
       case 'content-homepage':
@@ -947,19 +953,12 @@ export default function AdminApp({ user: authUser, onLogout }) {
 
       // ⚙️ ADMINISTRATION
       case 'administration':
-      case 'admin-users-roles':
-        return <UsersRolesView adminUsers={adminUsers} setAdminUsers={setAdminUsers} showToast={showToast} />;
-      case 'admin-notifications':
-        return <NotificationsView showToast={showToast} />;
-      case 'admin-documents':
-        return <DocumentsView documents={documents} setDocuments={setDocuments} showToast={showToast} />;
+      case 'scanner':
+      case 'admin-scanner':
+        return <ScannerView showToast={showToast} />;
       case 'settings':
       case 'admin-settings':
         return <SettingsView adminUser={adminUser} setAdminUser={handleUpdateAdminUser} showToast={showToast} />;
-      case 'admin-scanner':
-        return <ScannerView showToast={showToast} />;
-      case 'admin-activity-logs':
-        return <NotificationsView showToast={showToast} activeSubTab="logs" />;
 
       default:
         return (
@@ -967,6 +966,7 @@ export default function AdminApp({ user: authUser, onLogout }) {
             applications={applications}
             placements={placements}
             partners={partners}
+            volunteers={volunteers}
             donations={donations}
             contacts={contacts}
             programs={programs}
@@ -1015,7 +1015,13 @@ export default function AdminApp({ user: authUser, onLogout }) {
           setMobileOpen={setMobileOpen}
           user={adminUser}
           onLogout={handleLogout}
-          unreadCount={applications.filter(a => a.status === 'Pending' || a.status === 'Unread' || a.status === 'New').length}
+          applications={applications}
+          placements={placements}
+          volunteers={volunteers}
+          contacts={contacts}
+          partners={partners}
+          programs={programs}
+          centers={centers}
         />
 
         {/* View Dynamic Body */}
@@ -1061,9 +1067,48 @@ export default function AdminApp({ user: authUser, onLogout }) {
             setSelectedApp(prev => prev && prev.id === id ? { ...prev, status: newStatus, timelineStep: updatedStep } : null);
 
             if (targetApp) {
-              if (newStatus === 'Selected' || newStatus === 'Approved' || newStatus === 'Shortlisted') {
+              const isVolunteerApp = targetApp.type === 'volunteer' || targetApp.applicationType === 'Volunteer Application' || targetApp.course?.toLowerCase().includes('volunteer');
+              
+              if (isVolunteerApp && (newStatus === 'Selected' || newStatus === 'Approved' || newStatus === 'Verified')) {
+                const volObj = {
+                  id: targetApp.id || `VOL-LVS-${Date.now().toString().slice(-4)}`,
+                  name: targetApp.name || targetApp.fullName || 'Volunteer Applicant',
+                  email: targetApp.email || '',
+                  phone: targetApp.mobile || targetApp.phone || '',
+                  gender: targetApp.gender || 'Female',
+                  state: targetApp.state || 'Odisha',
+                  city: targetApp.city || '',
+                  location: targetApp.location || targetApp.address || `${targetApp.city || ''}, ${targetApp.state || 'Odisha'}`,
+                  skills: targetApp.roleInterest || targetApp.skills || 'Skill Trainer',
+                  interest: targetApp.roleInterest || targetApp.interest || 'Skill Trainer',
+                  availability: targetApp.availability || 'Weekends Only',
+                  applicationDate: targetApp.applicationDate || targetApp.date || new Date().toISOString().split('T')[0],
+                  status: 'Verified'
+                };
+
+                try {
+                  addDoc(collection(db, "volunteers"), { ...volObj, createdAt: serverTimestamp() });
+                } catch (e) {
+                  console.warn("Firestore save volunteer notice:", e);
+                }
+
+                setVolunteers(prev => {
+                  const exists = prev.some(v => v.phone === volObj.phone || v.email === volObj.email || v.name === volObj.name);
+                  if (exists) return prev;
+                  return [volObj, ...prev];
+                });
+
+                showToast(`✓ Volunteer ${volObj.name} approved & added to Volunteer Roster!`, 'success');
+              } else if (!isVolunteerApp && (newStatus === 'Selected' || newStatus === 'Approved' || newStatus === 'Shortlisted')) {
+                const isDuplicate = students.some(s => 
+                  (s.phone && (s.phone === targetApp.mobile || s.phone === targetApp.phone)) ||
+                  (s.name && targetApp.name && s.name.toLowerCase().trim() === targetApp.name.toLowerCase().trim())
+                );
+                if (isDuplicate) {
+                  showToast('⚠️ Student already exists / duplicate application! Candidate is already in the student roster.', 'warning');
+                }
                 handleSetStudents(prev => {
-                  const alreadyStudent = prev.some(s => s.phone === targetApp.mobile || s.name === targetApp.name);
+                  const alreadyStudent = prev.some(s => (s.phone && (s.phone === targetApp.mobile || s.phone === targetApp.phone)) || (s.name && targetApp.name && s.name.toLowerCase().trim() === targetApp.name.toLowerCase().trim()));
                   if (alreadyStudent) return prev;
                   const nextIdNum = String(prev.length + 1).padStart(4, '0');
                   const newStudentObj = {
