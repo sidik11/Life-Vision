@@ -1639,7 +1639,7 @@ if (
   );
 
   app.get(
-    '*',
+    '/{*splat}',
     (req, res) => {
       res.sendFile(
         path.resolve(
@@ -1655,6 +1655,8 @@ if (
 // ============================================================
 // START SERVER
 // ============================================================
+
+if (process.env.VERCEL !== '1') {
 
 app.listen(
   PORT,
@@ -1691,3 +1693,6 @@ app.listen(
     );
   }
 );
+}
+
+export default app;
