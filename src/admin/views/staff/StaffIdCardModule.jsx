@@ -41,7 +41,8 @@ export default function StaffIdCardModule({
     const emailMatch = (s.email || '').toLowerCase().includes(term);
     const deptMatch = (s.department || '').toLowerCase().includes(term);
     const roleMatch = (s.role || s.designation || '').toLowerCase().includes(term);
-    const matchesSearch = nameMatch || idMatch || emailMatch || phoneMatch || roleMatch;
+    const phoneMatch = (s.phone || '').toLowerCase().includes(term);
+    const matchesSearch = nameMatch || idMatch || emailMatch || deptMatch || phoneMatch || roleMatch;
 
     if (selectedStatus === 'All') return matchesSearch;
     if (selectedStatus === 'Pending Approval') {

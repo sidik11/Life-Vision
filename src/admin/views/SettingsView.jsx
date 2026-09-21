@@ -379,17 +379,17 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
 
       {/* 3. Email API Setup Tab */}
       {activeTab === 'email_api' && (
-        <form onSubmit={handleEmailApiSave} className="p-6 rounded-2xl bg-white border border-slate-200 space-y-5 max-w-2xl shadow-sm text-slate-900">
+        <div className="p-6 rounded-2xl bg-white border border-slate-200 space-y-5 max-w-2xl shadow-sm text-slate-900">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
               <h3 className="text-base font-bold text-slate-900 font-serif flex items-center gap-2">
                 <Mail className="w-5 h-5 text-emerald-600" />
-                <span>Google OAuth & Email API Setup</span>
+                <span>Google OAuth & Gmail API Status</span>
               </h3>
-              <p className="text-xs text-slate-500">Authorize Google Gmail Account (support.lifevision@gmail.com) to send approved Staff ID Cards directly to staff email inboxes</p>
+              <p className="text-xs text-slate-500">Backend service dispatches approved Staff ID Cards directly to staff email inboxes via Gmail API</p>
             </div>
             <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-extrabold flex items-center gap-1">
-              <Key className="w-3 h-3 text-emerald-600" /> Google Gmail Connector
+              <Key className="w-3 h-3 text-emerald-600" /> Secure Backend Integration
             </span>
           </div>
 
@@ -397,165 +397,33 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
             <div className="font-bold flex items-center justify-between text-emerald-900">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-emerald-600" />
-                <span>Google Account Status (support.lifevision@gmail.com):</span>
+                <span>Backend Gmail API Dispatcher</span>
               </div>
-              {googleAuthorized ? (
-                <span className="px-2.5 py-1 bg-emerald-600 text-white rounded-full text-[10px] font-extrabold flex items-center gap-1">
-                  <Check className="w-3 h-3" /> Authorized & Active
-                </span>
-              ) : (
-                <span className="px-2.5 py-1 bg-amber-500 text-white rounded-full text-[10px] font-extrabold">
-                  Authorization Required
-                </span>
-              )}
+              <span className="px-2.5 py-1 bg-emerald-600 text-white rounded-full text-[10px] font-extrabold flex items-center gap-1">
+                <Check className="w-3 h-3" /> Configured Server-Side
+              </span>
             </div>
 
             <p className="text-[11px] text-emerald-800 font-medium leading-relaxed">
-              Click the button below to authorize Google Gmail API. Upon Staff ID Card approval, the system will send official emails directly from <strong>support.lifevision@gmail.com</strong>.
+              Google OAuth Client credentials (<code className="bg-emerald-100 px-1 rounded">GOOGLE_CLIENT_ID</code>, <code className="bg-emerald-100 px-1 rounded">GOOGLE_CLIENT_SECRET</code>, <code className="bg-emerald-100 px-1 rounded">GOOGLE_REFRESH_TOKEN</code>) are loaded securely from environment variables (<code className="bg-emerald-100 px-1 rounded">.env</code>) on the server.
             </p>
-
-            <button
-              type="button"
-              onClick={handleAuthorizeGoogleAccount}
-              className="px-5 py-2.5 bg-[#047857] hover:bg-[#065F46] text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-md transition-all cursor-pointer"
-            >
-              <Key className="w-4 h-4 text-white" />
-              <span>{googleAuthorized ? 'Re-Authorize Google Account (support.lifevision@gmail.com)' : 'Authorize Google Gmail Account (support.lifevision@gmail.com)'}</span>
-            </button>
-          </div>
-
-          <div className="space-y-4 text-xs pt-2">
-            <div>
-              <label className="font-bold text-slate-700">Email Service Provider Mode</label>
-              <select
-                value={emailProvider}
-                onChange={(e) => setEmailProvider(e.target.value)}
-                className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
-              >
-                <option value="google_oauth">Google OAuth / Gmail API (Active - support.lifevision@gmail.com)</option>
-                <option value="web3forms">Web3Forms Access Key</option>
-                <option value="emailjs">EmailJS REST API</option>
-                <option value="custom_webhook">Custom Webhook / REST API Endpoint</option>
-              </select>
-            </div>
-
-            {emailProvider === 'google_oauth' && (
-              <>
-                <div>
-                  <label className="font-bold text-slate-700">Google OAuth Client ID</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 158794333888-xxx.apps.googleusercontent.com"
-                    value={googleClientId}
-                    onChange={(e) => setGoogleClientId(e.target.value)}
-                    className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700">Google OAuth Client Secret</label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="e.g. GOCSPX-xxx..."
-                    value={googleClientSecret}
-                    onChange={(e) => setGoogleClientSecret(e.target.value)}
-                    className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
-                  />
-                </div>
-              </>
-            )}
-
-            {emailProvider === 'web3forms' && (
-              <div>
-                <label className="font-bold text-slate-700">Web3Forms Access Key</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. a1b2c3d4-e5f6-7890-abcd-1234567890ab"
-                  value={web3FormsKey}
-                  onChange={(e) => setWeb3FormsKey(e.target.value)}
-                  className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
-                />
-              </div>
-            )}
-
-            {emailProvider === 'emailjs' && (
-              <>
-                <div>
-                  <label className="font-bold text-slate-700">EmailJS Service ID</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. service_xxxxxx"
-                    value={serviceId}
-                    onChange={(e) => setServiceId(e.target.value)}
-                    className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700">EmailJS Template ID</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. template_xxxxxx"
-                    value={templateId}
-                    onChange={(e) => setTemplateId(e.target.value)}
-                    className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700">EmailJS Public Key (User ID)</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. user_pk_xxxxxx"
-                    value={publicKey}
-                    onChange={(e) => setPublicKey(e.target.value)}
-                    className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
-                  />
-                </div>
-              </>
-            )}
-
-            {emailProvider === 'custom_webhook' && (
-              <div>
-                <label className="font-bold text-slate-700">Custom Webhook / REST API URL</label>
-                <input
-                  type="url"
-                  required
-                  placeholder="https://your-api-domain.com/send-email"
-                  value={apiUrl}
-                  onChange={(e) => setApiUrl(e.target.value)}
-                  className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
-                />
-              </div>
-            )}
+            <p className="text-[11px] text-emerald-800 font-medium leading-relaxed">
+              When Admin approves a staff ID card, the backend automatically generates the PDF and sends it from <strong>support.lifevision@gmail.com</strong>.
+            </p>
           </div>
 
           <div className="flex items-center space-x-3 pt-2">
             <button
-              type="submit"
-              className="px-6 py-3 bg-[#16A34A] hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow-md flex items-center space-x-2 cursor-pointer transition-all uppercase tracking-wider"
-            >
-              <Save className="w-4 h-4 text-white" />
-              <span>Save Email API Credentials</span>
-            </button>
-
-            <button
               type="button"
               onClick={handleTestEmailApi}
               disabled={testSending}
-              className="px-4 py-3 bg-[#123B5D] hover:bg-[#0E2F4A] text-white rounded-xl text-xs font-bold shadow-md flex items-center space-x-2 cursor-pointer transition-all"
+              className="px-5 py-3 bg-[#047857] hover:bg-[#065F46] text-white rounded-xl text-xs font-bold shadow-md flex items-center space-x-2 cursor-pointer transition-all"
             >
               <Send className="w-4 h-4 text-white" />
-              <span>{testSending ? 'Sending Test...' : 'Send Test Email'}</span>
+              <span>{testSending ? 'Sending Test Email...' : 'Send Test Email via Backend'}</span>
             </button>
           </div>
-        </form>
+        </div>
       )}
 
       {/* 4. Notifications Tab */}

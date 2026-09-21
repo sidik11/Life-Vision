@@ -240,154 +240,44 @@ export const generateStaffIdCardHtml = (staffMember) => {
   `;
 };
 
-// Google OAuth & Email API Dispatcher to send emails directly from support.lifevision@gmail.com
+// Google OAuth & Email API Dispatcher using backend server endpoint
 export const sendStaffIdCardEmailApi = async (staffMember) => {
   if (!staffMember || !staffMember.email) {
     return { success: false, emailSent: false, error: 'Staff member email address is missing' };
   }
 
-  const config = getEmailApiConfig();
-  const cardHtml = generateStaffIdCardHtml(staffMember);
+  try {
+    const response = await fetch('/api/staff/send-id-card-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ staff: staffMember })
+    });
 
-  // 1. Direct Gmail API if Google OAuth Token is active for support.lifevision@gmail.com
-  const googleAccessToken = typeof window !== 'undefined' ? localStorage.getItem('lvs_google_oauth_access_token') : null;
+    const data = await response.json();
 
-  if (googleAccessToken) {
-    try {
-      const rawMessage = [
-        `From: Life Vision Society <support.lifevision@gmail.com>`,
-        `To: ${staffMember.name} <${staffMember.email}>`,
-        `Subject: Staff ID Card – Approved`,
-        `MIME-Version: 1.0`,
-        `Content-Type: text/html; charset=utf-8`,
-        ``,
-        `<div style="font-family: sans-serif; padding: 20px; color: #1e293b;">`,
-        `  <h2 style="color: #047857; margin-bottom: 15px;">Life Vision Society - Staff ID Card Approved</h2>`,
-        `  <p>Dear <strong>${staffMember.name}</strong>,</p>`,
-        `  <p>Your Staff ID Card has been approved by the administration.</p>`,
-        `  <p>Please find your official Staff ID Card details below:</p>`,
-        `  <ul style="line-height: 1.6;">`,
-        `    <li><strong>Employee ID:</strong> ${staffMember.id || staffMember.employeeId}</li>`,
-        `    <li><strong>Department:</strong> ${staffMember.department}</li>`,
-        `    <li><strong>Contact No:</strong> ${staffMember.phone || '+91 9416362914'}</li>`,
-        `    <li><strong>Joining Date:</strong> ${staffMember.joinDate || '2026-01-01'}</li>`,
-        `  </ul>`,
-        `  <br>`,
-        `  <p>Regards,<br><strong>Life Vision Society Administration</strong></p>`,
-        `</div>`
-      ].join('\r\n');
-
-      const base64Raw = btoa(unescape(encodeURIComponent(rawMessage)))
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
-
-      const gResponse = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${googleAccessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ raw: base64Raw })
-      });
-
-      if (gResponse.ok) {
-        return { 
-          success: true, 
-          emailSent: true,
-          message: `✓ Staff ID Card email sent directly from support.lifevision@gmail.com to ${staffMember.email}!` 
-        };
-      } else {
-        if (gResponse.status === 401) {
-          localStorage.removeItem('lvs_google_oauth_access_token');
-          return {
-            success: false,
-            emailSent: false,
-            error: `Google OAuth Token expired. Please click "Authorize Google Gmail Account" in Admin Settings → Email API Setup.`
-          };
-        }
-      }
-    } catch (gErr) {
-      console.warn("Direct Gmail API error:", gErr);
+    if (response.ok && data.success && data.emailSent) {
+      return {
+        success: true,
+        emailSent: true,
+        message: data.message || `✓ Staff ID Card email successfully sent to ${staffMember.email}!`
+      };
+    } else {
+      return {
+        success: false,
+        emailSent: false,
+        error: data.error || data.message || `Failed to send email to ${staffMember.email}`
+      };
     }
+  } catch (err) {
+    console.error('[Staff ID Email Helper Error]:', err);
+    return {
+      success: false,
+      emailSent: false,
+      error: err.message || 'Network error connecting to backend email service'
+    };
   }
-
-  // 2. Dispatch via EmailJS API if user configured valid Service ID, Template ID & Public Key
-  if (config.serviceId && config.templateId && config.publicKey) {
-    try {
-      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          service_id: config.serviceId,
-          template_id: config.templateId,
-          user_id: config.publicKey,
-          template_params: {
-            to_email: staffMember.email,
-            to_name: staffMember.name,
-            staff_name: staffMember.name,
-            employee_id: staffMember.id || staffMember.employeeId,
-            department: staffMember.department,
-            phone: staffMember.phone || '+91 9416362914',
-            joining_date: staffMember.joinDate || '2026-01-01',
-            message: `Dear ${staffMember.name},\n\nYour Staff ID Card has been approved by the administration.\n\nPlease find your official Staff ID Card details attached.\n\nRegards,\nLife Vision Society Administration`
-          }
-        })
-      });
-
-      if (response.ok) {
-        return { 
-          success: true, 
-          emailSent: true,
-          message: `✓ Staff ID Card email successfully delivered to ${staffMember.email}!` 
-        };
-      } else {
-        const errText = await response.text();
-        return { success: false, emailSent: false, error: `EmailJS API (${response.status}): ${errText}` };
-      }
-    } catch (err) {
-      return { success: false, emailSent: false, error: `Network error connecting to EmailJS API: ${err.message}` };
-    }
-  }
-
-  // 3. Dispatch via Web3Forms API if Access Key is configured
-  if (config.web3FormsKey) {
-    try {
-      const response = await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          access_key: config.web3FormsKey,
-          to_email: staffMember.email,
-          email: staffMember.email,
-          name: staffMember.name,
-          subject: 'Staff ID Card – Approved',
-          from_name: 'Life Vision Society Administration',
-          message: `Dear ${staffMember.name},\n\nYour Staff ID Card has been approved by the administration.\n\nEmployee ID: ${staffMember.id || staffMember.employeeId}\nDepartment: ${staffMember.department}\nContact No: ${staffMember.phone || '+91 9416362914'}\nJoining Date: ${staffMember.joinDate || '2026-01-01'}\n\nRegards,\nLife Vision Society Administration`
-        })
-      });
-
-      const resData = await response.json();
-      if (resData.success) {
-        return { 
-          success: true, 
-          emailSent: true,
-          message: `✓ Staff ID Card email successfully delivered to ${staffMember.email}!` 
-        };
-      } else {
-        return { success: false, emailSent: false, error: resData.message || 'Web3Forms API failed' };
-      }
-    } catch (wErr) {
-      return { success: false, emailSent: false, error: `Web3Forms connection error: ${wErr.message}` };
-    }
-  }
-
-  // 4. Return explicit instructions if no authorization or API keys are active
-  return { 
-    success: false, 
-    emailSent: false,
-    error: `Google Gmail Account not authorized yet. Please go to Admin Settings → 📧 Email API Setup and click "Authorize Google Gmail Account (support.lifevision@gmail.com)".` 
-  };
 };
 
 // Direct Download High-Resolution PDF File of Exact View ID Card Design

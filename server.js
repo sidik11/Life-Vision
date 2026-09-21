@@ -320,14 +320,26 @@ app.post('/api/staff/send-id-card-email', async (req, res) => {
     try {
       pdfBuffer = await generateStaffIdCardPdfBuffer(staff);
     } catch (pdfErr) {
-      console.error("[Staff ID Email Service] PDF Generation Error:", pdfErr);
+      console.error("[Staff ID Email Error] PDF Generation Error:", pdfErr);
       return res.status(500).json({ success: false, emailSent: false, error: `Failed to generate ID card PDF: ${pdfErr.message}` });
     }
 
-    // 2. Transporter Initialization
+    // 2. Transporter Initialization (Google OAuth2 via Gmail API, standard SMTP, or Ethereal fallback)
     let transporter;
     try {
-      if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+      if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN) {
+        // Google OAuth2 Transport for Gmail API
+        transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            type: 'OAuth2',
+            user: process.env.GOOGLE_USER_EMAIL || process.env.GMAIL_USER || process.env.SMTP_USER || 'support.lifevision@gmail.com',
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+          }
+        });
+      } else if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
         transporter = nodemailer.createTransport({
           host: process.env.SMTP_HOST,
           port: Number(process.env.SMTP_PORT) || 587,
@@ -346,7 +358,7 @@ app.post('/api/staff/send-id-card-email', async (req, res) => {
           }
         });
       } else {
-        // Ethereal test inbox fallback for verified testing environment
+        // Ethereal test inbox fallback for local dev/testing
         const testAccount = await nodemailer.createTestAccount();
         transporter = nodemailer.createTransport({
           host: 'smtp.ethereal.email',
@@ -359,14 +371,15 @@ app.post('/api/staff/send-id-card-email', async (req, res) => {
         });
       }
     } catch (transporterErr) {
-      console.error("[Staff ID Email Service] Transporter Error:", transporterErr);
+      console.error("[Staff ID Email Error] Transporter initialization failed:", transporterErr);
       return res.status(500).json({ success: false, emailSent: false, error: `Email service initialization failed: ${transporterErr.message}` });
     }
 
     // 3. Email Dispatch Options matching strict specifications
     const staffName = staff.name || 'Staff Member';
+    const senderEmail = process.env.GOOGLE_USER_EMAIL || process.env.GMAIL_USER || process.env.SMTP_USER || 'support.lifevision@gmail.com';
     const mailOptions = {
-      from: process.env.EMAIL_FROM || '"Life Vision Society Administration" <support.lifevision@gmail.com>',
+      from: process.env.EMAIL_FROM || `"Life Vision Society Administration" <${senderEmail}>`,
       to: staff.email.trim(),
       subject: 'Staff ID Card – Approved',
       text: `Dear ${staffName},\n\nYour Staff ID Card has been approved by the administration.\n\nPlease find your Staff ID Card attached to this email as a PDF.\n\nRegards,\nLife Vision Society Administration`,
@@ -418,7 +431,7 @@ app.post('/api/staff/send-id-card-email', async (req, res) => {
     });
 
   } catch (err) {
-    console.error('[Staff ID Email Service] Send Mail Error:', err);
+    console.error('[Staff ID Email Error]:', err);
     return res.status(500).json({
       success: false,
       emailSent: false,
