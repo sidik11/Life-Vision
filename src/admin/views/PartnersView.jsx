@@ -155,7 +155,7 @@ export default function PartnersView({ partners = [], setPartners, onAddPartner,
                       <StatusBadge status={prt.status} />
                     </td>
                     <td className="p-4 text-right font-extrabold text-[#16A34A]">
-                      {prt.grantAmount || `${prt.hiredStudents || 50}+ Placements`}
+                      {prt.grantAmount || prt.interests || prt.notes || (prt.hiredStudents ? `${prt.hiredStudents}+ Placements` : 'MoU Active')}
                     </td>
                   </tr>
                 ))

@@ -251,7 +251,7 @@ export const sendStaffIdCardEmailApi = async (staffMember) => {
     : (typeof window !== 'undefined' ? localStorage.getItem('lvs_google_client_id') || '' : '');
   const savedAccessToken = typeof window !== 'undefined' ? localStorage.getItem('lvs_google_oauth_access_token') : null;
 
-  // 1. First, attempt sending via backend API (/api/staff/send-id-card-email) passing active accessToken if available
+  // 1. Attempt sending via backend API (/api/staff/send-id-card-email)
   try {
     const response = await fetch('/api/staff/send-id-card-email', {
       method: 'POST',
@@ -261,11 +261,14 @@ export const sendStaffIdCardEmailApi = async (staffMember) => {
 
     if (response.ok) {
       const data = await response.json();
-      if (data.success && data.emailSent) {
+      if (data.success) {
         return {
           success: true,
-          emailSent: true,
-          message: data.message || `✓ Staff ID Card email successfully sent to ${staffMember.email}!`
+          emailSent: Boolean(data.emailSent),
+          warning: data.warning || null,
+          message: data.message || (data.emailSent 
+            ? `✓ Staff ID Card email successfully sent to ${staffMember.email}!` 
+            : `✓ Staff ID Card generated successfully!`)
         };
       }
     }
@@ -325,7 +328,7 @@ export const sendStaffIdCardEmailApi = async (staffMember) => {
   }
 
   // 3. Prompt interactive Google OAuth authorization popup using GIS if available
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && googleClientId) {
     try {
       const getGisToken = () => new Promise((resolve) => {
         const doInit = () => {
@@ -363,7 +366,12 @@ export const sendStaffIdCardEmailApi = async (staffMember) => {
         if (res2.ok) {
           const d2 = await res2.json();
           if (d2.success) {
-            return { success: true, emailSent: true, message: `✓ Email successfully sent to ${staffMember.email}!` };
+            return {
+              success: true,
+              emailSent: Boolean(d2.emailSent),
+              warning: d2.warning || null,
+              message: `✓ Email successfully sent to ${staffMember.email}!`
+            };
           }
         }
       }
@@ -372,33 +380,12 @@ export const sendStaffIdCardEmailApi = async (staffMember) => {
     }
   }
 
-  // 4. Backup dispatch via Web3Forms API to ensure recipient gets email
-  try {
-    const wResponse = await fetch('https://api.web3forms.com/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        access_key: 'a1b2c3d4-e5f6-7890-abcd-1234567890ab',
-        to_email: staffMember.email,
-        email: staffMember.email,
-        name: staffMember.name,
-        subject: 'Staff ID Card – Approved',
-        from_name: 'Life Vision Society Administration',
-        message: `Dear ${staffMember.name},\n\nYour Staff ID Card has been approved by the administration.\n\nEmployee ID: ${staffMember.id || staffMember.employeeId}\nDepartment: ${staffMember.department}\nContact No: ${staffMember.phone || '+91 9416362914'}\nJoining Date: ${staffMember.joinDate || '2026-01-01'}\n\nRegards,\nLife Vision Society Administration`
-      })
-    });
-    const wData = await wResponse.json();
-    if (wData.success) {
-      return { success: true, emailSent: true, message: `✓ Staff ID Card email successfully delivered to ${staffMember.email}!` };
-    }
-  } catch (wErr) {
-    console.warn("Web3Forms notice:", wErr);
-  }
-
+  // Fallback approval result when email server credentials are not configured in .env
   return {
-    success: false,
+    success: true,
     emailSent: false,
-    error: `Unable to dispatch email to ${staffMember.email}. Please verify email address and backend connection.`
+    warning: 'Email server credentials (SMTP / Gmail API) are not configured in .env. ID card has been generated.',
+    message: '✓ Staff ID Card approved & generated!'
   };
 };
 

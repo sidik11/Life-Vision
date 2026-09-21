@@ -60,7 +60,7 @@ export default function StaffIdCardModule({
     return matchesSearch;
   });
 
-  // Handle Approve (✓) -> Call Email API -> Update Firestore to Generated ONLY IF email succeeds!
+  // Handle Approve (✓) -> Call Email API -> Update Firestore to Generated
   const handleApproveIdCard = async (staffMember) => {
     // Duplicate Protection: If already generated and emailed, require manual Resend Email action
     if (staffMember.cardStatus === 'Generated' && staffMember.emailSent) {
@@ -68,9 +68,9 @@ export default function StaffIdCardModule({
       return;
     }
 
-    if (showToast) showToast(`Generating PDF & dispatching email to ${staffMember.email}...`, 'info');
+    if (showToast) showToast(`Processing Staff ID Card approval for ${staffMember.name}...`, 'info');
 
-    // 1. Invoke backend Email API to attach and send PDF
+    // 1. Invoke backend Email API to generate PDF & dispatch email
     let emailResult = { success: false, emailSent: false, error: 'Failed to communicate with email service' };
     try {
       emailResult = await sendStaffIdCardEmailApi(staffMember);
@@ -78,11 +78,10 @@ export default function StaffIdCardModule({
       emailResult = { success: false, emailSent: false, error: err.message || 'Email API error' };
     }
 
-    // 2. IF EMAIL FAILS: Do NOT mark status as Generated! Keep as Pending Approval & show error message
+    // 2. IF PROCESS FAILED HARD: Show error message
     if (!emailResult || emailResult.success === false) {
-      const errorMsg = emailResult?.error || emailResult?.message || 'Email dispatch failed';
+      const errorMsg = emailResult?.error || emailResult?.message || 'ID Card approval failed';
       
-      // Track failure in Firestore without setting status to Generated
       if (staffMember.firestoreId) {
         try {
           await updateDoc(doc(db, "staff", staffMember.firestoreId), {
@@ -95,19 +94,20 @@ export default function StaffIdCardModule({
         }
       }
 
-      if (showToast) showToast(`✕ Failed to send ID Card PDF email to ${staffMember.email}: ${errorMsg}. ID Card remains Pending Approval.`, 'error');
+      if (showToast) showToast(`✕ Failed to approve ID Card: ${errorMsg}.`, 'error');
       return;
     }
 
-    // 3. IF EMAIL SUCCEEDS: Update status to Generated in Firebase and state
+    // 3. IF APPROVAL SUCCEEDS: Update status to Generated in Firebase and state
+    const isEmailSent = Boolean(emailResult.emailSent);
     const updatedStaff = {
       ...staffMember,
       status: 'Active',
       approvalStatus: 'Approved',
       cardStatus: 'Generated',
-      emailSent: true,
-      emailSentAt: new Date().toISOString(),
-      emailStatus: 'Sent',
+      emailSent: isEmailSent,
+      emailSentAt: isEmailSent ? new Date().toISOString() : null,
+      emailStatus: isEmailSent ? 'Sent' : 'Unsent (Config Required)',
       approvedDate: new Date().toISOString()
     };
 
@@ -123,9 +123,9 @@ export default function StaffIdCardModule({
           status: 'Active',
           approvalStatus: 'Approved',
           cardStatus: 'Generated',
-          emailSent: true,
-          emailSentAt: new Date().toISOString(),
-          emailStatus: 'Sent',
+          emailSent: isEmailSent,
+          emailSentAt: isEmailSent ? new Date().toISOString() : null,
+          emailStatus: isEmailSent ? 'Sent' : 'Unsent (Config Required)',
           approvedDate: new Date().toISOString()
         });
       } catch (err) {
@@ -140,9 +140,9 @@ export default function StaffIdCardModule({
         staffName: staffMember.name,
         email: staffMember.email,
         status: 'Generated',
-        emailSent: true,
-        emailSentAt: new Date().toISOString(),
-        emailStatus: 'Sent',
+        emailSent: isEmailSent,
+        emailSentAt: isEmailSent ? new Date().toISOString() : null,
+        emailStatus: isEmailSent ? 'Sent' : 'Unsent (Config Required)',
         requestDate: staffMember.requestDate || new Date().toISOString(),
         approvedDate: new Date().toISOString(),
         createdAt: serverTimestamp()
@@ -151,7 +151,13 @@ export default function StaffIdCardModule({
       console.warn("Firestore staffIdCards notice:", err);
     }
 
-    if (showToast) showToast(`✓ ID Card Approved & PDF emailed to ${updatedStaff.email}! Status updated to Generated.`, 'success');
+    if (showToast) {
+      if (isEmailSent) {
+        showToast(`✓ ID Card Approved & PDF emailed to ${updatedStaff.email}! Status updated to Generated.`, 'success');
+      } else {
+        showToast(`✓ ID Card Approved & Generated! (${emailResult.warning || 'Email credentials missing in .env'})`, 'warning');
+      }
+    }
   };
 
   // Handle Reject (✕)

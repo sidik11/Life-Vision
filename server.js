@@ -7,6 +7,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import PDFDocument from 'pdfkit';
 import { google } from 'googleapis';
+import nodemailer from 'nodemailer';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -67,6 +69,37 @@ const processedPayments = new Set();
 // STAFF ID CARD PDF GENERATOR
 // ============================================================
 
+// Helper to draw clean vector icon circles for PDFKit (User, Dept, Phone, Calendar)
+function drawIconCircle(doc, iconType, x, y) {
+  const isTeal = iconType === 'phone';
+  const circleColor = isTeal ? '#0e4b55' : '#047857';
+
+  // Draw circle background (diameter 16, radius 8)
+  doc.circle(x + 8, y + 8, 8).fill(circleColor);
+
+  doc.save();
+  doc.lineWidth(1.2);
+  doc.strokeColor('#ffffff');
+  doc.fillColor('#ffffff');
+
+  if (iconType === 'user') {
+    doc.circle(x + 8, y + 5.8, 2.3).fill('#ffffff');
+    doc.path(`M ${x + 4.5} ${y + 12.5} C ${x + 4.5} ${y + 9.5} ${x + 11.5} ${y + 9.5} ${x + 11.5} ${y + 12.5}`).stroke('#ffffff');
+  } else if (iconType === 'dept') {
+    doc.rect(x + 4.5, y + 4.5, 7, 7.5).stroke('#ffffff');
+    doc.rect(x + 6.5, y + 9, 3, 3).fill('#ffffff');
+  } else if (iconType === 'phone') {
+    doc.path(`M ${x + 5} ${y + 5} L ${x + 7} ${y + 5} L ${x + 8.2} ${y + 7.5} L ${x + 7} ${y + 8.8} C ${x + 7.8} ${y + 10.5} ${x + 9.5} ${y + 11.5} ${x + 11} ${y + 10.2} L ${x + 12.2} ${y + 11.2} L ${x + 11} ${y + 13} C ${x + 6} ${y + 13} ${x + 4.5} ${y + 8.5} ${x + 5} ${y + 5}`).fill('#ffffff');
+  } else if (iconType === 'calendar') {
+    doc.rect(x + 4.5, y + 5, 7, 6.5).stroke('#ffffff');
+    doc.moveTo(x + 4.5, y + 7.2).lineTo(x + 11.5, y + 7.2).stroke('#ffffff');
+    doc.moveTo(x + 6.5, y + 3.8).lineTo(x + 6.5, y + 5.2).stroke('#ffffff');
+    doc.moveTo(x + 9.5, y + 3.8).lineTo(x + 9.5, y + 5.2).stroke('#ffffff');
+  }
+
+  doc.restore();
+}
+
 function generateStaffIdCardPdfBuffer(staff) {
   return new Promise((resolve, reject) => {
     try {
@@ -90,265 +123,151 @@ function generateStaffIdCardPdfBuffer(staff) {
       });
 
       // --------------------------------------------------------
-      // Background
+      // Page 1: Front Side Card with Background Image
       // --------------------------------------------------------
+      const frontPath = path.join(__dirname, 'public', 'Team Member', 'id_card_front.jpg');
 
-      doc
-        .rect(0, 0, 340, 510)
-        .fill('#0f172a');
-
-      // --------------------------------------------------------
-      // Header
-      // --------------------------------------------------------
-
-      doc
-        .rect(0, 0, 340, 120)
-        .fill('#047857');
-
-      doc
-        .fillColor('#ffffff')
-        .fontSize(16)
-        .font('Helvetica-Bold')
-        .text(
-          'LIFE VISION SOCIETY',
-          0,
-          30,
-          {
-            width: 340,
-            align: 'center'
-          }
-        );
-
-      doc
-        .fontSize(9)
-        .font('Helvetica-Bold')
-        .fillColor('#a7f3d0')
-        .text(
-          'OFFICIAL STAFF IDENTITY CARD',
-          0,
-          52,
-          {
-            width: 340,
-            align: 'center'
-          }
-        );
-
-      // --------------------------------------------------------
-      // Profile photo
-      // --------------------------------------------------------
-
-      const photoY = 95;
-
-      doc
-        .roundedRect(
-          113,
-          photoY,
-          114,
-          114,
-          14
-        )
-        .fillAndStroke(
-          '#ffffff',
-          '#10b981'
-        );
-
-      if (
-        staff.avatar &&
-        typeof staff.avatar === 'string' &&
-        staff.avatar.startsWith('data:image')
-      ) {
-        try {
-          const base64Data =
-            staff.avatar.replace(
-              /^data:image\/\w+;base64,/,
-              ''
-            );
-
-          const imgBuffer = Buffer.from(
-            base64Data,
-            'base64'
-          );
-
-          doc.image(
-            imgBuffer,
-            115,
-            photoY + 2,
-            {
-              fit: [110, 110],
-              align: 'center',
-              valign: 'center'
-            }
-          );
-        } catch (e) {
-          doc
-            .fillColor('#047857')
-            .fontSize(11)
-            .font('Helvetica-Bold')
-            .text(
-              'STAFF PHOTO',
-              113,
-              photoY + 48,
-              {
-                width: 114,
-                align: 'center'
-              }
-            );
-        }
+      if (fs.existsSync(frontPath)) {
+        doc.image(frontPath, 0, 0, { width: 340, height: 510 });
       } else {
-        doc
-          .fillColor('#047857')
-          .fontSize(11)
-          .font('Helvetica-Bold')
-          .text(
-            'STAFF PHOTO',
-            113,
-            photoY + 48,
-            {
-              width: 114,
-              align: 'center'
-            }
-          );
+        doc.rect(0, 0, 340, 510).fill('#0f172a');
+        doc.rect(0, 0, 340, 120).fill('#047857');
+        doc.fillColor('#ffffff').fontSize(16).font('Helvetica-Bold').text('LIFE VISION SOCIETY', 0, 30, { width: 340, align: 'center' });
       }
 
       // --------------------------------------------------------
-      // Name and role
+      // Staff Profile Photo (Box at x=113, y=154, w=114, h=114, r=18)
       // --------------------------------------------------------
+      const photoX = 113;
+      const photoY = 154;
+      const photoW = 114;
+      const photoH = 114;
+      const photoR = 18;
 
-      doc
-        .fillColor('#ffffff')
-        .fontSize(14)
-        .font('Helvetica-Bold')
-        .text(
-          staff.name || 'Staff Member',
-          10,
-          225,
-          {
-            width: 320,
-            align: 'center'
+      let photoDrawn = false;
+      const avatarSrc = staff.avatar || staff.photoDoc;
+
+      // Draw photo box outer border
+      doc.roundedRect(photoX, photoY, photoW, photoH, photoR).fillAndStroke('#ffffff', '#10b981');
+
+      if (avatarSrc && typeof avatarSrc === 'string') {
+        if (avatarSrc.startsWith('data:image')) {
+          try {
+            const base64Data = avatarSrc.replace(/^data:image\/\w+;base64,/, '');
+            const imgBuffer = Buffer.from(base64Data, 'base64');
+            doc.save();
+            doc.roundedRect(photoX + 1.5, photoY + 1.5, photoW - 3, photoH - 3, photoR - 1).clip();
+            doc.image(imgBuffer, photoX + 1.5, photoY + 1.5, {
+              cover: [photoW - 3, photoH - 3],
+              align: 'center',
+              valign: 'center'
+            });
+            doc.restore();
+            photoDrawn = true;
+          } catch (e) {
+            console.warn('[Staff ID PDF] Base64 image render notice:', e.message);
           }
-        );
-
-      doc
-        .fillColor('#34d399')
-        .fontSize(10)
-        .font('Helvetica-Bold')
-        .text(
-          (
-            staff.role ||
-            staff.designation ||
-            'STAFF'
-          ).toUpperCase(),
-          10,
-          243,
-          {
-            width: 320,
-            align: 'center'
+        } else if (!avatarSrc.startsWith('http')) {
+          const localPhotoPath = path.join(__dirname, 'public', avatarSrc.replace(/^\//, ''));
+          if (fs.existsSync(localPhotoPath)) {
+            try {
+              doc.save();
+              doc.roundedRect(photoX + 1.5, photoY + 1.5, photoW - 3, photoH - 3, photoR - 1).clip();
+              doc.image(localPhotoPath, photoX + 1.5, photoY + 1.5, {
+                cover: [photoW - 3, photoH - 3],
+                align: 'center',
+                valign: 'center'
+              });
+              doc.restore();
+              photoDrawn = true;
+            } catch (e) {
+              console.warn('[Staff ID PDF] Local photo render notice:', e.message);
+            }
           }
-        );
-
-      // --------------------------------------------------------
-      // Details box
-      // --------------------------------------------------------
-
-      doc
-        .roundedRect(
-          20,
-          268,
-          300,
-          195,
-          12
-        )
-        .fill('#1e293b');
-
-      const infoRows = [
-        {
-          label: 'Employee ID:',
-          value:
-            staff.id ||
-            staff.employeeId ||
-            'N/A'
-        },
-        {
-          label: 'Department:',
-          value:
-            staff.department ||
-            'General'
-        },
-        {
-          label: 'Contact No.:',
-          value:
-            staff.phone ||
-            'N/A'
-        },
-        {
-          label: 'Joining Date:',
-          value:
-            staff.joinDate ||
-            staff.joiningDate ||
-            new Date()
-              .toISOString()
-              .split('T')[0]
-        },
-        {
-          label: 'Blood Group:',
-          value:
-            staff.bloodGroup ||
-            'N/A'
-        },
-        {
-          label: 'Status:',
-          value:
-            'APPROVED & ACTIVE'
         }
+      }
+
+      if (!photoDrawn) {
+        const logoPath = path.join(__dirname, 'public', 'image', 'logo.png');
+        if (fs.existsSync(logoPath)) {
+          try {
+            doc.save();
+            doc.roundedRect(photoX + 1.5, photoY + 1.5, photoW - 3, photoH - 3, photoR - 1).clip();
+            doc.image(logoPath, photoX + 17, photoY + 17, { fit: [80, 80], align: 'center', valign: 'center' });
+            doc.restore();
+          } catch (e) {}
+        }
+      }
+
+      // --------------------------------------------------------
+      // Staff Name & Designation / Role
+      // --------------------------------------------------------
+      const staffName = staff.name || 'Staff Member';
+      const staffRole = (staff.role || staff.designation || 'Staff').toUpperCase();
+
+      doc.fillColor('#021a10')
+         .fontSize(14)
+         .font('Helvetica-Bold')
+         .text(staffName, 0, 275, { width: 340, align: 'center' });
+
+      doc.fillColor('#047857')
+         .fontSize(10)
+         .font('Helvetica-Bold')
+         .text(staffRole, 0, 293, { width: 340, align: 'center' });
+
+      // --------------------------------------------------------
+      // Staff Details Rows with Icon Circles
+      // --------------------------------------------------------
+      const empId = staff.id || staff.employeeId || 'N/A';
+      const dept = staff.department || 'General';
+      const phone = staff.phone || '+91 9416362914';
+      const joinDate = staff.joinDate || staff.joiningDate || new Date().toISOString().split('T')[0];
+
+      const detailsList = [
+        { iconType: 'user', label: 'Employee ID', value: empId },
+        { iconType: 'dept', label: 'Department', value: dept },
+        { iconType: 'phone', label: 'Contact No.', value: phone },
+        { iconType: 'calendar', label: 'Joining Date', value: joinDate }
       ];
 
-      let rowY = 282;
+      let rowY = 316;
+      detailsList.forEach(row => {
+        // Draw Icon Circle at x=68
+        drawIconCircle(doc, row.iconType, 68, rowY);
 
-      infoRows.forEach(row => {
-        doc
-          .fillColor('#94a3b8')
-          .fontSize(9)
-          .font('Helvetica-Bold')
-          .text(
-            row.label,
-            35,
-            rowY
-          );
+        // Label
+        doc.fillColor('#1e293b')
+           .fontSize(9.5)
+           .font('Helvetica-Bold')
+           .text(row.label, 90, rowY + 3.5);
 
-        doc
-          .fillColor('#f8fafc')
-          .fontSize(9)
-          .font('Helvetica-Bold')
-          .text(
-            String(row.value),
-            135,
-            rowY
-          );
+        // Colon
+        doc.fillColor('#1e293b')
+           .fontSize(9.5)
+           .font('Helvetica-Bold')
+           .text(':', 156, rowY + 3.5);
 
-        rowY += 27;
+        // Value
+        doc.fillColor('#0f172a')
+           .fontSize(9.5)
+           .font('Helvetica-Bold')
+           .text(String(row.value), 164, rowY + 3.5, { width: 155, height: 14 });
+
+        rowY += 20;
       });
 
       // --------------------------------------------------------
-      // Footer
+      // Page 2: Back Side Card with Background Image
       // --------------------------------------------------------
+      const backPath = path.join(__dirname, 'public', 'Team Member', 'id_card_back.jpg');
+      doc.addPage({ size: [340, 510], margin: 0 });
 
-      doc
-        .rect(0, 480, 340, 30)
-        .fill('#047857');
-
-      doc
-        .fillColor('#ffffff')
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .text(
-          'Authorized Signature & Official Seal',
-          0,
-          490,
-          {
-            width: 340,
-            align: 'center'
-          }
-        );
+      if (fs.existsSync(backPath)) {
+        doc.image(backPath, 0, 0, { width: 340, height: 510 });
+      } else {
+        doc.rect(0, 0, 340, 510).fill('#0f172a');
+        doc.fillColor('#ffffff').fontSize(14).font('Helvetica-Bold').text('LIFE VISION SOCIETY', 0, 240, { width: 340, align: 'center' });
+      }
 
       doc.end();
 
@@ -1025,6 +944,9 @@ app.post(
   '/api/staff/send-id-card-email',
   async (req, res) => {
     try {
+      // Re-read process.env from .env file on every request so any new .env updates are instantly picked up
+      dotenv.config({ override: true });
+
       const { staff } = req.body;
 
       if (
@@ -1055,44 +977,6 @@ app.post(
 
       console.log(
         `[Staff ID Email Service] Generating PDF & dispatching approval email to: ${recipientEmail}`
-      );
-
-      // --------------------------------------------------------
-      // Check Gmail credentials
-      // --------------------------------------------------------
-
-      const clientId =
-        process.env.GOOGLE_CLIENT_ID?.trim();
-
-      const clientSecret =
-        process.env.GOOGLE_CLIENT_SECRET?.trim();
-
-      const refreshToken =
-        process.env.GOOGLE_REFRESH_TOKEN?.trim();
-
-      const senderEmail =
-        process.env.GOOGLE_USER_EMAIL?.trim();
-
-      if (
-        !clientId ||
-        !clientSecret ||
-        !refreshToken ||
-        !senderEmail
-      ) {
-        console.error(
-          '[Staff ID Email Error] Google Gmail API credentials are missing.'
-        );
-
-        return res.status(500).json({
-          success: false,
-          emailSent: false,
-          error:
-            'Email service is not configured. Check GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_USER_EMAIL and GOOGLE_REFRESH_TOKEN in .env.'
-        });
-      }
-
-      console.log(
-        `[Staff ID Email Service] Gmail API configured for: ${senderEmail}`
       );
 
       // --------------------------------------------------------
@@ -1141,7 +1025,7 @@ app.post(
       const text =
         `Dear ${staffName},\n\n` +
         `Your Staff ID Card has been approved by the administration.\n\n` +
-        `Please find your Staff ID Card attached to this email as a PDF.\n\n` +
+        `Please find your official Staff ID Card attached to this email as a PDF.\n\n` +
         `Regards,\n` +
         `Life Vision Society Administration`;
 
@@ -1208,7 +1092,7 @@ app.post(
     </p>
 
     <p>
-      Please find your Staff ID Card
+      Please find your official Staff ID Card
       attached to this email as a PDF.
     </p>
 
@@ -1239,18 +1123,29 @@ app.post(
 `;
 
       // --------------------------------------------------------
-      // Send using Gmail API
+      // Read Credentials (supports SMTP, Gmail App Password, and OAuth)
       // --------------------------------------------------------
 
-      console.log(
-        `[Staff ID Email Service] Sending Gmail API message to: ${recipientEmail}`
-      );
+      const smtpUser = process.env.EMAIL_USER || process.env.SMTP_USER || process.env.GMAIL_USER || process.env.MAIL_USER || process.env.GOOGLE_USER_EMAIL;
+      const smtpPass = process.env.EMAIL_PASS || process.env.SMTP_PASS || process.env.GMAIL_PASS || process.env.GMAIL_APP_PASSWORD || process.env.MAIL_PASS;
+      const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+      const smtpPort = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT) || 465;
 
-      let info;
+      const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID)?.trim();
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+      const refreshToken = process.env.GOOGLE_REFRESH_TOKEN?.trim();
+      const senderEmail = (process.env.GOOGLE_USER_EMAIL || smtpUser)?.trim();
 
-      try {
-        info =
-          await sendGmailMessage({
+      let emailSent = false;
+      let messageId = null;
+      let warning = null;
+      let lastError = null;
+
+      // 1. Attempt Gmail OAuth API if OAuth credentials present
+      if (clientId && clientSecret && refreshToken && senderEmail) {
+        try {
+          console.log(`[Staff ID Email Service] Attempting Gmail OAuth API dispatch via ${senderEmail}...`);
+          const info = await sendGmailMessage({
             to: recipientEmail,
             subject,
             text,
@@ -1258,63 +1153,80 @@ app.post(
             pdfBuffer,
             filename
           });
-
-      } catch (gmailError) {
-        console.error(
-          '[Staff ID Email Error] Gmail API Error:',
-          {
-            message:
-              gmailError?.message,
-            code:
-              gmailError?.code,
-            response:
-              gmailError?.response?.data ||
-              gmailError?.response
-          }
-        );
-
-        let message =
-          gmailError?.message ||
-          'Gmail API failed to send email.';
-
-        if (
-          /invalid_grant/i.test(
-            message
-          )
-        ) {
-          message =
-            'Google OAuth refresh token is invalid or revoked. Generate a new refresh token.';
+          emailSent = true;
+          messageId = info?.id || null;
+        } catch (gmailErr) {
+          lastError = gmailErr.message;
+          console.warn('[Staff ID Email Notice] Gmail OAuth API failed:', gmailErr.message);
         }
-
-        if (
-          /unauthorized/i.test(
-            message
-          )
-        ) {
-          message =
-            'Gmail API authorization failed. Check the Google OAuth client and Gmail API configuration.';
-        }
-
-        return res.status(500).json({
-          success: false,
-          emailSent: false,
-          error: message
-        });
       }
 
-      console.log(
-        `[Staff ID Email Service] Successfully sent ID Card PDF email to ${recipientEmail}. MessageId: ${info?.id || 'unknown'}`
-      );
+      // 2. Attempt Nodemailer SMTP (supports Gmail App Passwords & standard SMTP)
+      if (!emailSent && smtpUser && smtpPass) {
+        try {
+          console.log(`[Staff ID Email Service] Attempting Nodemailer SMTP dispatch via ${smtpUser}...`);
+          
+          const isGmail = smtpHost.includes('gmail') || smtpUser.includes('gmail');
+          const transportOpts = isGmail
+            ? {
+                service: 'gmail',
+                auth: { user: smtpUser, pass: smtpPass }
+              }
+            : {
+                host: smtpHost,
+                port: smtpPort,
+                secure: smtpPort === 465,
+                auth: { user: smtpUser, pass: smtpPass }
+              };
+
+          const transporter = nodemailer.createTransport(transportOpts);
+
+          const mailOptions = {
+            from: process.env.EMAIL_FROM || `"Life Vision Society Administration" <${smtpUser}>`,
+            to: recipientEmail,
+            subject,
+            text,
+            html,
+            attachments: [
+              {
+                filename,
+                content: pdfBuffer,
+                contentType: 'application/pdf'
+              }
+            ]
+          };
+
+          const info = await transporter.sendMail(mailOptions);
+          emailSent = true;
+          messageId = info.messageId;
+        } catch (smtpErr) {
+          lastError = smtpErr.message;
+          console.warn('[Staff ID Email Notice] Nodemailer SMTP failed:', smtpErr.message);
+        }
+      }
+
+      if (!emailSent) {
+        if (lastError) {
+          warning = `Email transport error: ${lastError}. Check your credentials in .env file.`;
+        } else {
+          warning = `Email credentials (SMTP or Gmail API) not found in .env. Please configure EMAIL_USER & EMAIL_PASS in .env file.`;
+        }
+        console.log(`[Staff ID Email Service] ${warning}`);
+      } else {
+        console.log(
+          `[Staff ID Email Service] Successfully sent ID Card PDF email to ${recipientEmail}. MessageId: ${messageId}`
+        );
+      }
 
       return res.json({
         success: true,
-        emailSent: true,
-        recipient:
-          recipientEmail,
-        messageId:
-          info?.id || null,
-        message:
-          `Staff ID Card PDF successfully emailed to ${recipientEmail}`
+        emailSent,
+        recipient: recipientEmail,
+        messageId,
+        warning,
+        message: emailSent
+          ? `✓ Staff ID Card PDF successfully emailed to ${recipientEmail}`
+          : `✓ Staff ID Card generated successfully. (${warning})`
       });
 
     } catch (err) {
@@ -1341,6 +1253,345 @@ app.post(
     }
   }
 );
+
+// ============================================================
+// UNIVERSAL WEBSITE FORM EMAIL DISPATCHER
+// Sends Applicant Confirmation + Admin Notification
+// ============================================================
+
+app.post('/api/send-email', async (req, res) => {
+  try {
+    dotenv.config({ path: path.join(__dirname, 'env'), override: true });
+    dotenv.config({ path: path.join(__dirname, '.env'), override: true });
+
+    const { type, applicantEmail, applicantName, data } = req.body;
+
+    if (!applicantEmail) {
+      return res.status(400).json({ success: false, error: 'Applicant email address is required' });
+    }
+
+    const adminEmail = process.env.GOOGLE_USER_EMAIL || process.env.EMAIL_USER || 'support.lifevision@gmail.com';
+    const name = applicantName || data?.name || data?.studentName || data?.fullName || 'Applicant';
+
+    // Helper to send individual message
+    const dispatchOne = async ({ to, subject, html, text }) => {
+      const smtpUser = process.env.EMAIL_USER || process.env.SMTP_USER || process.env.GMAIL_USER || process.env.GOOGLE_USER_EMAIL;
+      const smtpPass = process.env.EMAIL_PASS || process.env.SMTP_PASS || process.env.GMAIL_PASS || process.env.GMAIL_APP_PASSWORD;
+
+      const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID)?.trim();
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+      const refreshToken = process.env.GOOGLE_REFRESH_TOKEN?.trim();
+      const senderEmail = (process.env.GOOGLE_USER_EMAIL || smtpUser || 'support.lifevision@gmail.com')?.trim();
+
+      // 1. Try Gmail OAuth API
+      if (clientId && clientSecret && refreshToken && senderEmail) {
+        try {
+          const rawMessage = [
+            `From: "Life Vision Society" <${senderEmail}>`,
+            `To: ${to}`,
+            `Subject: ${subject}`,
+            'MIME-Version: 1.0',
+            'Content-Type: text/html; charset=utf-8',
+            '',
+            html
+          ].join('\r\n');
+
+          const raw = Buffer.from(rawMessage, 'utf8').toString('base64url');
+          const { gmail } = getGmailClient();
+          await gmail.users.messages.send({ userId: 'me', requestBody: { raw } });
+          return true;
+        } catch (e) {
+          console.warn(`[Website Email Service] Gmail OAuth API error for ${to}:`, e.message);
+        }
+      }
+
+      // 2. Try Nodemailer SMTP
+      if (smtpUser && smtpPass) {
+        try {
+          const isGmail = smtpUser.includes('gmail');
+          const transporter = nodemailer.createTransport(
+            isGmail
+              ? { service: 'gmail', auth: { user: smtpUser, pass: smtpPass } }
+              : { host: process.env.SMTP_HOST || 'smtp.gmail.com', port: 465, secure: true, auth: { user: smtpUser, pass: smtpPass } }
+          );
+
+          await transporter.sendMail({
+            from: `"Life Vision Society" <${smtpUser}>`,
+            to,
+            subject,
+            text: text || subject,
+            html
+          });
+          return true;
+        } catch (e) {
+          console.warn(`[Website Email Service] Nodemailer SMTP error for ${to}:`, e.message);
+        }
+      }
+
+      return false;
+    };
+
+    let applicantSubject = '';
+    let applicantHtml = '';
+    let adminSubject = '';
+    let adminHtml = '';
+
+    const currentDate = new Date().toISOString().split('T')[0];
+
+    if (type === 'trainer' || type === 'volunteer') {
+      const role = data.roleInterest || data.skills || data.interest || 'Skill Trainer / Instructor';
+      applicantSubject = `Volunteer & Trainer Application Received – Life Vision Society`;
+      applicantHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <div style="background: #047857; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 20px;">Life Vision Society</h2>
+            <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: bold;">Volunteer & Trainer Application</p>
+          </div>
+          <div style="padding: 24px 0; color: #1e293b; font-size: 14px; line-height: 1.6;">
+            <p>Dear <strong>${name}</strong>,</p>
+            <p>Thank you for expressing interest in joining Life Vision Society as a <strong>${role}</strong>!</p>
+            <p>We have received your application details:</p>
+            <ul style="background: #f8fafc; padding: 14px 20px; border-radius: 8px;">
+              <li><strong>Name:</strong> ${name}</li>
+              <li><strong>Email:</strong> ${applicantEmail}</li>
+              <li><strong>Phone:</strong> ${data.phone || data.mobile || 'N/A'}</li>
+              <li><strong>Role Interest:</strong> ${role}</li>
+              <li><strong>Location:</strong> ${data.location || data.city || 'Odisha'}</li>
+            </ul>
+            <p>Our volunteer & trainer coordinator will review your application and contact you shortly.</p>
+            <p>Regards,<br/><strong>Life Vision Society Administration</strong></p>
+          </div>
+        </div>`;
+
+      adminSubject = `[Website Alert] New Volunteer / Trainer Application: ${name}`;
+      adminHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <div style="background: #0f172a; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 18px;">New Volunteer / Trainer Application</h2>
+          </div>
+          <div style="padding: 20px 0; color: #1e293b; font-size: 14px; line-height: 1.6;">
+            <ul style="background: #f8fafc; padding: 14px 20px; border-radius: 8px;">
+              <li><strong>Applicant Name:</strong> ${name}</li>
+              <li><strong>Email:</strong> ${applicantEmail}</li>
+              <li><strong>Phone:</strong> ${data.phone || data.mobile || 'N/A'}</li>
+              <li><strong>Role / Skill:</strong> ${role}</li>
+              <li><strong>Location:</strong> ${data.location || data.city || 'N/A'}</li>
+              <li><strong>Date:</strong> ${currentDate}</li>
+            </ul>
+          </div>
+        </div>`;
+
+    } else if (type === 'placement') {
+      const course = data.course || data.higherCourse || 'Placement Support';
+      const appId = data.applicationId || data.id || `PLC-${Date.now().toString().slice(-4)}`;
+
+      applicantSubject = `Placement Support Application Received (ID: ${appId}) – Life Vision Society`;
+      applicantHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <div style="background: #047857; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 20px;">Life Vision Society</h2>
+            <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: bold;">Placement Support Application</p>
+          </div>
+          <div style="padding: 24px 0; color: #1e293b; font-size: 14px; line-height: 1.6;">
+            <p>Dear <strong>${name}</strong>,</p>
+            <p>Your request for <strong>Placement Support</strong> has been submitted successfully!</p>
+            <ul style="background: #f8fafc; padding: 14px 20px; border-radius: 8px;">
+              <li><strong>Application ID:</strong> ${appId}</li>
+              <li><strong>Course / Training:</strong> ${course}</li>
+              <li><strong>Location:</strong> ${data.location || 'Odisha'}</li>
+              <li><strong>Date Submitted:</strong> ${currentDate}</li>
+            </ul>
+            <p>Our Placement Cell will review your profile and contact you for upcoming hiring drives.</p>
+            <p>Regards,<br/><strong>Life Vision Society Placement Cell</strong></p>
+          </div>
+        </div>`;
+
+      adminSubject = `[Website Alert] New Placement Support Application: ${name} (ID: ${appId})`;
+      adminHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <div style="background: #0f172a; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 18px;">New Placement Support Request</h2>
+          </div>
+          <div style="padding: 20px 0; color: #1e293b; font-size: 14px; line-height: 1.6;">
+            <ul style="background: #f8fafc; padding: 14px 20px; border-radius: 8px;">
+              <li><strong>Student Name:</strong> ${name}</li>
+              <li><strong>Application ID:</strong> ${appId}</li>
+              <li><strong>Course / Training:</strong> ${course}</li>
+              <li><strong>Email:</strong> ${applicantEmail}</li>
+              <li><strong>Mobile:</strong> ${data.phone || data.mobile || 'N/A'}</li>
+              <li><strong>Location:</strong> ${data.location || 'N/A'}</li>
+            </ul>
+          </div>
+        </div>`;
+
+    } else if (type === 'csr' || type === 'partner') {
+      const org = data.orgName || data.companyName || name;
+
+      applicantSubject = `Thank You for Partnering with Life Vision Society`;
+      applicantHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <div style="background: #047857; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 20px;">Life Vision Society</h2>
+            <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: bold;">CSR & Institutional Partnership</p>
+          </div>
+          <div style="padding: 24px 0; color: #1e293b; font-size: 14px; line-height: 1.6;">
+            <p>Dear <strong>${name}</strong>,</p>
+            <p>Thank you for expressing interest in collaborating with Life Vision Society on behalf of <strong>${org}</strong>.</p>
+            <p>Our partnership development team will review your proposal and get in touch with you shortly.</p>
+            <p>Regards,<br/><strong>Life Vision Society Partnership Cell</strong></p>
+          </div>
+        </div>`;
+
+      adminSubject = `[Website Alert] New CSR / Collaboration Proposal from ${org}`;
+      adminHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <div style="background: #0f172a; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 18px;">New Corporate / Institutional Partnership Proposal</h2>
+          </div>
+          <div style="padding: 20px 0; color: #1e293b; font-size: 14px; line-height: 1.6;">
+            <ul style="background: #f8fafc; padding: 14px 20px; border-radius: 8px;">
+              <li><strong>Organization / Company:</strong> ${org}</li>
+              <li><strong>Contact Person:</strong> ${name}</li>
+              <li><strong>Email:</strong> ${applicantEmail}</li>
+              <li><strong>Phone:</strong> ${data.phone || data.mobile || 'N/A'}</li>
+              <li><strong>Budget / Area:</strong> ${data.budget || data.collabArea || 'N/A'}</li>
+              <li><strong>Notes / Message:</strong> ${data.message || data.notes || 'N/A'}</li>
+            </ul>
+          </div>
+        </div>`;
+
+    } else if (type === 'donation') {
+      const amount = data.amount || 'N/A';
+      const receiptId = data.receiptId || data.id || `RCPT-${Date.now()}`;
+
+      applicantSubject = `Donation Confirmation & Receipt – Life Vision Society`;
+      applicantHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <div style="background: #047857; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 20px;">Life Vision Society</h2>
+            <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: bold;">Donation Receipt</p>
+          </div>
+          <div style="padding: 24px 0; color: #1e293b; font-size: 14px; line-height: 1.6;">
+            <p>Dear <strong>${name}</strong>,</p>
+            <p>Thank you for your generous donation of <strong>₹${amount}</strong> to Life Vision Society!</p>
+            <ul style="background: #f8fafc; padding: 14px 20px; border-radius: 8px;">
+              <li><strong>Donor Name:</strong> ${name}</li>
+              <li><strong>Amount Paid:</strong> ₹${amount}</li>
+              <li><strong>Receipt ID:</strong> ${receiptId}</li>
+              <li><strong>Purpose:</strong> ${data.purpose || 'General Social Support'}</li>
+              <li><strong>Date:</strong> ${currentDate}</li>
+            </ul>
+            <p>Your support helps empower women, youth, and rural communities across Odisha.</p>
+            <p>Regards,<br/><strong>Life Vision Society Finance Team</strong></p>
+          </div>
+        </div>`;
+
+      adminSubject = `[Website Alert] New Donation Received: ₹${amount} from ${name}`;
+      adminHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <div style="background: #0f172a; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 18px;">New Online Donation Received</h2>
+          </div>
+          <div style="padding: 20px 0; color: #1e293b; font-size: 14px; line-height: 1.6;">
+            <ul style="background: #f8fafc; padding: 14px 20px; border-radius: 8px;">
+              <li><strong>Donor Name:</strong> ${name}</li>
+              <li><strong>Amount:</strong> ₹${amount}</li>
+              <li><strong>Email:</strong> ${applicantEmail}</li>
+              <li><strong>Mobile:</strong> ${data.mobile || data.phone || 'N/A'}</li>
+              <li><strong>PAN No:</strong> ${data.panNo || 'N/A'}</li>
+              <li><strong>Receipt ID:</strong> ${receiptId}</li>
+            </ul>
+          </div>
+        </div>`;
+
+    } else if (type === 'contact') {
+      const subjectMsg = data.subject || 'General Inquiry';
+
+      applicantSubject = `We Have Received Your Message – Life Vision Society`;
+      applicantHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <div style="background: #047857; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 20px;">Life Vision Society</h2>
+            <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: bold;">Contact Inquiry Acknowledgment</p>
+          </div>
+          <div style="padding: 24px 0; color: #1e293b; font-size: 14px; line-height: 1.6;">
+            <p>Dear <strong>${name}</strong>,</p>
+            <p>Thank you for contacting Life Vision Society. We have received your inquiry regarding <strong>"${subjectMsg}"</strong> and our team will get back to you shortly.</p>
+            <p>Regards,<br/><strong>Life Vision Society Support Team</strong></p>
+          </div>
+        </div>`;
+
+      adminSubject = `[Website Alert] New Contact Us Inquiry from ${name}`;
+      adminHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <div style="background: #0f172a; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 18px;">New Contact Us Inquiry</h2>
+          </div>
+          <div style="padding: 20px 0; color: #1e293b; font-size: 14px; line-height: 1.6;">
+            <ul style="background: #f8fafc; padding: 14px 20px; border-radius: 8px;">
+              <li><strong>Sender Name:</strong> ${name}</li>
+              <li><strong>Email:</strong> ${applicantEmail}</li>
+              <li><strong>Phone:</strong> ${data.phone || 'N/A'}</li>
+              <li><strong>Subject:</strong> ${subjectMsg}</li>
+              <li><strong>Message:</strong> ${data.message || 'N/A'}</li>
+            </ul>
+          </div>
+        </div>`;
+
+    } else {
+      const program = data.program || data.course || 'Training Program';
+
+      applicantSubject = `Application Received – Life Vision Society`;
+      applicantHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <div style="background: #047857; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 20px;">Life Vision Society</h2>
+            <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: bold;">Application Confirmation</p>
+          </div>
+          <div style="padding: 24px 0; color: #1e293b; font-size: 14px; line-height: 1.6;">
+            <p>Dear <strong>${name}</strong>,</p>
+            <p>Your application for <strong>${program}</strong> has been received successfully.</p>
+            <p>Our team will contact you shortly.</p>
+            <p>Regards,<br/><strong>Life Vision Society Team</strong></p>
+          </div>
+        </div>`;
+
+      adminSubject = `[Website Alert] New Application Received from ${name}`;
+      adminHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <div style="background: #0f172a; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 18px;">New Application Submitted</h2>
+          </div>
+          <div style="padding: 20px 0; color: #1e293b; font-size: 14px; line-height: 1.6;">
+            <ul style="background: #f8fafc; padding: 14px 20px; border-radius: 8px;">
+              <li><strong>Applicant Name:</strong> ${name}</li>
+              <li><strong>Email:</strong> ${applicantEmail}</li>
+              <li><strong>Phone:</strong> ${data.phone || data.mobile || 'N/A'}</li>
+              <li><strong>Program / Topic:</strong> ${program}</li>
+            </ul>
+          </div>
+        </div>`;
+    }
+
+    const [applicantSent, adminSent] = await Promise.all([
+      dispatchOne({ to: applicantEmail, subject: applicantSubject, html: applicantHtml }),
+      dispatchOne({ to: adminEmail, subject: adminSubject, html: adminHtml })
+    ]);
+
+    console.log(`[Website Email Service] Form "${type}" processed. Applicant email sent: ${applicantSent}, Admin email sent: ${adminSent}`);
+
+    return res.json({
+      success: true,
+      applicantSent,
+      adminSent,
+      message: `Emails processed for ${applicantEmail}`
+    });
+
+  } catch (err) {
+    console.error('[Website Email Service Error]:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 // ============================================================
 // HEALTH CHECK

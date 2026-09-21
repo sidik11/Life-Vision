@@ -69,62 +69,72 @@ export default function DashboardView({
     heightPct: maxCount > 0 && item.count > 0 ? Math.max(Math.round((item.count / maxCount) * 100), 18) : 6
   }));
 
-  // Placement Student Details & Status Breakdown Grow Bars
+  // Placement Support Applications Status Breakdown Grow Bars
   const placementMetrics = {
-    employed: placements.filter(p => p.placementStatus?.toLowerCase().includes('employed') && !p.placementStatus?.toLowerCase().includes('self')).length,
-    selfEmployed: placements.filter(p => p.placementStatus?.toLowerCase().includes('self')).length,
-    selected: placements.filter(p => p.placementStatus?.toLowerCase().includes('selected') || p.placementStatus?.toLowerCase().includes('offer')).length,
-    interview: placements.filter(p => p.placementStatus?.toLowerCase().includes('interview')).length,
-    seeking: placements.filter(p => p.placementStatus?.toLowerCase().includes('seeking') || p.placementStatus?.toLowerCase().includes('pending')).length,
+    applied: placements.filter(p => (p.placementStatus || p.status) === 'Applied' || !p.placementStatus).length,
+    contacted: placements.filter(p => (p.placementStatus || p.status) === 'Contacted').length,
+    counseling: placements.filter(p => (p.placementStatus || p.status) === 'Counseling/Discussion').length,
+    inProcess: placements.filter(p => (p.placementStatus || p.status) === 'Placement in Process').length,
+    placed: placements.filter(p => (p.placementStatus || p.status) === 'Placed').length,
+    notInterested: placements.filter(p => (p.placementStatus || p.status) === 'Not Interested' || (p.placementStatus || p.status) === 'Closed').length,
   };
 
   const totalPlacementsRecorded = Math.max(placements.length, 1);
 
   const placementGrowBars = [
     {
-      label: 'Employed (Salaried Jobs)',
-      icon: '👔',
-      count: placementMetrics.employed,
+      label: 'Applied (From Main Website)',
+      icon: '📩',
+      count: placementMetrics.applied,
+      gradient: 'from-blue-500 via-blue-600 to-[#123B5D]',
+      bgColor: 'bg-blue-50',
+      textColor: 'text-blue-700',
+      pct: Math.round((placementMetrics.applied / totalPlacementsRecorded) * 100) || (placementMetrics.applied > 0 ? 15 : 4)
+    },
+    {
+      label: 'Contacted Students',
+      icon: '📞',
+      count: placementMetrics.contacted,
+      gradient: 'from-purple-500 via-indigo-600 to-purple-800',
+      bgColor: 'bg-purple-50',
+      textColor: 'text-purple-700',
+      pct: Math.round((placementMetrics.contacted / totalPlacementsRecorded) * 100) || (placementMetrics.contacted > 0 ? 15 : 4)
+    },
+    {
+      label: 'Counseling & Discussion',
+      icon: '🗣️',
+      count: placementMetrics.counseling,
+      gradient: 'from-amber-500 via-orange-500 to-amber-700',
+      bgColor: 'bg-amber-50',
+      textColor: 'text-amber-700',
+      pct: Math.round((placementMetrics.counseling / totalPlacementsRecorded) * 100) || (placementMetrics.counseling > 0 ? 15 : 4)
+    },
+    {
+      label: 'Placement in Process',
+      icon: '⚙️',
+      count: placementMetrics.inProcess,
+      gradient: 'from-indigo-500 via-cyan-600 to-indigo-800',
+      bgColor: 'bg-indigo-50',
+      textColor: 'text-indigo-700',
+      pct: Math.round((placementMetrics.inProcess / totalPlacementsRecorded) * 100) || (placementMetrics.inProcess > 0 ? 15 : 4)
+    },
+    {
+      label: 'Placed Students',
+      icon: '🎉',
+      count: placementMetrics.placed,
       gradient: 'from-emerald-500 via-teal-600 to-[#047857]',
       bgColor: 'bg-emerald-50',
       textColor: 'text-emerald-700',
-      pct: Math.round((placementMetrics.employed / totalPlacementsRecorded) * 100) || (placementMetrics.employed > 0 ? 15 : 4)
+      pct: Math.round((placementMetrics.placed / totalPlacementsRecorded) * 100) || (placementMetrics.placed > 0 ? 15 : 4)
     },
     {
-      label: 'Self-Employed (Micro-Boutiques)',
-      icon: '🚀',
-      count: placementMetrics.selfEmployed,
-      gradient: 'from-blue-600 via-indigo-600 to-[#123B5D]',
-      bgColor: 'bg-blue-50',
-      textColor: 'text-blue-700',
-      pct: Math.round((placementMetrics.selfEmployed / totalPlacementsRecorded) * 100) || (placementMetrics.selfEmployed > 0 ? 15 : 4)
-    },
-    {
-      label: 'Selected / Offer Received',
-      icon: '✅',
-      count: placementMetrics.selected,
-      gradient: 'from-purple-500 via-indigo-500 to-[#1E527B]',
-      bgColor: 'bg-purple-50',
-      textColor: 'text-purple-700',
-      pct: Math.round((placementMetrics.selected / totalPlacementsRecorded) * 100) || (placementMetrics.selected > 0 ? 15 : 4)
-    },
-    {
-      label: 'Interview Scheduled',
-      icon: '🗣️',
-      count: placementMetrics.interview,
-      gradient: 'from-cyan-500 via-teal-500 to-blue-600',
-      bgColor: 'bg-cyan-50',
-      textColor: 'text-cyan-700',
-      pct: Math.round((placementMetrics.interview / totalPlacementsRecorded) * 100) || (placementMetrics.interview > 0 ? 15 : 4)
-    },
-    {
-      label: 'Seeking Employment',
-      icon: '🔍',
-      count: placementMetrics.seeking,
-      gradient: 'from-amber-500 via-orange-500 to-rose-500',
-      bgColor: 'bg-amber-50',
-      textColor: 'text-amber-700',
-      pct: Math.round((placementMetrics.seeking / totalPlacementsRecorded) * 100) || (placementMetrics.seeking > 0 ? 15 : 4)
+      label: 'Not Interested / Closed',
+      icon: '❌',
+      count: placementMetrics.notInterested,
+      gradient: 'from-slate-400 via-rose-500 to-slate-700',
+      bgColor: 'bg-rose-50',
+      textColor: 'text-rose-700',
+      pct: Math.round((placementMetrics.notInterested / totalPlacementsRecorded) * 100) || (placementMetrics.notInterested > 0 ? 15 : 4)
     }
   ];
 

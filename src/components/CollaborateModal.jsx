@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, Send, Handshake, User, Phone, Mail, MapPin, Building, Target, Loader2 } from 'lucide-react';
 import { saveToFirestore } from '../utils/firebaseSave';
+import { sendWebsiteFormEmail } from '../utils/emailHelper';
 
 export default function CollaborateModal({ isOpen, onClose }) {
   const [submitted, setSubmitted] = useState(false);
@@ -35,20 +36,28 @@ export default function CollaborateModal({ isOpen, onClose }) {
 
     const newCollab = {
       id: `PRT-OD-${Math.floor(10 + Math.random() * 90)}`,
-      orgName: formData.orgName || 'Collaborating Organization',
-      contactPerson: formData.contactPerson || 'Collab Lead',
-      email: formData.email || 'collab@org.com',
-      phone: formData.phone || '+91 98000 00000',
-      partnerType: formData.collabType || 'Institutional Partner',
-      logo: '/company/Privir Healthcare.jpg',
-      location: formData.location || 'Odisha',
+      orgName: formData.orgName,
+      contactPerson: formData.contactPerson,
+      email: formData.email,
+      phone: formData.phone,
+      partnerType: formData.orgType || 'Institutional Partner',
+      logo: '',
+      location: formData.location,
       dateJoined: new Date().toISOString().split('T')[0],
       status: 'Pending',
       programsSupported: 1,
-      notes: formData.message || 'Collaboration Proposal'
+      notes: formData.message
     };
 
     await saveToFirestore('partners', newCollab, 'lvs_new_partner');
+
+    // Dispatch Confirmation & Admin Notification Emails
+    sendWebsiteFormEmail({
+      type: 'partner',
+      applicantEmail: formData.email,
+      applicantName: formData.contactPerson,
+      data: newCollab
+    }).catch(err => console.warn("Email alert notice:", err));
 
     setIsSubmitting(false);
     setSubmitted(true);

@@ -11,7 +11,7 @@ export default function AboutPage({ onOpenApply, onOpenDonate, onOpenCsr, onOpen
       id: 'founder',
       name: 'Dr. Aman Kumar',
       designation: 'Founder & Chairperson',
-      avatar: '/Team Meber/Dr. Aman Kumar.png',
+      avatar: '/Team Member/Dr. Aman Kumar.png',
       bio: 'Visionary social leader and founder dedicated to women empowerment, rural development, and ethical trust stewardship across Odisha. With over 15 years of dedicated community service, Dr. Aman Kumar spearheads strategic growth, partner alliances, and social impact programs.',
       quote: 'Empowering underprivileged women and youth is not just our mission — it is our duty to humanity and the foundation of a stronger, self-reliant society.',
       linkedin: 'https://linkedin.com',
@@ -21,7 +21,7 @@ export default function AboutPage({ onOpenApply, onOpenDonate, onOpenCsr, onOpen
       id: 'pradip',
       name: 'Dr. Pradip Kumar Sarmah',
       designation: 'Executive Director & Advisor',
-      avatar: '/Team Meber/Dr. Pradip Kumar Sarmah.jpeg',
+      avatar: '/Team Member/Dr. Pradip Kumar Sarmah.jpeg',
       bio: 'Senior advisory director guiding strategic partnerships, community health initiatives, and institutional governance across Life Vision Society programs.',
       quote: 'Sustainable social progress requires dedicated field commitment, ethical governance, and empowering communities from the roots.',
       linkedin: 'https://www.linkedin.com/in/dr-pradip-kumar-sarmah-4175343',
@@ -31,7 +31,7 @@ export default function AboutPage({ onOpenApply, onOpenDonate, onOpenCsr, onOpen
       id: 'ed',
       name: 'MS. Sharda Devi',
       designation: 'Program Director',
-      avatar: '/Team Meber/Ms. Sharda Devi.jpeg',
+      avatar: '/Team Member/Ms. Sharda Devi.jpeg',
       bio: 'Directs daily trust operations, donor relations, financial compliance, and policy execution across regional offices. She works tirelessly to ensure transparent governance and seamless execution of community welfare initiatives.',
       quote: 'Every trained individual represents a transformed family. Complete transparency, dedication, and measurable community impact guide everything we do.',
       linkedin: 'https://linkedin.com',
@@ -44,56 +44,56 @@ export default function AboutPage({ onOpenApply, onOpenDonate, onOpenCsr, onOpen
     {
       name: 'Vivek Mukherjee',
       role: 'Team Member',
-      avatar: '/Team Meber/Vivek Mukherjee.jpeg',
+      avatar: '/Team Member/Vivek Mukherjee.jpeg',
       desc: 'Operations team member assisting in beneficiary support and training center logistics.',
       color: 'border-blue-200 bg-blue-50/40'
     },
     {
       name: 'Naresh Mehra',
       role: 'Team Member',
-      avatar: '/Team Meber/Naresh Mehra.jpeg',
+      avatar: '/Team Member/Naresh Mehra.jpeg',
       desc: 'Field operations team member managing project execution, logistics, and beneficiary outreach.',
       color: 'border-pink-200 bg-[#FFF7F6]'
     },
     {
       name: 'Ashok Kumar',
       role: 'Team Member',
-      avatar: '/Team Meber/Ashok Kumar.png',
+      avatar: '/Team Member/Ashok Kumar.png',
       desc: 'Coordinates ground-level activities, village-level mobilization, and community health camp logistics.',
       color: 'border-emerald-200 bg-emerald-50/40'
     },
     {
       name: 'Vipin Arya',
       role: 'Team Member',
-      avatar: '/Team Meber/Vipin Arya.jpeg',
+      avatar: '/Team Member/Vipin Arya.jpeg',
       desc: 'Ground execution team member managing program operations and field outreach.',
       color: 'border-purple-200 bg-purple-50/40'
     },
     {
       name: 'Bably Kumari',
-      role: 'Team Member',
-      avatar: '/Team Meber/Bably Kumari.jpeg',
+      role: 'Team Memmber',
+      avatar: '/Team Member/Bably Kumari.jpeg',
       desc: 'Dedicated team member supporting community mobilization and skill training coordination.',
       color: 'border-[#C52B75]/20 bg-pink-50/60'
     },
     {
       name: 'Kumar Gaurav',
       role: 'Team Member',
-      avatar: '/Team Meber/Kumar Gaurav.jpeg',
+      avatar: '/Team Member/Kumar Gaurav.jpeg',
       desc: 'Handles project planning, resource allocation, milestone tracking, and ground implementation.',
       color: 'border-purple-200 bg-purple-50/40'
     },
     {
       name: 'Kumari Vandana',
       role: 'Team Member',
-      avatar: '/Team Meber/Kumari Vandana.jpeg',
+      avatar: '/Team Member/Kumari Vandana.jpeg',
       desc: 'Manages NGO programs, activity schedules, workshop logistics, and cross-departmental coordination.',
       color: 'border-pink-200 bg-[#FFF7F6]'
     },
     {
       name: 'Ravina yadav',
       role: 'Team Member',
-      avatar: '/Team Meber/Ravina yadav.jpeg',
+      avatar: '/Team Member/Ravina yadav.jpeg',
       desc: 'Coordinates ground-level activities, village-level mobilization, and community health camp logistics.',
       color: 'border-emerald-200 bg-emerald-50/40'
     }

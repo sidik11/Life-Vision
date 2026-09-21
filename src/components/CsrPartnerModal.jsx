@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, Send, Building2, User, Phone, Mail, Briefcase, DollarSign, CheckSquare, Loader2 } from 'lucide-react';
 import { saveToFirestore } from '../utils/firebaseSave';
+import { sendWebsiteFormEmail } from '../utils/emailHelper';
 
 export default function CsrPartnerModal({ isOpen, onClose }) {
   const [submitted, setSubmitted] = useState(false);
@@ -46,21 +47,29 @@ export default function CsrPartnerModal({ isOpen, onClose }) {
 
     const newPartner = {
       id: `PRT-OD-${Math.floor(10 + Math.random() * 90)}`,
-      orgName: formData.companyName || 'Corporate CSR Partner',
-      contactPerson: `${formData.contactPerson || 'Contact Person'} (${formData.designation || 'CSR Lead'})`,
-      email: formData.email || 'partner@company.com',
-      phone: formData.phone || '+91 98000 00000',
+      orgName: formData.companyName,
+      contactPerson: formData.designation ? `${formData.contactPerson} (${formData.designation})` : formData.contactPerson,
+      email: formData.email,
+      phone: formData.phone,
       partnerType: 'CSR Corporate Partner',
-      logo: '/company/Privir Healthcare.jpg',
-      location: 'Odisha / Corporate HQ',
+      logo: '',
+      location: 'Odisha',
       dateJoined: new Date().toISOString().split('T')[0],
       status: 'Pending',
       programsSupported: 1,
-      budget: formData.budget || '₹5 Lakhs - ₹15 Lakhs',
-      interests: formData.interests.join(', ') || 'Women Empowerment'
+      budget: formData.budget,
+      interests: formData.interests.join(', ')
     };
 
     await saveToFirestore('partners', newPartner, 'lvs_new_partner');
+
+    // Dispatch Confirmation & Admin Notification Emails
+    sendWebsiteFormEmail({
+      type: 'csr',
+      applicantEmail: formData.email,
+      applicantName: formData.contactPerson,
+      data: newPartner
+    }).catch(err => console.warn("Email alert notice:", err));
 
     setIsSubmitting(false);
     setSubmitted(true);

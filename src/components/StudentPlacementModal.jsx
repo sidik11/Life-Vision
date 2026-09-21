@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, Send, GraduationCap, User, Phone, Mail, BookOpen, MapPin, Award, Briefcase, Share2, Loader2, Upload, Plus, FileText } from 'lucide-react';
 import { saveToFirestore } from '../utils/firebaseSave';
+import { sendWebsiteFormEmail } from '../utils/emailHelper';
 
 export default function StudentPlacementModal({ isOpen, onClose }) {
   const [submitted, setSubmitted] = useState(false);
@@ -129,21 +130,31 @@ export default function StudentPlacementModal({ isOpen, onClose }) {
 
     const newPlacement = {
       id: `PLC-OD-${Math.floor(100 + Math.random() * 900)}`,
-      student: formData.fullName || 'Scholarship Applicant',
-      course: formData.higherCourse || 'Higher Education Scholarship',
-      trainingCompleted: 'Scholarship Requested',
+      student: formData.fullName,
+      course: formData.higherCourse,
+      mobile: formData.phone,
+      email: formData.email,
+      trainingCompleted: 'Requested Placement',
       placementStatus: 'Applied',
-      employer: formData.collegeName || 'Tuition Fee Sponsorship',
-      jobRole: formData.supportType || 'Higher Education Placement',
-      location: `${formData.district || 'Bhubaneswar'}, ${formData.state || 'Odisha'}`,
+      employer: formData.collegeName,
+      jobRole: formData.supportType,
+      location: formData.district ? `${formData.district}, ${formData.state}` : formData.state,
       joiningDate: new Date().toISOString().split('T')[0],
-      salary: 'Scholarship Requested',
+      salary: 'Pending Assessment',
       photoDoc: photoDoc || '',
       aadharDoc: aadharDoc || '',
       extraDocs: extraDocs || []
     };
 
     await saveToFirestore('placements', newPlacement, 'lvs_new_placement');
+
+    // Dispatch Confirmation & Admin Notification Emails
+    sendWebsiteFormEmail({
+      type: 'placement',
+      applicantEmail: formData.email,
+      applicantName: formData.fullName,
+      data: newPlacement
+    }).catch(err => console.warn("Email alert notice:", err));
 
     setIsSubmitting(false);
     setSubmitted(true);

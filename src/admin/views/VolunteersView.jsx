@@ -60,6 +60,7 @@ export default function VolunteersView({ volunteers = [], setVolunteers, showToa
             <thead>
               <tr className="border-b border-slate-200 text-slate-500 bg-slate-50 uppercase tracking-wider font-bold">
                 <th className="p-4">Volunteer Name</th>
+                <th className="p-4">Gender</th>
                 <th className="p-4">Location</th>
                 <th className="p-4">Skills</th>
                 <th className="p-4">Area of Interest</th>
@@ -71,7 +72,7 @@ export default function VolunteersView({ volunteers = [], setVolunteers, showToa
             <tbody className="divide-y divide-slate-100 font-medium">
               {filteredVolunteers.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="p-12 text-center text-slate-500">
+                  <td colSpan="8" className="p-12 text-center text-slate-500">
                     <div className="max-w-xs mx-auto space-y-2">
                       <Users className="w-10 h-10 text-slate-300 mx-auto" />
                       <p className="font-bold text-slate-700 text-sm">No Volunteers Found</p>
@@ -86,6 +87,7 @@ export default function VolunteersView({ volunteers = [], setVolunteers, showToa
                       <div>{vol.name}</div>
                       <div className="text-[10px] text-[#123B5D] font-mono">{vol.id}</div>
                     </td>
+                    <td className="p-4 text-slate-700">{vol.gender || '—'}</td>
                     <td className="p-4 text-slate-700">{vol.location}</td>
                     <td className="p-4 text-slate-900 font-bold">{vol.skills}</td>
                     <td className="p-4 text-emerald-700 font-bold">{vol.interest}</td>

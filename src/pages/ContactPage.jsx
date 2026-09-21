@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Phone, Mail, MapPin, Send, CheckCircle2, Clock, MessageSquare, ShieldCheck, HeartHandshake, ChevronDown, HelpCircle, Sparkles, X, Loader2 } from 'lucide-react';
 import { saveToFirestore } from '../utils/firebaseSave';
+import { sendWebsiteFormEmail } from '../utils/emailHelper';
 
 export default function ContactPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -35,32 +36,22 @@ export default function ContactPage() {
       status: 'Unread'
     };
 
-    // 1. Save directly to Firebase Firestore Database with fast timeout & Admin Portal event
+    // 1. Save directly to Firebase Firestore Database
     await saveToFirestore('contacts', newContact, 'lvs_new_contact');
 
+    // 2. Dispatch Confirmation & Admin Notification Emails
+    sendWebsiteFormEmail({
+      type: 'contact',
+      applicantEmail: senderEmail,
+      applicantName: senderName,
+      data: {
+        phone: senderPhone,
+        subject: messageSubject,
+        message: messageContent
+      }
+    }).catch(err => console.warn('Email dispatch notice:', err));
+
     setIsSubmitting(false);
-
-    // 3. Direct Email Dispatch to support.lifevision@gmail.com (Non-blocking)
-    fetch('https://formsubmit.co/ajax/support.lifevision@gmail.com', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        _subject: `[Life Vision Society Website] New Inquiry from ${senderName}`,
-        _replyto: senderEmail,
-        _captcha: 'false',
-        _template: 'table',
-        _autoresponse: 'Thank you for contacting Life Vision Society. We have received your inquiry and our team will respond to you shortly.',
-        "Sender Name": senderName,
-        "Sender Email": senderEmail,
-        "Sender Phone": senderPhone,
-        "Subject": messageSubject,
-        "Message": messageContent
-      })
-    }).catch(err => console.warn('FormSubmit dispatch status:', err));
-
     setShowSuccessModal(true);
     setFormData({ name: '', phone: '', email: '', subject: '', message: '' });
   };

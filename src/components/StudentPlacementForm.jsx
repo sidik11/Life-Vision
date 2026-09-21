@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { GraduationCap, User, Phone, Mail, MapPin, CheckCircle2, Send, BookOpen, Award, Briefcase, Share2, Loader2, Upload, Plus, X, FileText } from 'lucide-react';
 import { saveToFirestore } from '../utils/firebaseSave';
+import { sendWebsiteFormEmail } from '../utils/emailHelper';
 
 export default function StudentPlacementForm() {
   const [submitted, setSubmitted] = useState(false);
@@ -129,15 +130,17 @@ export default function StudentPlacementForm() {
 
     const newPlacement = {
       id: `PLC-OD-${Math.floor(100 + Math.random() * 900)}`,
-      student: formData.fullName || 'Scholarship Applicant',
-      course: formData.higherCourse || 'Higher Education Scholarship',
-      trainingCompleted: 'Scholarship Requested',
+      student: formData.fullName,
+      course: formData.higherCourse,
+      mobile: formData.phone,
+      email: formData.email,
+      trainingCompleted: 'Requested Placement',
       placementStatus: 'Applied',
-      employer: formData.collegeName || 'Tuition Fee Sponsorship',
-      jobRole: formData.supportType || 'Higher Education Placement',
-      location: `${formData.district || 'Bhubaneswar'}, ${formData.state || 'Odisha'}`,
+      employer: formData.collegeName,
+      jobRole: formData.supportType,
+      location: formData.district ? `${formData.district}, ${formData.state}` : formData.state,
       joiningDate: new Date().toISOString().split('T')[0],
-      salary: 'Scholarship Requested',
+      salary: 'Pending Assessment',
       photoDoc: photoDoc || '',
       aadharDoc: aadharDoc || '',
       extraDocs: extraDocs || []
@@ -151,27 +154,13 @@ export default function StudentPlacementForm() {
     setIsSubmitting(false);
     setSubmitted(true);
 
-    // 3. Optional FormSubmit email notice to support.lifevision@gmail.com (Non-blocking)
-    fetch('https://formsubmit.co/ajax/support.lifevision@gmail.com', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        _subject: `[LVS Student Application] ${formData.fullName} - ${formData.higherCourse}`,
-        _replyto: formData.email,
-        _captcha: 'false',
-        _template: 'table',
-        "Student Name": formData.fullName,
-        "Phone": formData.phone,
-        "Email": formData.email,
-        "Course": formData.higherCourse,
-        "College": formData.collegeName,
-        "District": formData.district,
-        "Support Required": formData.supportType
-      })
-    }).catch(err => console.warn("Email alert status:", err));
+    // Dispatch Confirmation & Admin Notification Emails
+    sendWebsiteFormEmail({
+      type: 'placement',
+      applicantEmail: formData.email,
+      applicantName: formData.fullName,
+      data: newPlacement
+    }).catch(err => console.warn("Email alert notice:", err));
 
     setTimeout(() => {
       setSubmitted(false);

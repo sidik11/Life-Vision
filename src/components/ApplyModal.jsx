@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, Send, GraduationCap, User, Phone, Mail, BookOpen, MapPin, Calendar, Briefcase, Award, Share2, FileCheck, Upload, Loader2 } from 'lucide-react';
 import { saveToFirestore } from '../utils/firebaseSave';
+import { sendWebsiteFormEmail } from '../utils/emailHelper';
 
 export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
   const [submitted, setSubmitted] = useState(false);
@@ -109,33 +110,32 @@ export default function ApplyModal({ isOpen, onClose, selectedCourse }) {
       // 1. Build raw application object with clean fallbacks for all fields
       const rawApp = {
         id: `APP-LVS-2026-${Math.floor(100 + Math.random() * 900)}`,
-        name: formData.fullName || 'New Applicant',
-        fullName: formData.fullName || 'New Applicant',
+        name: formData.fullName,
+        fullName: formData.fullName,
         photo: safePhoto,
-        gender: formData.gender || 'Female',
-        age: 22,
-        dob: formData.dob || '2004-01-01',
-        mobile: formData.phone || '+91 98000 00000',
-        phone: formData.phone || '+91 98000 00000',
-        email: formData.email || 'applicant@gmail.com',
-        address: formData.fullAddress || formData.villageCity || 'Main Village Road',
-        district: formData.district || 'Bhubaneswar',
-        state: formData.state || 'Odisha',
-        pincode: formData.pincode || '751001',
-        qualification: formData.qualification || '12th Pass',
-        institution: formData.boardUniversity || 'Odisha Board',
-        passingYear: formData.passingYear || '2022',
-        course: formData.course || selectedCourse || 'Tailoring & Stitching Training',
-        preferredCenter: 'Bhubaneswar LVS Skill Center',
-        preferredBatch: 'BATCH-2026-T1 (Morning)',
+        gender: formData.gender,
+        dob: formData.dob,
+        mobile: formData.phone,
+        phone: formData.phone,
+        email: formData.email,
+        address: formData.fullAddress || formData.villageCity,
+        district: formData.district,
+        state: formData.state,
+        pincode: formData.pincode,
+        qualification: formData.qualification,
+        institution: formData.boardUniversity,
+        passingYear: formData.passingYear,
+        course: formData.course || selectedCourse,
+        preferredCenter: 'LVS Skill Training Center',
+        preferredBatch: 'Standard Batch',
         applicationDate: new Date().toISOString().split('T')[0],
         status: 'New',
-        location: `${formData.district || 'Bhubaneswar'}, ${formData.state || 'Odisha'}`,
+        location: formData.district ? `${formData.district}, ${formData.state}` : formData.state,
         timelineStep: 1,
         documents: {
-          photo: documents.photoName ? `Uploaded (${documents.photoName})` : 'Applicant Photo',
-          idProof: documents.aadhaarName ? `Uploaded (${documents.aadhaarName})` : 'Aadhaar Card (Optional)',
-          educationCertificate: documents.marksheetName ? `Uploaded (${documents.marksheetName})` : 'Marksheet (Optional)',
+          photo: documents.photoName ? `Uploaded (${documents.photoName})` : '',
+          idProof: documents.aadhaarName ? `Uploaded (${documents.aadhaarName})` : '',
+          educationCertificate: documents.marksheetName ? `Uploaded (${documents.marksheetName})` : '',
           other: 'Registration Form'
         },
         uploadedPhotoName: documents.photoName || '',
@@ -186,46 +186,20 @@ Life Vision Society
 Skill Development & Training Team`;
 
       if (recipientEmail) {
-        // Send direct clean confirmation email to student via FormSubmit
-        fetch(`https://formsubmit.co/ajax/${recipientEmail}`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            name: studentName,
-            email: recipientEmail,
-            _subject: `Training Registration Confirmation – Life Vision Society`,
-            _autorespond: emailBody,
-            _captcha: 'false',
-            message: emailBody
-          })
-        }).catch(err => console.warn("Student email dispatch notice:", err));
+        sendWebsiteFormEmail({
+          type: 'application',
+          applicantEmail: recipientEmail,
+          applicantName: studentName,
+          data: {
+            registrationId: regId,
+            id: regId,
+            program: courseName,
+            course: courseName,
+            phone: formData.phone,
+            date: regDate
+          }
+        }).catch(err => console.warn("Email alert notice:", err));
       }
-
-      // Send admin notification with ONLY the 6 specified fields
-      fetch('https://formsubmit.co/ajax/support.lifevision@gmail.com', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          name: studentName,
-          email: recipientEmail || 'support.lifevision@gmail.com',
-          _subject: `[New Training Application] ${studentName} (${regId})`,
-          _replyto: recipientEmail || 'support.lifevision@gmail.com',
-          _captcha: 'false',
-          _template: 'table',
-          "Student Name": studentName,
-          "Registration ID": regId,
-          "Course": courseName,
-          "Registration Date": regDate,
-          "Mobile": formData.phone || 'N/A',
-          "Email": recipientEmail || 'N/A'
-        })
-      }).catch(emailErr => console.warn("Admin notification email notice:", emailErr));
 
       const resetForm = () => {
         setSubmitted(false);

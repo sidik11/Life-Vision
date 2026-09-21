@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Heart, User, Mail, Phone, MapPin, CheckCircle2, Award, Sparkles, Briefcase, Loader2 } from 'lucide-react';
 import { saveToFirestore } from '../utils/firebaseSave';
+import { sendWebsiteFormEmail } from '../utils/emailHelper';
 
 export default function VolunteerModal({ isOpen, onClose }) {
   const [submitted, setSubmitted] = useState(false);
@@ -9,8 +10,9 @@ export default function VolunteerModal({ isOpen, onClose }) {
     fullName: '',
     email: '',
     mobile: '',
+    gender: 'Female',
+    state: 'Odisha',
     city: '',
-    state: '',
     roleInterest: 'Skill Trainer / Instructor',
     availability: 'Weekends Only',
     motivation: ''
@@ -22,12 +24,19 @@ export default function VolunteerModal({ isOpen, onClose }) {
     e.preventDefault();
     setIsSubmitting(true);
 
+    const locationStr = formData.city && formData.state 
+      ? `${formData.city}, ${formData.state}` 
+      : (formData.city || formData.state || '');
+
     const newVol = {
       id: `VOL-LVS-${Date.now().toString().slice(-4)}`,
       name: formData.fullName,
       email: formData.email,
       phone: formData.mobile,
-      location: formData.city,
+      gender: formData.gender,
+      state: formData.state,
+      city: formData.city,
+      location: locationStr,
       skills: formData.roleInterest,
       interest: formData.roleInterest,
       availability: formData.availability,
@@ -37,6 +46,14 @@ export default function VolunteerModal({ isOpen, onClose }) {
 
     await saveToFirestore('volunteers', newVol, 'lvs_new_volunteer');
 
+    // Dispatch Confirmation & Admin Notification Emails
+    sendWebsiteFormEmail({
+      type: 'volunteer',
+      applicantEmail: formData.email,
+      applicantName: formData.fullName,
+      data: newVol
+    }).catch(err => console.warn("Email alert notice:", err));
+
     setIsSubmitting(false);
     setSubmitted(true);
     setTimeout(() => {
@@ -45,8 +62,9 @@ export default function VolunteerModal({ isOpen, onClose }) {
         fullName: '',
         email: '',
         mobile: '',
+        gender: 'Female',
+        state: 'Odisha',
         city: '',
-        state: '',
         roleInterest: 'Skill Trainer / Instructor',
         availability: 'Weekends Only',
         motivation: ''
@@ -128,6 +146,61 @@ export default function VolunteerModal({ isOpen, onClose }) {
                     onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                     className="w-full px-3.5 py-2.5 text-xs border border-slate-200 bg-[#FFF7F6]/50 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-medium"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Gender *</label>
+                  <select
+                    value={formData.gender}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-xs border border-slate-200 bg-[#FFF7F6]/50 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-medium text-slate-700"
+                  >
+                    <option value="Female">Female</option>
+                    <option value="Male">Male</option>
+                    <option value="Other">Other</option>
+                    <option value="Prefer not to say">Prefer not to say</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">State *</label>
+                  <select
+                    required
+                    value={formData.state}
+                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-xs border border-slate-200 bg-[#FFF7F6]/50 rounded-xl focus:ring-2 focus:ring-[#C52B75]/30 focus:border-[#C52B75] outline-none font-medium text-slate-700"
+                  >
+                    <option value="Odisha">Odisha</option>
+                    <option value="Andhra Pradesh">Andhra Pradesh</option>
+                    <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                    <option value="Assam">Assam</option>
+                    <option value="Bihar">Bihar</option>
+                    <option value="Chhattisgarh">Chhattisgarh</option>
+                    <option value="Delhi / NCR">Delhi / NCR</option>
+                    <option value="Goa">Goa</option>
+                    <option value="Gujarat">Gujarat</option>
+                    <option value="Haryana">Haryana</option>
+                    <option value="Himachal Pradesh">Himachal Pradesh</option>
+                    <option value="Jharkhand">Jharkhand</option>
+                    <option value="Karnataka">Karnataka</option>
+                    <option value="Kerala">Kerala</option>
+                    <option value="Madhya Pradesh">Madhya Pradesh</option>
+                    <option value="Maharashtra">Maharashtra</option>
+                    <option value="Manipur">Manipur</option>
+                    <option value="Meghalaya">Meghalaya</option>
+                    <option value="Mizoram">Mizoram</option>
+                    <option value="Nagaland">Nagaland</option>
+                    <option value="Punjab">Punjab</option>
+                    <option value="Rajasthan">Rajasthan</option>
+                    <option value="Sikkim">Sikkim</option>
+                    <option value="Tamil Nadu">Tamil Nadu</option>
+                    <option value="Telangana">Telangana</option>
+                    <option value="Tripura">Tripura</option>
+                    <option value="Uttar Pradesh">Uttar Pradesh</option>
+                    <option value="Uttarakhand">Uttarakhand</option>
+                    <option value="West Bengal">West Bengal</option>
+                    <option value="Other State / UT">Other State / UT</option>
+                  </select>
                 </div>
 
                 <div>
