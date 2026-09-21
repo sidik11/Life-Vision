@@ -63,6 +63,16 @@ export default function CollaborateModal({ isOpen, onClose }) {
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
+      setFormData({
+        orgName: '',
+        contactPerson: '',
+        email: '',
+        phone: '',
+        orgType: 'Corporate (CSR)',
+        collabArea: 'Skill Training Support',
+        location: '',
+        message: ''
+      });
       onClose();
     }, 3500);
   };

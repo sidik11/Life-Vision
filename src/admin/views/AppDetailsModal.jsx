@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import StatusBadge from '../components/Common/StatusBadge';
 import { 
   X, User, Mail, Phone, MapPin, GraduationCap, Calendar, 
-  FileCheck, CheckCircle2, Award, Clock, ArrowRight, Check, Ban
+  FileCheck, CheckCircle2, Award, Clock, ArrowRight, Check, Ban, Printer, Building, FileText
 } from 'lucide-react';
 
 export default function AppDetailsModal({ application, onClose, onUpdateStatus, onAssignBatch }) {
@@ -23,6 +23,10 @@ export default function AppDetailsModal({ application, onClose, onUpdateStatus, 
     }
     return initial;
   });
+
+  const handlePrintApp = () => {
+    window.print();
+  };
 
   const isDocUploaded = (key, val) => {
     if (!val) return false;
@@ -59,22 +63,6 @@ export default function AppDetailsModal({ application, onClose, onUpdateStatus, 
     return true;
   };
 
-  const uploadedDocEntries = Object.entries(application.documents || {}).filter(([key, val]) => isDocUploaded(key, val));
-
-  const handleApproveDoc = (docKey) => {
-    setVerifiedDocs(prev => ({ ...prev, [docKey]: true }));
-    if (onUpdateStatus) {
-      onUpdateStatus(application.id, 'Under Review', Math.max(application.timelineStep || 1, 2));
-    }
-  };
-
-  const handleRejectDoc = (docKey) => {
-    setVerifiedDocs(prev => ({ ...prev, [docKey]: false }));
-    if (onUpdateStatus) {
-      onUpdateStatus(application.id, 'Rejected', 1);
-    }
-  };
-
   const handlePreviewDoc = (key, val) => {
     let fileUrl = null;
 
@@ -87,7 +75,7 @@ export default function AppDetailsModal({ application, onClose, onUpdateStatus, 
     }
 
     if (!fileUrl) {
-      fileUrl = application.photo || '/hero_training.png';
+      fileUrl = application.photo || '/image/logo.png';
     }
 
     setPreviewFile({
@@ -97,277 +85,330 @@ export default function AppDetailsModal({ application, onClose, onUpdateStatus, 
     });
   };
 
+  const candidateName = application.name || application.studentName || application.fullName || 'Student Applicant';
+  const guardianName = application.guardianName || application.fatherName || application.fatherGuardianName || application.parentName || 'N/A';
+  const phoneNum = application.mobile || application.phone || 'N/A';
+  const emailAddr = application.email || 'N/A';
+  const displayCenter = (application.preferredCenter && application.preferredCenter !== 'LVS Skill Training Center') ? application.preferredCenter : (application.center || 'N/A');
+  const displayBatch = (application.preferredBatch && application.preferredBatch !== 'Standard Batch') ? application.preferredBatch : (application.batch || 'N/A');
+
   const timelineSteps = [
-    { step: 1, label: 'Application Submitted', date: application.applicationDate, done: application.timelineStep >= 1 },
+    { step: 1, label: 'Application Submitted', date: application.applicationDate || 'Submitted', done: application.timelineStep >= 1 },
     { step: 2, label: 'Under Review', date: 'Document Verification', done: application.timelineStep >= 2 },
     { step: 3, label: 'Shortlisted', date: 'Interview Scheduled', done: application.timelineStep >= 3 },
     { step: 4, label: 'Selected', date: 'Enrolled in LVS', done: application.timelineStep >= 4 },
-    { step: 5, label: 'Batch Assigned', date: application.preferredBatch || 'Assigned', done: application.timelineStep >= 5 }
+    { step: 5, label: 'Batch Assigned', date: displayBatch, done: application.timelineStep >= 5 }
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#2C221E]/50 backdrop-blur-xs overflow-y-auto">
-      <div className="w-full max-w-4xl bg-[#FFFDF9] border border-[#E5DDD0] rounded-3xl shadow-2xl overflow-hidden my-auto space-y-0 text-[#2C221E]">
-        
-        {/* Header */}
-        <div className="p-6 bg-[#FAF6EE] border-b border-[#E5DDD0] flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <img 
-              src={application.photo} 
-              alt={application.name} 
-              className="w-14 h-14 rounded-2xl object-cover ring-2 ring-[#E5DDD0]" 
-            />
-            <div>
-              <div className="flex items-center space-x-3">
-                <h2 className="text-xl font-bold text-[#2C221E]">{application.name}</h2>
-                <StatusBadge status={application.status} />
-              </div>
-              <p className="text-xs text-[#8C756B] font-mono mt-0.5">
-                ID: {application.id} • Applied on {application.applicationDate}
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="p-2 text-[#8C756B] hover:text-[#2C221E] rounded-xl hover:bg-[#F5EFE6] transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Content Body */}
-        <div className="p-6 sm:p-8 space-y-8 max-h-[75vh] overflow-y-auto">
+    <>
+      {/* SCREEN VIEW MODAL */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/75 backdrop-blur-xs overflow-y-auto print:hidden font-sans">
+        <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-auto space-y-0 text-slate-900">
           
-          {/* Application Timeline Progress */}
-          <div className="p-5 rounded-2xl bg-[#FAF6EE] border border-[#E5DDD0] space-y-4">
-            <h3 className="text-xs font-bold text-[#8C756B] uppercase tracking-wider">Application Timeline Progress</h3>
+          {/* Header Bar */}
+          <div className="p-6 bg-gradient-to-r from-slate-900 via-[#123B5D] to-[#6B1D52] text-white flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <img 
+                src={application.photo || '/image/logo.png'} 
+                alt={candidateName} 
+                className="w-14 h-14 rounded-2xl object-cover ring-2 ring-white/30 bg-white p-0.5" 
+              />
+              <div>
+                <div className="flex items-center space-x-3">
+                  <h2 className="text-xl font-bold font-serif text-white">{candidateName}</h2>
+                  <StatusBadge status={application.status} />
+                </div>
+                <p className="text-xs text-pink-200 font-mono mt-0.5">
+                  Application ID: {application.id || 'APP-LVS-000'} • Applied on {application.applicationDate || 'N/A'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              {/* Print Button */}
+              <button
+                onClick={handlePrintApp}
+                className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-white/20"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Print</span>
+              </button>
+
+              {/* Close Button */}
+              <button
+                onClick={onClose}
+                className="p-2 text-white/80 hover:text-white rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Contact & Action Bar */}
+          <div className="p-4 bg-gradient-to-r from-pink-50/70 via-white to-pink-50/70 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center space-x-2">
+              {phoneNum !== 'N/A' && (
+                <a
+                  href={`tel:${phoneNum}`}
+                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors shadow-2xs"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  <span>Call ({phoneNum})</span>
+                </a>
+              )}
+              {emailAddr !== 'N/A' && (
+                <a
+                  href={`mailto:${emailAddr}`}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors shadow-2xs"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Email ({emailAddr})</span>
+                </a>
+              )}
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-bold text-slate-700">Course:</span>
+              <span className="px-3 py-1 bg-pink-100 text-[#6B1D52] font-black rounded-lg text-xs border border-pink-200">
+                {application.course || 'Training Course'}
+              </span>
+            </div>
+          </div>
+
+          {/* Content Body */}
+          <div className="p-6 sm:p-8 space-y-6 max-h-[72vh] overflow-y-auto text-left">
             
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 relative">
-              {timelineSteps.map((s) => (
-                <div key={s.step} className="flex sm:flex-col items-center sm:items-start space-x-3 sm:space-x-0 space-y-1">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                    s.done 
-                      ? 'bg-[#3D0A2E] text-white ring-4 ring-[#FAF0E6]' 
-                      : 'bg-[#EFE6D8] text-[#8C756B] border border-[#DCD0C0]'
-                  }`}>
-                    {s.done ? <Check className="w-4 h-4 text-[#F472B6]" /> : s.step}
+            {/* Application Timeline Progress */}
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+              <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider font-serif">Application Timeline Progress</h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 relative">
+                {timelineSteps.map((s) => (
+                  <div key={s.step} className="flex sm:flex-col items-center sm:items-start space-x-3 sm:space-x-0 space-y-1">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                      s.done 
+                        ? 'bg-[#6B1D52] text-white ring-4 ring-pink-100' 
+                        : 'bg-slate-200 text-slate-600 border border-slate-300'
+                    }`}>
+                      {s.done ? <Check className="w-4 h-4 text-pink-300" /> : s.step}
+                    </div>
+                    <div>
+                      <div className={`text-xs font-bold ${s.done ? 'text-slate-900' : 'text-slate-500'}`}>{s.label}</div>
+                      <div className="text-[10px] text-slate-500">{s.date}</div>
+                    </div>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Grid: Personal Info & Education */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* Personal Information */}
+              <div className="p-5 rounded-2xl bg-white border border-slate-200 space-y-3 shadow-2xs">
+                <h4 className="text-xs font-black text-[#6B1D52] uppercase tracking-wider font-serif flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <User className="w-4 h-4 text-[#C52B75]" /> Personal Information
+                </h4>
+
+                <div className="space-y-2 text-xs text-slate-700 font-medium">
+                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-500">Gender & Age:</span>
+                    <span className="font-bold text-slate-900">{application.gender || 'Female'}, {application.age || 22} Yrs</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-500">Father / Guardian:</span>
+                    <span className="font-bold text-slate-900">{guardianName}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-500">Mobile Number:</span>
+                    <span className="font-mono font-bold text-slate-900">{phoneNum}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-500">Email Address:</span>
+                    <span className="font-bold text-slate-900">{emailAddr}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">District & State:</span>
+                    <span className="font-bold text-slate-900">{application.district || 'Bhubaneswar'}, {application.state || 'Odisha'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Education & Preferences */}
+              <div className="p-5 rounded-2xl bg-white border border-slate-200 space-y-3 shadow-2xs">
+                <h4 className="text-xs font-black text-[#6B1D52] uppercase tracking-wider font-serif flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <GraduationCap className="w-4 h-4 text-[#C52B75]" /> Education & Preferences
+                </h4>
+
+                <div className="space-y-2 text-xs text-slate-700 font-medium">
+                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-500">Qualification:</span>
+                    <span className="font-bold text-slate-900">{application.qualification || 'Higher Secondary'}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-500">School / College:</span>
+                    <span className="font-bold text-slate-900">{application.institution || application.boardUniversity || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-500">Applied Course:</span>
+                    <span className="font-extrabold text-[#6B1D52]">{application.course || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-500">Preferred Center:</span>
+                    <span className="font-bold text-slate-900">{displayCenter}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Assigned Batch:</span>
+                    <span className="font-extrabold text-emerald-700">{displayBatch}</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Submitted Verification Documents */}
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+              <h4 className="text-xs font-black text-[#6B1D52] uppercase tracking-wider font-serif flex items-center gap-2">
+                <FileCheck className="w-4 h-4 text-[#C52B75]" /> Submitted Candidate Verification Documents
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* 1. Student Photo */}
+                <div className="p-3.5 bg-white border border-slate-200 rounded-2xl space-y-2 shadow-2xs flex flex-col justify-between">
                   <div>
-                    <div className={`text-xs font-bold ${s.done ? 'text-[#2C221E]' : 'text-[#8C756B]'}`}>{s.label}</div>
-                    <div className="text-[10px] text-[#8C756B]">{s.date}</div>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">1. Candidate Photo</span>
+                      <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        <span>Submitted</span>
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-slate-900 truncate mt-1">
+                      {application.uploadedPhotoName || 'Applicant Photo'}
+                    </p>
                   </div>
+                  <button 
+                    onClick={() => handlePreviewDoc('photo', application.uploadedPhotoName || 'Candidate Photo')}
+                    className="w-full text-xs text-[#C52B75] font-bold hover:bg-pink-50 py-1.5 px-3 rounded-xl border border-pink-200 transition-all cursor-pointer flex items-center justify-center space-x-1 mt-2"
+                  >
+                    <span>View Photo</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-[#C52B75]" />
+                  </button>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Grid: Personal Info & Education */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* Personal Information */}
-            <div className="p-5 rounded-2xl bg-[#FAF6EE] border border-[#E5DDD0] space-y-4">
-              <h4 className="text-xs font-bold text-[#C52B75] uppercase tracking-wider flex items-center gap-2">
-                <User className="w-4 h-4" /> Personal Information
-              </h4>
+                {/* 2. Aadhaar Card */}
+                <div className="p-3.5 bg-white border border-slate-200 rounded-2xl space-y-2 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">2. Aadhaar Card / ID</span>
+                      <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        <span>Verified</span>
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-slate-900 truncate mt-1">
+                      {application.uploadedAadhaarName || 'Aadhaar Card Copy'}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => handlePreviewDoc('idProof', application.uploadedAadhaarName || 'Aadhaar Card')}
+                    className="w-full text-xs text-[#C52B75] font-bold hover:bg-pink-50 py-1.5 px-3 rounded-xl border border-pink-200 transition-all cursor-pointer flex items-center justify-center space-x-1 mt-2"
+                  >
+                    <span>View Aadhaar</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-[#C52B75]" />
+                  </button>
+                </div>
 
-              <div className="space-y-2.5 text-xs text-[#5C4A42]">
-                <div className="flex justify-between border-b border-[#E5DDD0] pb-1.5">
-                  <span className="text-[#8C756B]">Gender & Age:</span>
-                  <span className="font-semibold text-[#2C221E]">{application.gender || 'Female'}, {application.age || 22} Yrs (DOB: {application.dob || 'N/A'})</span>
+                {/* 3. Qualification Marksheet */}
+                <div className="p-3.5 bg-white border border-slate-200 rounded-2xl space-y-2 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">3. Qualification Marksheet</span>
+                      <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        <span>Verified</span>
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-slate-900 truncate mt-1">
+                      {application.uploadedMarksheetName || '10th / 12th Marksheet'}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => handlePreviewDoc('educationCertificate', application.uploadedMarksheetName || 'Educational Certificate')}
+                    className="w-full text-xs text-[#C52B75] font-bold hover:bg-pink-50 py-1.5 px-3 rounded-xl border border-pink-200 transition-all cursor-pointer flex items-center justify-center space-x-1 mt-2"
+                  >
+                    <span>View Marksheet</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-[#C52B75]" />
+                  </button>
                 </div>
-                <div className="flex justify-between border-b border-[#E5DDD0] pb-1.5">
-                  <span className="text-[#8C756B]">Mobile Number:</span>
-                  <span className="font-semibold text-[#2C221E]">{application.mobile || application.phone || 'N/A'}</span>
-                </div>
-                <div className="flex justify-between border-b border-[#E5DDD0] pb-1.5">
-                  <span className="text-[#8C756B]">Email Address:</span>
-                  <span className="font-semibold text-[#2C221E]">{application.email || 'N/A'}</span>
-                </div>
-                <div className="flex justify-between border-b border-[#E5DDD0] pb-1.5">
-                  <span className="text-[#8C756B]">Full Address:</span>
-                  <span className="font-semibold text-[#2C221E] text-right">{application.address || application.fullAddress || application.villageCity || 'N/A'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#8C756B]">District & State:</span>
-                  <span className="font-semibold text-[#2C221E]">{application.district || 'Bhubaneswar'}, {application.state || 'Odisha'} - {application.pincode || 'N/A'}</span>
-                </div>
-              </div>
-            </div>
 
-            {/* Education & Preferences */}
-            <div className="p-5 rounded-2xl bg-[#FAF6EE] border border-[#E5DDD0] space-y-4">
-              <h4 className="text-xs font-bold text-[#C52B75] uppercase tracking-wider flex items-center gap-2">
-                <GraduationCap className="w-4 h-4" /> Education & Course Preferences
-              </h4>
-
-              <div className="space-y-2.5 text-xs text-[#5C4A42]">
-                <div className="flex justify-between border-b border-[#E5DDD0] pb-1.5">
-                  <span className="text-[#8C756B]">Qualification:</span>
-                  <span className="font-semibold text-[#2C221E]">{application.qualification || 'N/A'}</span>
-                </div>
-                <div className="flex justify-between border-b border-[#E5DDD0] pb-1.5">
-                  <span className="text-[#8C756B]">School / College:</span>
-                  <span className="font-semibold text-[#2C221E]">{application.institution || application.boardUniversity || 'N/A'} ({application.passingYear || 'N/A'})</span>
-                </div>
-                <div className="flex justify-between border-b border-[#E5DDD0] pb-1.5">
-                  <span className="text-[#8C756B]">Applied Course:</span>
-                  <span className="font-bold text-[#2C221E]">{application.course || 'N/A'}</span>
-                </div>
-                <div className="flex justify-between border-b border-[#E5DDD0] pb-1.5">
-                  <span className="text-[#8C756B]">Preferred Center:</span>
-                  <span className="font-semibold text-[#2C221E]">{application.preferredCenter || 'Bhubaneswar LVS Skill Center'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#8C756B]">Preferred Batch:</span>
-                  <span className="font-semibold text-[#047857]">{application.preferredBatch || 'BATCH-2026-T1 (Morning)'}</span>
-                </div>
               </div>
             </div>
 
           </div>
 
-          {/* Uploaded Documents */}
-          <div className="p-5 rounded-2xl bg-[#FAF6EE] border border-[#E5DDD0] space-y-3">
-            <h4 className="text-xs font-bold text-[#C52B75] uppercase tracking-wider flex items-center gap-2">
-              <FileCheck className="w-4 h-4" /> Submitted Candidate Verification Documents
-            </h4>
+          {/* Action Footer Buttons */}
+          <div className="p-6 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => {
+                  if (onUpdateStatus) onUpdateStatus(application.id, 'Shortlisted', 3);
+                }}
+                className="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Shortlist Candidate
+              </button>
+              <button
+                onClick={() => {
+                  if (onUpdateStatus) onUpdateStatus(application.id, 'Selected', 4);
+                }}
+                className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Select Candidate
+              </button>
+              <button
+                onClick={() => {
+                  if (onUpdateStatus) onUpdateStatus(application.id, 'Rejected', 1);
+                }}
+                className="px-4 py-2 bg-rose-100 hover:bg-rose-200 text-rose-900 border border-rose-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Reject Candidate
+              </button>
+            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* 1. Student Photo */}
-              <div className="p-3.5 bg-[#FFFDF9] border border-[#E5DDD0] rounded-2xl space-y-2 shadow-xs flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[11px] font-extrabold text-[#8C756B] uppercase tracking-wider">1. Candidate Photo</span>
-                    <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      <span>Submitted</span>
-                    </span>
-                  </div>
-                  <p className="text-xs font-bold text-[#2C221E] truncate mt-1">
-                    {application.uploadedPhotoName || 'Applicant Photo (Passport Size)'}
-                  </p>
-                </div>
-                <button 
-                  onClick={() => handlePreviewDoc('photo', application.uploadedPhotoName || 'Candidate Photo')}
-                  className="w-full text-xs text-[#C52B75] font-bold hover:bg-pink-50 py-1.5 px-3 rounded-xl border border-pink-200 transition-all cursor-pointer flex items-center justify-center space-x-1 mt-2"
-                >
-                  <span>View Student Photo</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-[#C52B75]" />
-                </button>
-              </div>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handlePrintApp}
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold text-xs rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer"
+              >
+                <Printer className="w-4 h-4 text-slate-700" />
+                <span>Print Application</span>
+              </button>
 
-              {/* 2. Aadhaar Card */}
-              <div className="p-3.5 bg-[#FFFDF9] border border-[#E5DDD0] rounded-2xl space-y-2 shadow-xs flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[11px] font-extrabold text-[#8C756B] uppercase tracking-wider">2. Aadhaar Card / ID</span>
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
-                      application.uploadedAadhaarName || application.uploadedAadhaar ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
-                    }`}>
-                      <CheckCircle2 className="w-3 h-3" />
-                      <span>{application.uploadedAadhaarName || application.uploadedAadhaar ? 'Uploaded' : 'Optional / Self-Attested'}</span>
-                    </span>
-                  </div>
-                  <p className="text-xs font-bold text-[#2C221E] truncate mt-1">
-                    {application.uploadedAadhaarName || (application.documents?.idProof ? String(application.documents.idProof) : 'Aadhaar Card Copy')}
-                  </p>
-                </div>
-                <button 
-                  onClick={() => handlePreviewDoc('idProof', application.uploadedAadhaarName || 'Aadhaar Card')}
-                  className="w-full text-xs text-[#C52B75] font-bold hover:bg-pink-50 py-1.5 px-3 rounded-xl border border-pink-200 transition-all cursor-pointer flex items-center justify-center space-x-1 mt-2"
-                >
-                  <span>View Aadhaar Card</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-[#C52B75]" />
-                </button>
-              </div>
-
-              {/* 3. Marksheet / Education Certificate */}
-              <div className="p-3.5 bg-[#FFFDF9] border border-[#E5DDD0] rounded-2xl space-y-2 shadow-xs flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[11px] font-extrabold text-[#8C756B] uppercase tracking-wider">3. Qualification Marksheet</span>
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
-                      application.uploadedMarksheetName || application.uploadedMarksheet ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
-                    }`}>
-                      <CheckCircle2 className="w-3 h-3" />
-                      <span>{application.uploadedMarksheetName || application.uploadedMarksheet ? 'Uploaded' : 'Optional / Self-Attested'}</span>
-                    </span>
-                  </div>
-                  <p className="text-xs font-bold text-[#2C221E] truncate mt-1">
-                    {application.uploadedMarksheetName || (application.documents?.educationCertificate ? String(application.documents.educationCertificate) : '10th / 12th Marksheet')}
-                  </p>
-                </div>
-                <button 
-                  onClick={() => handlePreviewDoc('educationCertificate', application.uploadedMarksheetName || 'Educational Certificate')}
-                  className="w-full text-xs text-[#C52B75] font-bold hover:bg-pink-50 py-1.5 px-3 rounded-xl border border-pink-200 transition-all cursor-pointer flex items-center justify-center space-x-1 mt-2"
-                >
-                  <span>View Marksheet</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-[#C52B75]" />
-                </button>
-              </div>
-
+              <button
+                onClick={() => setShowBatchAssignModal(true)}
+                className="px-4 py-2 bg-[#6B1D52] hover:bg-[#8C246B] text-white font-bold text-xs rounded-xl shadow-md flex items-center space-x-2 transition-all cursor-pointer"
+              >
+                <Award className="w-4 h-4 text-pink-300" />
+                <span>Assign Batch</span>
+              </button>
             </div>
           </div>
 
         </div>
-
-        {/* Action Footer Buttons */}
-        <div className="p-6 bg-[#FAF6EE] border-t border-[#E5DDD0] flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => {
-                if (application.status === 'Shortlisted') {
-                  alert("⚠️ Student already exists / Candidate is already shortlisted!");
-                  return;
-                }
-                onUpdateStatus(application.id, 'Shortlisted', 3);
-              }}
-              className="px-4 py-2.5 bg-[#F3E8FF] hover:bg-[#E9D5FF] text-[#6B21A8] border border-[#DDD6FE] rounded-xl text-xs font-bold transition-all cursor-pointer"
-            >
-              [ Shortlist Candidate ]
-            </button>
-            <button
-              onClick={() => {
-                if (application.status === 'Selected') {
-                  alert("⚠️ Student already exists / Candidate is already selected!");
-                  return;
-                }
-                onUpdateStatus(application.id, 'Selected', 4);
-              }}
-              className="px-4 py-2.5 bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#047857] border border-[#A7F3D0] rounded-xl text-xs font-bold transition-all cursor-pointer"
-            >
-              [ Select Candidate ]
-            </button>
-            <button
-              onClick={() => onUpdateStatus(application.id, 'Rejected', 1)}
-              className="px-4 py-2.5 bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
-            >
-              [ Reject ]
-            </button>
-          </div>
-
-          <button
-            onClick={() => setShowBatchAssignModal(true)}
-            className="px-5 py-2.5 bg-[#3D0A2E] hover:bg-[#5A1644] text-white font-bold text-xs rounded-xl shadow-md flex items-center space-x-2 transition-all cursor-pointer"
-          >
-            <Award className="w-4 h-4 text-[#F472B6]" />
-            <span>[ Assign Batch ]</span>
-          </button>
-        </div>
-
       </div>
 
       {/* DOCUMENT PREVIEW SUB-MODAL */}
       {previewFile && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fade-in font-sans">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fade-in font-sans print:hidden">
           <div className="bg-white rounded-3xl max-w-3xl w-full p-6 space-y-4 shadow-2xl relative border border-pink-100 max-h-[90vh] overflow-y-auto text-left">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <span className="text-[10px] font-black text-[#C52B75] uppercase tracking-wider bg-pink-50 px-2.5 py-0.5 rounded-full border border-pink-100 font-serif">
                   Document Preview & Verification
                 </span>
-                <h3 className="text-base font-bold text-slate-900 font-serif mt-1">{application.name} • {previewFile.key}</h3>
+                <h3 className="text-base font-bold text-slate-900 font-serif mt-1">{candidateName} • {previewFile.key}</h3>
                 <p className="text-xs text-slate-500 font-medium">{previewFile.val}</p>
               </div>
               <button
@@ -378,148 +419,64 @@ export default function AppDetailsModal({ application, onClose, onUpdateStatus, 
               </button>
             </div>
 
-            {/* Interactive Document Verification Controls */}
-            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center space-x-2">
-                <FileCheck className="w-5 h-5 text-[#C52B75]" />
-                <div>
-                  <span className="text-xs font-bold text-slate-800">Verification Status: </span>
-                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold inline-flex items-center gap-1 ${
-                    verifiedDocs[previewFile.key] 
-                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
-                      : 'bg-amber-100 text-amber-800 border border-amber-300'
-                  }`}>
-                    {verifiedDocs[previewFile.key] ? (
-                      <>
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Approved & Verified</span>
-                      </>
-                    ) : (
-                      <>
-                        <Clock className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Under Review</span>
-                      </>
-                    )}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handleApproveDoc(previewFile.key)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shadow-xs ${
-                    verifiedDocs[previewFile.key]
-                      ? 'bg-emerald-700 text-white shadow-inner'
-                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                  }`}
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>✓ Approve & Verify Document</span>
-                </button>
-                <button
-                  onClick={() => handleRejectDoc(previewFile.key)}
-                  className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shadow-xs"
-                >
-                  <Ban className="w-4 h-4" />
-                  <span>✕ Reject Document</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-center p-4 bg-slate-50 rounded-2xl min-h-[260px] border border-slate-200">
-              {previewFile.url && (previewFile.url.startsWith('data:image') || previewFile.url.endsWith('.png') || previewFile.url.endsWith('.jpg') || previewFile.url.endsWith('.jpeg')) ? (
-                <img
-                  src={previewFile.url}
-                  alt={previewFile.key}
-                  className="max-h-[55vh] max-w-full object-contain rounded-xl shadow-md border border-slate-200"
-                />
-              ) : previewFile.url && previewFile.url.startsWith('data:application/pdf') ? (
-                <iframe
-                  src={previewFile.url}
-                  title={previewFile.key}
-                  className="w-full h-[55vh] rounded-xl border border-slate-200"
-                />
-              ) : (
-                <div className="text-center space-y-3 py-6">
-                  <FileCheck className="w-12 h-12 text-[#C52B75] mx-auto opacity-75" />
-                  <p className="text-xs text-slate-700 font-bold">Document Available for Viewing</p>
-                  <p className="text-xs text-slate-500 font-medium">{previewFile.val}</p>
-                  {previewFile.url && (
-                    <a
-                      href={previewFile.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      download={`${application.name}_${previewFile.key}`}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#C52B75] to-[#A82260] text-white rounded-xl text-xs font-bold shadow-md hover:opacity-95 transition-all"
-                    >
-                      <span>Open / Download File</span>
-                    </a>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-              {previewFile.url ? (
-                <a
-                  href={previewFile.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  download={`${application.name}_${previewFile.key}`}
-                  className="text-xs font-bold text-[#2563EB] hover:underline"
-                >
-                  Download File
-                </a>
-              ) : <div />}
-              <button
-                onClick={() => setPreviewFile(null)}
-                className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl cursor-pointer"
-              >
-                Close Preview
-              </button>
+            <div className="p-4 bg-slate-100 rounded-2xl flex items-center justify-center min-h-[300px]">
+              <img src={previewFile.url} alt="Document" className="max-h-[60vh] object-contain rounded-xl shadow-md" />
             </div>
           </div>
         </div>
       )}
 
-      {/* Assign Batch Sub-modal */}
-      {showBatchAssignModal && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-[#2C221E]/60 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-[#FFFDF9] border border-[#E5DDD0] rounded-2xl p-6 space-y-5 text-[#2C221E]">
-            <h3 className="text-lg font-bold text-[#2C221E]">Assign Training Batch</h3>
-            <p className="text-xs text-[#8C756B]">Select an active or upcoming batch for {application.name}.</p>
-            
-            <select
-              value={selectedBatch}
-              onChange={(e) => setSelectedBatch(e.target.value)}
-              className="w-full p-3 bg-[#FAF6EE] border border-[#E5DDD0] rounded-xl text-xs font-semibold text-[#2C221E] focus:outline-none"
-            >
-              <option value="BATCH-2026-T1 (Morning)">BATCH-2026-T1 (Morning) - Bhubaneswar Hub</option>
-              <option value="BATCH-2026-B1 (Afternoon)">BATCH-2026-B1 (Afternoon) - Cuttack Hub</option>
-              <option value="BATCH-2026-A1 (Full Day)">BATCH-2026-A1 (Full Day) - Puri Hub</option>
-              <option value="BATCH-2026-H1 (Morning)">BATCH-2026-H1 (Morning) - Ganjam Hub</option>
-            </select>
-
-            <div className="flex items-center justify-end space-x-3 pt-2">
-              <button
-                onClick={() => setShowBatchAssignModal(false)}
-                className="px-4 py-2 bg-[#F5EFE6] hover:bg-[#EFE6D8] text-[#5C4A42] rounded-xl text-xs font-semibold"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  onAssignBatch(application.id, selectedBatch);
-                  setShowBatchAssignModal(false);
-                }}
-                className="px-4 py-2 bg-[#3D0A2E] hover:bg-[#5A1644] text-white rounded-xl text-xs font-bold shadow-md"
-              >
-                Confirm Batch Assignment
-              </button>
+      {/* PRINT-ONLY APPLICATION SUMMARY FORM */}
+      <div className="hidden print:block fixed inset-0 bg-white p-8 text-black font-sans z-[99999]">
+        <div className="max-w-3xl mx-auto border-2 border-black p-8 rounded-none space-y-6 bg-white text-black">
+          
+          <div className="flex items-center justify-between border-b-2 border-black pb-4">
+            <div className="flex items-center space-x-3">
+              <img src="/image/logo.png" alt="Life Vision Society Logo" className="h-16 w-auto" />
+              <div>
+                <h1 className="text-xl font-black font-serif uppercase">LIFE VISION SOCIETY</h1>
+                <p className="text-xs font-bold">Government Recognized NGO | Training & Skill Development</p>
+                <p className="text-[10px] text-slate-600 font-mono">Official Training Candidate Application Record</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-xs font-mono font-bold border border-black px-2 py-1">
+                ID: {application.id || 'APP-LVS-000'}
+              </span>
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4 text-xs font-medium border-b border-slate-300 pb-4">
+            <div><strong>Candidate Name:</strong> {candidateName}</div>
+            <div><strong>Father / Guardian:</strong> {guardianName}</div>
+            <div><strong>Applied Course:</strong> {application.course || 'N/A'}</div>
+            <div><strong>Mobile Number:</strong> {phoneNum}</div>
+            <div><strong>Email Address:</strong> {emailAddr}</div>
+            <div><strong>Gender & Age:</strong> {application.gender || 'Female'}, {application.age || 22} Yrs</div>
+            <div><strong>Application Date:</strong> {application.applicationDate || 'N/A'}</div>
+            <div><strong>State:</strong> {application.state || 'Odisha'}</div>
+            <div><strong>District:</strong> {application.district || 'Bhubaneswar'}</div>
+          </div>
+
+          <div className="space-y-2 text-xs">
+            <h3 className="font-bold uppercase tracking-wider text-black border-b border-black pb-1">Academic & Center Details</h3>
+            <p><strong>Highest Qualification:</strong> {application.qualification || 'Higher Secondary'}</p>
+            <p><strong>College / Board:</strong> {application.institution || application.boardUniversity || 'N/A'}</p>
+            <p><strong>Preferred Center:</strong> {displayCenter}</p>
+            <p><strong>Assigned Batch:</strong> {displayBatch}</p>
+          </div>
+
+          <div className="pt-8 grid grid-cols-2 text-center text-xs font-bold border-t-2 border-black">
+            <div>
+              <p className="border-t border-black w-40 mx-auto pt-1">Student Signature</p>
+            </div>
+            <div>
+              <p className="border-t border-black w-40 mx-auto pt-1">NGO Verifier Stamp</p>
+            </div>
+          </div>
+
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }

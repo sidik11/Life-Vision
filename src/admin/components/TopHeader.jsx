@@ -19,10 +19,12 @@ export default function TopHeader({
   contacts = [],
   partners = [],
   programs = [],
-  centers = []
+  centers = [],
+  onViewApp
 }) {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifFilter, setNotifFilter] = useState('all'); // 'all' | 'unread'
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -170,21 +172,22 @@ export default function TopHeader({
 
   const breadcrumbs = breadcrumbMap[activeTab] || ['Dashboard', 'Overview'];
 
-  // Build Real Notifications from all 5 application sections
+  // Build Real Notifications with guaranteed unique IDs across all 5 sections
   const realNotifications = [
-    ...applications.map(item => ({
-      id: `train-${item.id || item.firestoreId}`,
+    ...applications.map((item, idx) => ({
+      id: `train-${item.id || item.firestoreId || idx}`,
       type: 'training',
       badgeLabel: 'Training App',
       icon: GraduationCap,
       color: 'bg-emerald-100 text-emerald-700',
       title: item.studentName || item.fullName || item.name || 'New Training Student',
-      desc: `Applied for ${item.courseName || item.program || item.trade || 'Training Program'} (${item.district || item.state || 'Odisha'})`,
-      time: item.appliedDate || item.appliedAt || item.createdAt || 'Recent',
-      tab: 'app-training'
+      desc: `Applied for ${item.course || item.courseName || item.program || 'Training Program'} (${item.district || item.state || 'Odisha'})`,
+      time: item.applicationDate || item.appliedDate || item.createdAt || 'Recent',
+      tab: 'app-training',
+      rawItem: item
     })),
-    ...placements.map(item => ({
-      id: `place-${item.id || item.firestoreId}`,
+    ...placements.map((item, idx) => ({
+      id: `place-${item.id || item.firestoreId || idx}`,
       type: 'placement',
       badgeLabel: 'Placement Support',
       icon: Briefcase,
@@ -192,10 +195,11 @@ export default function TopHeader({
       title: item.studentName || item.student || item.fullName || item.name || 'New Placement Applicant',
       desc: `${item.supportType || item.preferredJobRole || 'Tuition Fee Sponsorship & Placement'} • ${item.district || item.state || 'Odisha'}`,
       time: item.appliedDate || item.applicationDate || item.appliedAt || 'Recent',
-      tab: 'placement-applications'
+      tab: 'placement-applications',
+      rawItem: item
     })),
-    ...volunteers.map(item => ({
-      id: `vol-${item.id || item.firestoreId}`,
+    ...volunteers.map((item, idx) => ({
+      id: `vol-${item.id || item.firestoreId || idx}`,
       type: 'volunteer',
       badgeLabel: 'Volunteer App',
       icon: Heart,
@@ -203,10 +207,11 @@ export default function TopHeader({
       title: item.fullName || item.name || 'New Volunteer Applicant',
       desc: `Volunteer for ${item.role || item.area || 'Social Support Work'} (${item.city || item.state || 'Location'})`,
       time: item.appliedDate || item.appliedAt || item.date || 'Recent',
-      tab: 'volunteer-applications'
+      tab: 'volunteer-applications',
+      rawItem: item
     })),
-    ...contacts.map(item => ({
-      id: `contact-${item.id || item.firestoreId}`,
+    ...contacts.map((item, idx) => ({
+      id: `contact-${item.id || item.firestoreId || idx}`,
       type: 'contact',
       badgeLabel: 'Contact Enquiry',
       icon: MessageSquare,
@@ -214,10 +219,11 @@ export default function TopHeader({
       title: item.name || item.fullName || 'New Contact Inquiry',
       desc: `${item.subject || item.message || 'General Website Contact Inquiry'}`,
       time: item.date || item.appliedAt || item.createdAt || 'Recent',
-      tab: 'contact-details'
+      tab: 'contact-details',
+      rawItem: item
     })),
-    ...partners.map(item => ({
-      id: `part-${item.id || item.firestoreId}`,
+    ...partners.map((item, idx) => ({
+      id: `part-${item.id || item.firestoreId || idx}`,
       type: 'partner',
       badgeLabel: 'Partner App',
       icon: Handshake,
@@ -225,19 +231,32 @@ export default function TopHeader({
       title: item.orgName || item.organizationName || item.name || 'New Partner Applicant',
       desc: `${item.partnerType || item.type || 'CSR / Corporate Partnership Collaboration'}`,
       time: item.date || item.appliedAt || item.createdAt || 'Recent',
-      tab: 'partner-applications'
+      tab: 'partner-applications',
+      rawItem: item
     }))
   ];
 
   // Calculate Unread Count
   const unreadCount = realNotifications.filter(n => !readIds.includes(n.id)).length;
 
-  const handleMarkAllRead = () => {
+  const handleMarkAllRead = (e) => {
+    if (e) e.stopPropagation();
     const allIds = realNotifications.map(n => n.id);
     setReadIds(allIds);
     try {
       localStorage.setItem('lvs_read_notification_ids', JSON.stringify(allIds));
-    } catch (e) {}
+    } catch (err) {}
+  };
+
+  const handleMarkSingleRead = (e, notifId) => {
+    if (e) e.stopPropagation();
+    if (!readIds.includes(notifId)) {
+      const nextRead = [...readIds, notifId];
+      setReadIds(nextRead);
+      try {
+        localStorage.setItem('lvs_read_notification_ids', JSON.stringify(nextRead));
+      } catch (err) {}
+    }
   };
 
   const handleNotificationClick = (item) => {
@@ -246,9 +265,12 @@ export default function TopHeader({
       setReadIds(nextRead);
       try {
         localStorage.setItem('lvs_read_notification_ids', JSON.stringify(nextRead));
-      } catch (e) {}
+      } catch (err) {}
     }
     setActiveTab(item.tab);
+    if (item.type === 'training' && onViewApp && item.rawItem) {
+      onViewApp(item.rawItem);
+    }
     setShowNotifications(false);
   };
 
@@ -337,44 +359,66 @@ export default function TopHeader({
             <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white border border-[#E2E8F0] rounded-2xl shadow-2xl z-50 overflow-hidden">
               
               {/* Header */}
-              <div className="p-4 bg-[#123B5D] text-white flex items-center justify-between border-b border-[#123B5D]">
-                <div className="flex items-center space-x-2">
-                  <Bell className="w-4 h-4 text-pink-300" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider">Live System Notifications</h3>
+              <div className="p-4 bg-[#123B5D] text-white space-y-2 border-b border-[#123B5D]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Bell className="w-4 h-4 text-pink-300" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider">Live System Notifications</h3>
+                  </div>
+                  
+                  {unreadCount > 0 ? (
+                    <button
+                      onClick={handleMarkAllRead}
+                      className="px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                      title="Mark all notifications as read"
+                    >
+                      <CheckCheck className="w-3.5 h-3.5 text-pink-300" />
+                      <span>Mark All Read</span>
+                    </button>
+                  ) : (
+                    <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                      All Read
+                    </span>
+                  )}
                 </div>
-                
-                {unreadCount > 0 ? (
+
+                {/* Filter Tabs */}
+                <div className="flex items-center space-x-2 pt-1">
                   <button
-                    onClick={handleMarkAllRead}
-                    className="px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                    title="Mark all notifications as read"
+                    onClick={(e) => { e.stopPropagation(); setNotifFilter('all'); }}
+                    className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                      notifFilter === 'all' ? 'bg-white text-[#123B5D]' : 'bg-white/10 text-white/80 hover:bg-white/20'
+                    }`}
                   >
-                    <CheckCheck className="w-3.5 h-3.5" />
-                    <span>Mark All Read</span>
+                    All ({realNotifications.length})
                   </button>
-                ) : (
-                  <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                    All Read
-                  </span>
-                )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setNotifFilter('unread'); }}
+                    className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                      notifFilter === 'unread' ? 'bg-white text-[#123B5D]' : 'bg-white/10 text-white/80 hover:bg-white/20'
+                    }`}
+                  >
+                    Unread ({unreadCount})
+                  </button>
+                </div>
               </div>
 
               {/* Notification List */}
               <div className="max-h-80 overflow-y-auto divide-y divide-[#E2E8F0]">
-                {realNotifications.length === 0 ? (
+                {((notifFilter === 'unread' ? realNotifications.filter(n => !readIds.includes(n.id)) : realNotifications)).length === 0 ? (
                   <div className="p-6 text-center text-xs text-slate-500 space-y-1">
-                    <p className="font-bold">No Applications Yet</p>
+                    <p className="font-bold">{notifFilter === 'unread' ? 'No Unread Notifications' : 'No Applications Yet'}</p>
                     <p className="text-[11px]">When users apply on the main website, notifications will appear here.</p>
                   </div>
                 ) : (
-                  realNotifications.map((n) => {
+                  (notifFilter === 'unread' ? realNotifications.filter(n => !readIds.includes(n.id)) : realNotifications).map((n) => {
                     const IconComp = n.icon;
                     const isUnread = !readIds.includes(n.id);
                     return (
                       <div 
                         key={n.id} 
                         onClick={() => handleNotificationClick(n)}
-                        className={`p-3.5 hover:bg-[#F8FAFC] transition-colors cursor-pointer flex items-start space-x-3 ${
+                        className={`p-3.5 hover:bg-[#F8FAFC] transition-colors cursor-pointer flex items-start space-x-3 group relative ${
                           isUnread ? 'bg-blue-50/70 font-semibold' : 'opacity-85'
                         }`}
                       >
@@ -391,9 +435,20 @@ export default function TopHeader({
                           <h4 className="text-xs font-bold text-[#1E293B] truncate mt-1">{n.title}</h4>
                           <p className="text-[11px] text-[#64748B] mt-0.5 line-clamp-2 leading-relaxed">{n.desc}</p>
                         </div>
-                        {isUnread && (
-                          <span className="w-2 h-2 bg-blue-600 rounded-full shrink-0 mt-2" title="Unread" />
-                        )}
+                        <div className="flex items-center space-x-1 shrink-0 mt-1">
+                          {isUnread && (
+                            <button
+                              onClick={(e) => handleMarkSingleRead(e, n.id)}
+                              className="p-1 rounded-md text-blue-600 hover:bg-blue-100 transition-colors"
+                              title="Mark as read"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          {isUnread && (
+                            <span className="w-2 h-2 bg-blue-600 rounded-full shrink-0" title="Unread" />
+                          )}
+                        </div>
                       </div>
                     );
                   })
@@ -411,7 +466,7 @@ export default function TopHeader({
                 </button>
                 
                 <span className="text-[10px] font-medium text-slate-400">
-                  {realNotifications.length} Total Applications
+                  {realNotifications.length} Total Notifications
                 </span>
               </div>
 

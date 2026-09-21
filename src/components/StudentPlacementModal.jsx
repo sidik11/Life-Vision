@@ -197,6 +197,30 @@ export default function StudentPlacementModal({ isOpen, onClose }) {
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
+      setFormData({
+        supportType: 'NGO Tuition Fee Sponsorship + Job Placement Support',
+        fullName: '',
+        dob: '',
+        gender: 'Female',
+        guardianName: '',
+        phone: '',
+        email: '',
+        state: 'Odisha',
+        district: '',
+        block: '',
+        villageCity: '',
+        pincode: '',
+        fullAddress: '',
+        higherCourse: 'B.Tech / B.E. Engineering',
+        collegeName: '',
+        passingYear: '',
+        boardUniversity: '',
+        employmentStatus: 'Student',
+        hearAboutUs: 'Website',
+      });
+      setPhotoDoc(null);
+      setAadharDoc(null);
+      setExtraDocs([]);
       onClose();
     }, 3500);
   };

@@ -924,10 +924,12 @@ export default function AdminApp({ user: authUser, onLogout }) {
       case 'volunteer-reports':
         return <VolunteersView volunteers={volunteers} setVolunteers={setVolunteers} showToast={showToast} activeSubTab={activeTab} />;
 
-      // 📞 CONTACT DETAILS
+      // 📞 CONTACT DETAILS & NOTIFICATIONS
       case 'contact-details':
       case 'app-contact':
       case 'contact-inquiries':
+      case 'admin-notifications':
+      case 'notifications':
         return <NotificationsView contacts={contacts} setContacts={setContacts} showToast={showToast} activeSubTab="contacts" />;
 
       // 📰 CONTENT
@@ -1022,6 +1024,7 @@ export default function AdminApp({ user: authUser, onLogout }) {
           partners={partners}
           programs={programs}
           centers={centers}
+          onViewApp={(app) => setSelectedApp(app)}
         />
 
         {/* View Dynamic Body */}
