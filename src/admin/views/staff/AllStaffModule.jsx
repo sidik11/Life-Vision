@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import ActionPopover from '../../components/Common/ActionPopover';
 import StaffProfileModal from './StaffProfileModal';
+import { db, doc, updateDoc } from '../../../firebase';
 
 export default function AllStaffModule({ 
   staffList = [], 
@@ -50,6 +51,36 @@ export default function AllStaffModule({
     'Trainee',
     ...staffList.map(s => s.employmentType).filter(Boolean)
   ]));
+
+  // Approve Staff Member Handler
+  const handleApproveStaff = async (staffMember) => {
+    const updatedStaff = {
+      ...staffMember,
+      status: 'Active',
+      approvalStatus: 'Approved',
+      cardStatus: 'Generated',
+      approvedDate: new Date().toISOString()
+    };
+
+    if (setStaffList) {
+      setStaffList(prev => prev.map(s => (s.id === updatedStaff.id || (s.firestoreId && s.firestoreId === updatedStaff.firestoreId)) ? updatedStaff : s));
+    }
+
+    if (staffMember.firestoreId) {
+      try {
+        await updateDoc(doc(db, "staff", staffMember.firestoreId), {
+          status: 'Active',
+          approvalStatus: 'Approved',
+          cardStatus: 'Generated',
+          approvedDate: new Date().toISOString()
+        });
+      } catch (err) {
+        console.warn("Firestore update staff approval notice:", err);
+      }
+    }
+
+    if (showToast) showToast(`✓ Staff member "${staffMember.name}" approved! Now visible in Staff Attendance.`, 'success');
+  };
 
   // Delete Staff Member
   const handleDeleteStaff = (staffMember) => {
@@ -97,30 +128,44 @@ export default function AllStaffModule({
   const totalPages = Math.ceil(filteredStaff.length / itemsPerPage) || 1;
   const paginatedStaff = filteredStaff.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const getActionItems = (s) => [
-    {
+  const getActionItems = (s) => {
+    const isPending = s.status === 'Pending Approval' || s.approvalStatus === 'Pending' || s.cardStatus === 'Pending Approval';
+    const items = [];
+
+    if (isPending) {
+      items.push({
+        label: '✓ Approve Staff Member',
+        icon: CheckCircle2,
+        onClick: () => handleApproveStaff(s)
+      });
+      items.push({ divider: true });
+    }
+
+    items.push({
       label: 'View Profile',
       icon: Eye,
       onClick: () => onViewProfile ? onViewProfile(s) : setViewingProfileStaff(s)
-    },
-    {
+    });
+    items.push({
       label: 'Edit Details',
       icon: Edit,
       onClick: () => setEditingStaff({ ...s })
-    },
-    {
+    });
+    items.push({
       label: 'View Documents',
       icon: FileText,
       onClick: () => onViewProfile ? onViewProfile(s) : setViewingProfileStaff(s)
-    },
-    { divider: true },
-    {
+    });
+    items.push({ divider: true });
+    items.push({
       label: 'Delete Staff Member',
       icon: Trash2,
       danger: true,
       onClick: () => handleDeleteStaff(s)
-    }
-  ];
+    });
+
+    return items;
+  };
 
   return (
     <div className="space-y-4">
@@ -314,9 +359,20 @@ export default function AllStaffModule({
                           ● Active
                         </span>
                       ) : staff.status === 'Pending Approval' || staff.approvalStatus === 'Pending' ? (
-                        <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 border border-amber-200 rounded-full font-bold text-[10px]">
-                          ⏳ Pending Approval
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 border border-amber-200 rounded-full font-bold text-[10px]">
+                            ⏳ Pending Approval
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleApproveStaff(staff)}
+                            className="px-2.5 py-1 bg-[#047857] hover:bg-[#065F46] text-white rounded-lg text-[10px] font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                            title="Approve staff member to show in attendance"
+                          >
+                            <CheckCircle2 className="w-3 h-3" />
+                            Approve
+                          </button>
+                        </div>
                       ) : (
                         <span className="px-2.5 py-0.5 bg-rose-100 text-rose-800 border border-rose-200 rounded-full font-bold text-[10px]">
                           ✕ Inactive

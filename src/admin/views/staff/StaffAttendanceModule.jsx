@@ -11,6 +11,7 @@ export default function StaffAttendanceModule({
   departments = [], 
   attendance = [], 
   setAttendance, 
+  onNavigateTab,
   showToast 
 }) {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -19,6 +20,18 @@ export default function StaffAttendanceModule({
   const [activeTab, setActiveTab] = useState('daily'); // 'daily' | 'monthly' | 'staff-wise' | 'dept-wise'
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Helper to check if staff is approved by admin
+  const isStaffApproved = (s) => {
+    if (s.status === 'Rejected' || s.approvalStatus === 'Rejected' || s.cardStatus === 'Rejected') return false;
+    if (s.status === 'Inactive') return false;
+    if (s.status === 'Pending Approval' || s.approvalStatus === 'Pending' || s.cardStatus === 'Pending Approval') return false;
+    return s.status === 'Active' || s.approvalStatus === 'Approved' || s.cardStatus === 'Approved' || s.cardStatus === 'Generated' || (!s.status && !s.approvalStatus);
+  };
+
+  // Only approved staff members are displayed in Attendance
+  const approvedStaffList = staffList.filter(isStaffApproved);
+  const pendingStaffCount = staffList.filter(s => s.status === 'Pending Approval' || s.approvalStatus === 'Pending' || s.cardStatus === 'Pending Approval').length;
 
   // Local draft status map for selected date: { staffId: { status, checkIn, checkOut } }
   const [draftAttendance, setDraftAttendance] = useState({});
@@ -33,7 +46,8 @@ export default function StaffAttendanceModule({
     'Finance',
     'Management',
     'IT & Support',
-    ...departments.map(d => d.departmentName || d.name).filter(Boolean)
+    ...departments.map(d => d.departmentName || d.name).filter(Boolean),
+    ...approvedStaffList.map(s => s.department).filter(Boolean)
   ]));
 
   // Three-dot View Options items for switching attendance views
@@ -71,8 +85,8 @@ export default function StaffAttendanceModule({
     }
   };
 
-  // Filter staff members
-  const filteredStaff = staffList.filter(s => {
+  // Filter approved staff members
+  const filteredStaff = approvedStaffList.filter(s => {
     const matchesSearch = (s.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
                           (s.id || s.employeeId || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesDept = selectedDept === 'All' || s.department === selectedDept;
@@ -278,8 +292,8 @@ export default function StaffAttendanceModule({
               onChange={(e) => setSelectedStaffId(e.target.value)}
               className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none"
             >
-              <option value="All">All Staff Members ({staffList.length})</option>
-              {staffList.map(s => (
+              <option value="All">All Approved Staff ({approvedStaffList.length})</option>
+              {approvedStaffList.map(s => (
                 <option key={s.id || s.employeeId} value={s.id || s.employeeId}>
                   {s.name} ({s.id || s.employeeId})
                 </option>
@@ -303,6 +317,28 @@ export default function StaffAttendanceModule({
           </div>
 
         </div>
+
+        {/* Pending Approval Notice Banner */}
+        {pendingStaffCount > 0 && (
+          <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-amber-900 font-medium">
+            <div className="flex items-center space-x-2">
+              <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                <strong>{pendingStaffCount} Staff Member(s)</strong> are currently pending Admin Approval. Once approved by the Admin, their details will automatically appear here in Attendance.
+              </span>
+            </div>
+            {onNavigateTab && (
+              <button
+                type="button"
+                onClick={() => onNavigateTab('staff-id-cards')}
+                className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-2xs transition-all shrink-0 cursor-pointer shadow-xs flex items-center gap-1"
+              >
+                <CheckCircle2 className="w-3 h-3" />
+                Go to Staff Approval →
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 1. DAILY ATTENDANCE LOG VIEW */}
@@ -551,7 +587,7 @@ export default function StaffAttendanceModule({
       {activeTab === 'dept-wise' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {deptOptions.filter(d => d !== 'All').map(deptName => {
-            const deptStaff = staffList.filter(s => s.department === deptName);
+            const deptStaff = approvedStaffList.filter(s => s.department === deptName);
             const deptCount = deptStaff.length;
 
             return (

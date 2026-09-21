@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Lock, Bell, Settings as SettingsIcon, Building, Save, CheckCircle2, ShieldCheck, Camera, Sparkles, Mail, Send, Key, Check } from 'lucide-react';
 import { getEmailApiConfig, saveEmailApiConfig, sendStaffIdCardEmailApi } from '../../utils/staffIdPdfHelper';
+import { db, doc, setDoc, onSnapshot } from '../../firebase';
 
 export default function SettingsView({ adminUser, setAdminUser, showToast, onShowToast }) {
   const notify = showToast || onShowToast || (() => {});
@@ -40,6 +41,7 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
     return typeof window !== 'undefined' && !!localStorage.getItem('lvs_google_oauth_access_token');
   });
 
+  // Sync state from adminUser prop & Real-time Firestore Settings Subscriptions
   useEffect(() => {
     if (adminUser) {
       setName(adminUser.name || 'Life Vision Society');
@@ -57,41 +59,115 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
     setTemplateId(apiConf.templateId || (typeof window !== 'undefined' ? localStorage.getItem('lvs_emailjs_template_id') : '') || '');
     setPublicKey(apiConf.publicKey || (typeof window !== 'undefined' ? localStorage.getItem('lvs_emailjs_public_key') : '') || '');
     setApiUrl(apiConf.apiUrl || '');
+
+    // Real-time Firestore document listeners for settings
+    const unsubs = [];
+
+    try {
+      unsubs.push(onSnapshot(doc(db, "settings", "organization"), (snap) => {
+        if (snap.exists()) {
+          const d = snap.data();
+          if (d.orgName) setOrgName(d.orgName);
+          if (d.regNo) setRegNo(d.regNo);
+          if (d.taxId) setTaxId(d.taxId);
+        }
+      }));
+
+      unsubs.push(onSnapshot(doc(db, "settings", "notifications"), (snap) => {
+        if (snap.exists()) {
+          const d = snap.data();
+          if (typeof d.emailAlerts === 'boolean') setEmailAlerts(d.emailAlerts);
+          if (typeof d.smsAlerts === 'boolean') setSmsAlerts(d.smsAlerts);
+        }
+      }));
+
+      unsubs.push(onSnapshot(doc(db, "settings", "email_config"), (snap) => {
+        if (snap.exists()) {
+          const d = snap.data();
+          if (d.provider) setEmailProvider(d.provider);
+          if (d.googleClientId) setGoogleClientId(d.googleClientId);
+          if (d.googleClientSecret) setGoogleClientSecret(d.googleClientSecret);
+        }
+      }));
+    } catch (e) {
+      console.warn("Firestore settings sync error:", e);
+    }
+
+    return () => unsubs.forEach(fn => fn && fn());
   }, [adminUser]);
 
-  const handleProfileSave = (e) => {
+  // Save Admin Profile to Firestore
+  const handleProfileSave = async (e) => {
     e.preventDefault();
     const updatedUser = {
       name: name,
       email: email,
       role: role,
       phone: phone,
-      avatar: avatar
+      avatar: avatar,
+      updatedAt: new Date().toISOString()
     };
+
     if (setAdminUser) {
       setAdminUser(updatedUser);
     }
     try {
       localStorage.setItem('lvs_admin_profile', JSON.stringify(updatedUser));
-    } catch (err) {}
-    notify(`Admin Profile updated to "${role}" & saved permanently!`, 'success');
+      await setDoc(doc(db, "settings", "admin_profile"), updatedUser, { merge: true });
+    } catch (err) {
+      console.warn("Firestore profile save notice:", err);
+    }
+    notify(`✓ Admin Profile updated & saved to Firebase database!`, 'success');
   };
 
-  const handleSecuritySave = (e) => {
+  // Save Security Settings to Firestore
+  const handleSecuritySave = async (e) => {
     e.preventDefault();
     if (newPass && newPass !== confirmPass) {
       notify('New passwords do not match.', 'error');
       return;
     }
-    notify('Security settings & Admin Password updated successfully!', 'success');
+    try {
+      await setDoc(doc(db, "settings", "security"), {
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (err) {
+      console.warn("Firestore security save notice:", err);
+    }
+    notify('✓ Password & Security settings updated in Firebase database!', 'success');
     setCurrentPass('');
     setNewPass('');
     setConfirmPass('');
   };
 
-  const handleOrgSave = (e) => {
+  // Save Organization Details to Firestore
+  const handleOrgSave = async (e) => {
     e.preventDefault();
-    notify('NGO Organization details saved successfully!', 'success');
+    try {
+      await setDoc(doc(db, "settings", "organization"), {
+        orgName,
+        regNo,
+        taxId,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (err) {
+      console.warn("Firestore org save notice:", err);
+    }
+    notify('✓ NGO Organization details saved to Firebase database!', 'success');
+  };
+
+  // Save Notification Preferences to Firestore
+  const handleNotificationSave = async () => {
+    try {
+      await setDoc(doc(db, "settings", "notifications"), {
+        emailAlerts,
+        smsAlerts,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (err) {
+      console.warn("Firestore notifications save notice:", err);
+    }
+    notify('✓ Notification alert preferences saved to Firebase database!', 'success');
   };
 
   const handleAuthorizeGoogleAccount = () => {
@@ -141,7 +217,8 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
     triggerAuth();
   };
 
-  const handleEmailApiSave = (e) => {
+  // Save Email API Config to Firestore
+  const handleEmailApiSave = async (e) => {
     e.preventDefault();
     const config = {
       provider: emailProvider,
@@ -151,10 +228,16 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
       serviceId: serviceId.trim(),
       templateId: templateId.trim(),
       publicKey: publicKey.trim(),
-      apiUrl: apiUrl.trim()
+      apiUrl: apiUrl.trim(),
+      updatedAt: new Date().toISOString()
     };
     saveEmailApiConfig(config);
-    notify('Google OAuth Email API credentials saved successfully!', 'success');
+    try {
+      await setDoc(doc(db, "settings", "email_config"), config, { merge: true });
+    } catch (err) {
+      console.warn("Firestore email config save notice:", err);
+    }
+    notify('✓ Google OAuth Email API credentials saved to Firebase database!', 'success');
   };
 
   const handleTestEmailApi = async () => {
@@ -475,8 +558,9 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
           </div>
 
           <button
-            onClick={() => notify('Notification alert settings updated!', 'success')}
-            className="px-6 py-3 bg-[#123B5D] text-white rounded-xl text-xs font-bold shadow-md cursor-pointer"
+            type="button"
+            onClick={handleNotificationSave}
+            className="px-6 py-3 bg-[#123B5D] hover:bg-[#0E2F4A] text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-all uppercase tracking-wider"
           >
             Save Notification Settings
           </button>

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Menu, Bell, Search, ChevronDown, User, Settings, 
-  HelpCircle, LogOut, CheckCircle2, X, Command
+  HelpCircle, LogOut, CheckCircle2, X, Command, Phone, Mail, Shield
 } from 'lucide-react';
 
 export default function TopHeader({ 
@@ -18,6 +18,28 @@ export default function TopHeader({
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const profileRef = useRef(null);
+  const notificationsRef = useRef(null);
+
+  // Click Outside Listener for Profile Dropdown & Notifications
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setShowProfileDropdown(false);
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -45,14 +67,16 @@ export default function TopHeader({
     'training-reports': ['Training', 'Training Reports'],
 
     // Placement
-    'placement-overview': ['Placement', 'Placement Overview'],
-    'students-seeking-jobs': ['Placement', 'Students Seeking Jobs'],
-    'job-opportunities': ['Placement', 'Job Opportunities'],
-    'interviews': ['Placement', 'Interviews'],
-    'selected-students': ['Placement', 'Selected Students'],
-    'employed-students': ['Placement', 'Employed Students'],
-    'self-employed': ['Placement', 'Self-Employed'],
-    'placement-reports': ['Placement', 'Placement Reports'],
+    'placement': ['Placement Support', 'Placement Applications'],
+    'placement-applications': ['Placement Support', 'Placement Applications'],
+    'placement-overview': ['Placement Support', 'Placement Applications'],
+    'students-seeking-jobs': ['Placement Support', 'Placement Applications'],
+    'job-opportunities': ['Placement Support', 'Placement Applications'],
+    'interviews': ['Placement Support', 'Placement Applications'],
+    'selected-students': ['Placement Support', 'Placement Applications'],
+    'employed-students': ['Placement Support', 'Placement Applications'],
+    'self-employed': ['Placement Support', 'Placement Applications'],
+    'placement-reports': ['Placement Support', 'Placement Applications'],
 
     // Partners
     'all-partners': ['Partners', 'All Partners'],
@@ -124,6 +148,7 @@ export default function TopHeader({
     'admin-notifications': ['Administration', 'Notifications'],
     'admin-documents': ['Administration', 'Documents'],
     'admin-settings': ['Administration', 'Settings'],
+    'admin-scanner': ['Administration', 'NGO Scanner'],
     'admin-activity-logs': ['Administration', 'Activity Logs']
   };
 
@@ -185,10 +210,10 @@ export default function TopHeader({
         </button>
 
         {/* Notifications */}
-        <div className="relative">
+        <div className="relative" ref={notificationsRef}>
           <button
             onClick={() => {
-              setShowNotifications(!showNotifications);
+              setShowNotifications(prev => !prev);
               setShowProfileDropdown(false);
             }}
             className="p-2 rounded-xl text-[#2563EB] hover:bg-[#F8FAFC] transition-colors relative cursor-pointer"
@@ -246,10 +271,10 @@ export default function TopHeader({
         </div>
 
         {/* Admin Profile */}
-        <div className="relative">
+        <div className="relative" ref={profileRef}>
           <button
             onClick={() => {
-              setShowProfileDropdown(!showProfileDropdown);
+              setShowProfileDropdown(prev => !prev);
               setShowNotifications(false);
             }}
             className="flex items-center space-x-3 p-1.5 rounded-xl hover:bg-[#F8FAFC] transition-all cursor-pointer border border-transparent hover:border-[#E2E8F0]"
@@ -270,10 +295,29 @@ export default function TopHeader({
           </button>
 
           {showProfileDropdown && (
-            <div className="absolute right-0 mt-3 w-56 bg-white border border-[#E2E8F0] rounded-2xl shadow-xl z-50 py-2">
-              <div className="px-4 py-3 border-b border-[#E2E8F0] bg-[#F8FAFC]">
-                <p className="text-xs font-bold text-[#1E293B]">{user?.name || "Life Vision Society"}</p>
-                <p className="text-[11px] text-[#64748B] truncate">{user?.email || "support.lifevision@gmail.com"}</p>
+            <div className="absolute right-0 mt-3 w-64 bg-white border border-[#E2E8F0] rounded-2xl shadow-xl z-50 py-2 overflow-hidden">
+              {/* Detailed Header Info */}
+              <div className="px-4 py-3.5 border-b border-[#E2E8F0] bg-slate-50 space-y-1.5">
+                <div className="flex items-center space-x-2.5">
+                  <img src={user?.avatar || "/image/logo.png"} alt="Avatar" className="w-8 h-8 rounded-lg object-contain bg-white p-0.5 ring-2 ring-emerald-500 shrink-0" />
+                  <div className="overflow-hidden">
+                    <p className="text-xs font-bold text-[#1E293B] truncate">{user?.name || "Life Vision Society"}</p>
+                    <p className="text-[10px] font-extrabold text-[#16A34A]">{user?.role || "Super Admin"}</p>
+                  </div>
+                </div>
+
+                <div className="pt-1.5 space-y-1 text-[11px] text-[#64748B]">
+                  <div className="flex items-center space-x-1.5 truncate">
+                    <Mail className="w-3 h-3 text-slate-400 shrink-0" />
+                    <span className="truncate">{user?.email || "support.lifevision@gmail.com"}</span>
+                  </div>
+                  {user?.phone && (
+                    <div className="flex items-center space-x-1.5">
+                      <Phone className="w-3 h-3 text-slate-400 shrink-0" />
+                      <span>{user.phone}</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="py-1">
@@ -282,7 +326,7 @@ export default function TopHeader({
                     setActiveTab('admin-settings');
                     setShowProfileDropdown(false);
                   }}
-                  className="w-full text-left px-4 py-2 text-xs font-semibold text-[#1E293B] hover:bg-[#F8FAFC] flex items-center space-x-2 cursor-pointer"
+                  className="w-full text-left px-4 py-2.5 text-xs font-semibold text-[#1E293B] hover:bg-[#F8FAFC] flex items-center space-x-2 cursor-pointer transition-colors"
                 >
                   <User className="w-4 h-4 text-[#64748B]" />
                   <span>Profile Settings</span>
@@ -291,8 +335,11 @@ export default function TopHeader({
 
               <div className="border-t border-[#E2E8F0] pt-1">
                 <button
-                  onClick={onLogout}
-                  className="w-full text-left px-4 py-2 text-xs font-bold text-[#DC2626] hover:bg-rose-50 flex items-center space-x-2 cursor-pointer"
+                  onClick={() => {
+                    setShowProfileDropdown(false);
+                    if (onLogout) onLogout();
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-xs font-bold text-[#DC2626] hover:bg-rose-50 flex items-center space-x-2 cursor-pointer transition-colors"
                 >
                   <LogOut className="w-4 h-4 text-[#DC2626]" />
                   <span>Logout</span>

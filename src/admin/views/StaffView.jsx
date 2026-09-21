@@ -70,6 +70,7 @@ export default function StaffView({
           attendance={attendance}
           leaves={leaves}
           staffDocuments={staffDocuments}
+          onNavigateTab={(tab) => setSubTab(tab)}
           onViewProfile={(staff) => setSelectedProfileStaff(staff)}
           onOpenAddModal={() => setShowAddModal(true)}
           showToast={showToast}
@@ -92,6 +93,7 @@ export default function StaffView({
           departments={departments}
           attendance={attendance}
           setAttendance={setAttendance}
+          onNavigateTab={(tab) => setSubTab(tab)}
           showToast={showToast}
         />
       )}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { db, collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, addDoc } from '../firebase';
+import { db, collection, query, orderBy, onSnapshot, doc, setDoc, updateDoc, deleteDoc, addDoc } from '../firebase';
 import AdminLogin from './components/AdminLogin';
 import Sidebar from './components/Sidebar';
 import TopHeader from './components/TopHeader';
@@ -29,6 +29,7 @@ import UsersRolesView from './views/UsersRolesView';
 import StaffView from './views/StaffView';
 import TrainersView from './views/TrainersView';
 import ReportsView from './views/ReportsView';
+import ScannerView from './views/ScannerView';
 
 // Real Data fetched directly from Public Website
 import {
@@ -39,10 +40,10 @@ import {
   initialAdminUsers
 } from './mockData';
 
-export default function AdminApp() {
+export default function AdminApp({ user: authUser, onLogout }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     try {
-      return sessionStorage.getItem('lvs_admin_auth') === 'true';
+      return localStorage.getItem('lvs_admin_auth') === 'true' || sessionStorage.getItem('lvs_admin_auth') === 'true';
     } catch (e) {
       return false;
     }
@@ -56,20 +57,43 @@ export default function AdminApp() {
     return {
       name: 'Life Vision Society',
       email: 'support.lifevision@gmail.com',
-      role: 'Admin',
+      role: 'Super Admin',
       phone: '+91 9416362914',
       avatar: '/image/logo.png'
     };
   });
 
-  const handleUpdateAdminUser = (updatedData) => {
-    setAdminUser(prev => {
-      const nextUser = typeof updatedData === 'function' ? updatedData(prev) : { ...prev, ...updatedData };
-      try {
-        localStorage.setItem('lvs_admin_profile', JSON.stringify(nextUser));
-      } catch (e) { }
-      return nextUser;
-    });
+  // Real-time Firebase Firestore Sync for Admin Profile & Settings
+  useEffect(() => {
+    try {
+      const profileDocRef = doc(db, "settings", "admin_profile");
+      const unsub = onSnapshot(profileDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const firestoreProfile = docSnap.data();
+          setAdminUser(prev => ({ ...prev, ...firestoreProfile }));
+          try {
+            localStorage.setItem('lvs_admin_profile', JSON.stringify(firestoreProfile));
+          } catch (e) {}
+        }
+      }, (err) => console.warn("Firestore admin_profile sync notice:", err));
+      return () => unsub();
+    } catch (err) {}
+  }, []);
+
+  const handleUpdateAdminUser = async (updatedData) => {
+    const nextUser = typeof updatedData === 'function' ? updatedData(adminUser) : { ...adminUser, ...updatedData };
+    setAdminUser(nextUser);
+    
+    try {
+      localStorage.setItem('lvs_admin_profile', JSON.stringify(nextUser));
+    } catch (e) { }
+
+    // Store in Firebase Firestore settings collection
+    try {
+      await setDoc(doc(db, "settings", "admin_profile"), nextUser, { merge: true });
+    } catch (err) {
+      console.warn("Firestore save admin_profile notice:", err);
+    }
   };
 
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -670,7 +694,7 @@ export default function AdminApp() {
         localStorage.setItem('lvs_admin_profile', JSON.stringify(user));
       }
       sessionStorage.setItem('lvs_admin_auth', 'true');
-      localStorage.removeItem('lvs_admin_auth');
+      localStorage.setItem('lvs_admin_auth', 'true');
     } catch (e) { }
     setAdminUser(userToUse);
     setIsAuthenticated(true);
@@ -932,6 +956,8 @@ export default function AdminApp() {
       case 'settings':
       case 'admin-settings':
         return <SettingsView adminUser={adminUser} setAdminUser={handleUpdateAdminUser} showToast={showToast} />;
+      case 'admin-scanner':
+        return <ScannerView showToast={showToast} />;
       case 'admin-activity-logs':
         return <NotificationsView showToast={showToast} activeSubTab="logs" />;
 

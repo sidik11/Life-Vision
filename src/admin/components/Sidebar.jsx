@@ -178,18 +178,11 @@ export default function Sidebar({
     // 💼 PLACEMENT
     {
       id: 'placement',
-      label: 'Placement',
+      label: 'Placement Support',
       icon: Briefcase,
       hasSubmenu: true,
       subItems: [
-        { id: 'placement-overview', label: 'Placement Overview' },
-        { id: 'students-seeking-jobs', label: 'Students Seeking Jobs' },
-        { id: 'job-opportunities', label: 'Job Opportunities' },
-        { id: 'interviews', label: 'Interviews' },
-        { id: 'selected-students', label: 'Selected Students' },
-        { id: 'employed-students', label: 'Employed Students' },
-        { id: 'self-employed', label: 'Self-Employed' },
-        { id: 'placement-reports', label: 'Placement Reports' }
+        { id: 'placement-applications', label: 'Placement Applications' }
       ]
     },
 
@@ -332,6 +325,7 @@ export default function Sidebar({
         { id: 'admin-notifications', label: 'Notifications' },
         { id: 'admin-documents', label: 'Documents' },
         { id: 'admin-settings', label: 'Settings' },
+        { id: 'admin-scanner', label: 'Scanner' },
         { id: 'admin-activity-logs', label: 'Activity Logs' }
       ]
     }

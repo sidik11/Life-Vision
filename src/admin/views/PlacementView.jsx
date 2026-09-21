@@ -1,891 +1,670 @@
 import React, { useState } from 'react';
-import StatusBadge from '../components/Common/StatusBadge';
-import ActionPopover from '../components/Common/ActionPopover';
 import { 
-  Briefcase, Building2, MapPin, Edit, CheckCircle2, Filter, 
-  Eye, Trash2, X, User, Phone, Mail, GraduationCap, Award, 
-  Calendar, FileText, Upload, Plus, Download, Shield, Sparkles
+  Briefcase, Search, Filter, Eye, Edit, Trash2, X, Phone, Mail, 
+  MapPin, Calendar, FileText, CheckCircle2, MessageSquare, Clock, User, Award, ExternalLink
 } from 'lucide-react';
-import { db, doc, deleteDoc } from '../../firebase';
-import { saveToFirestore } from '../../utils/firebaseSave';
+import { db, doc, setDoc, updateDoc, deleteDoc } from '../../firebase';
 
-export default function PlacementView({ placements = [], setPlacements, showToast, onShowToast, activeSubTab = 'placement-overview' }) {
+export default function PlacementView({ placements = [], setPlacements, showToast, onShowToast }) {
   const notify = showToast || onShowToast || (() => {});
-  const [subTab, setSubTab] = useState(activeSubTab);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
 
   // Modals state
   const [viewingItem, setViewingItem] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
+  const [remarksText, setRemarksText] = useState('');
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
-  // Edit Form Fields State (matching main placement form)
-  const [editFormData, setEditFormData] = useState({
-    id: '',
-    student: '',
+  // Edit Form Fields State
+  const [editForm, setEditForm] = useState({
+    name: '',
     phone: '',
     email: '',
-    gender: 'Female',
-    dob: '',
-    guardianName: '',
     course: '',
-    collegeName: '',
-    passingYear: '',
-    boardUniversity: '',
-    trainingCompleted: 'Certified',
-    placementStatus: 'Seeking Employment',
-    employer: '',
-    jobRole: '',
     location: '',
-    salary: '',
-    joiningDate: '',
-    district: '',
-    state: 'Odisha'
+    placementStatus: 'Applied',
+    remarks: '',
+    higherEducation: '',
+    passingYear: '',
+    collegeName: ''
   });
 
-  // Document Uploads State for Edit Modal
-  const [photoDoc, setPhotoDoc] = useState('');
-  const [aadharDoc, setAadharDoc] = useState('');
-  const [extraDocs, setExtraDocs] = useState([]);
-  const [docError, setDocError] = useState('');
+  // Valid placement statuses strictly as requested
+  const STATUS_OPTIONS = [
+    'Applied',
+    'Contacted',
+    'Counseling/Discussion',
+    'Placement in Process',
+    'Placed',
+    'Not Interested',
+    'Closed'
+  ];
 
-  // Handle opening edit modal
+  // Filter ONLY students who submitted a Placement Support request
+  const placementApplications = placements.filter(p => {
+    // Only records with a valid application ID or applicant name
+    const isPlacementApp = p.id || p.student || p.name || p.phone;
+    if (!isPlacementApp) return false;
+
+    const term = searchQuery.toLowerCase();
+    const nameMatch = (p.student || p.name || '').toLowerCase().includes(term);
+    const idMatch = (p.id || p.applicationId || p.firestoreId || '').toLowerCase().includes(term);
+    const courseMatch = (p.course || p.training || '').toLowerCase().includes(term);
+    const phoneMatch = (p.phone || p.mobile || '').toLowerCase().includes(term);
+    const emailMatch = (p.email || '').toLowerCase().includes(term);
+    const locMatch = (p.location || p.district || p.address || '').toLowerCase().includes(term);
+
+    const matchesSearch = nameMatch || idMatch || courseMatch || phoneMatch || emailMatch || locMatch;
+    const matchesStatus = statusFilter === 'All' || (p.placementStatus || p.status) === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  // Handle Quick Status Change directly from Table Dropdown
+  const handleStatusChange = async (plc, newStatus) => {
+    const updated = {
+      ...plc,
+      placementStatus: newStatus,
+      status: newStatus,
+      updatedAt: new Date().toISOString()
+    };
+
+    if (setPlacements) {
+      setPlacements(prev => prev.map(p => (p.id === plc.id || (p.firestoreId && p.firestoreId === plc.firestoreId)) ? updated : p));
+    }
+
+    const docId = plc.firestoreId || plc.id;
+    if (docId) {
+      try {
+        await updateDoc(doc(db, "placements", docId), {
+          placementStatus: newStatus,
+          status: newStatus,
+          updatedAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.warn("Firestore update placement status notice:", err);
+      }
+    }
+
+    notify(`✓ Updated placement status for ${plc.student || plc.name} to "${newStatus}"!`, 'success');
+  };
+
+  // Open Viewing Modal
+  const handleOpenView = (plc) => {
+    setViewingItem(plc);
+    setRemarksText(plc.remarks || plc.notes || '');
+  };
+
+  // Save Remarks & Notes in Viewing Modal
+  const handleSaveRemarks = async (plc) => {
+    setUpdatingStatus(true);
+    const updated = {
+      ...plc,
+      remarks: remarksText,
+      notes: remarksText,
+      updatedAt: new Date().toISOString()
+    };
+
+    if (setPlacements) {
+      setPlacements(prev => prev.map(p => (p.id === plc.id || (p.firestoreId && p.firestoreId === plc.firestoreId)) ? updated : p));
+    }
+
+    const docId = plc.firestoreId || plc.id;
+    if (docId) {
+      try {
+        await updateDoc(doc(db, "placements", docId), {
+          remarks: remarksText,
+          notes: remarksText,
+          updatedAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.warn("Firestore save remarks notice:", err);
+      }
+    }
+
+    setViewingItem(updated);
+    setUpdatingStatus(false);
+    notify(`✓ Remarks saved for ${plc.student || plc.name}!`, 'success');
+  };
+
+  // Handle Open Edit Modal
   const handleOpenEdit = (plc) => {
     setEditingItem(plc);
-    setEditFormData({
-      id: plc.id || '',
-      student: plc.student || '',
-      phone: plc.phone || '',
+    setEditForm({
+      name: plc.student || plc.name || '',
+      phone: plc.phone || plc.mobile || '',
       email: plc.email || '',
-      gender: plc.gender || 'Female',
-      dob: plc.dob || '',
-      guardianName: plc.guardianName || '',
-      course: plc.course || 'Higher Education / Skill Training',
-      collegeName: plc.collegeName || plc.employer || '',
+      course: plc.course || plc.training || '',
+      location: plc.location || plc.district || plc.address || '',
+      placementStatus: plc.placementStatus || plc.status || 'Applied',
+      remarks: plc.remarks || plc.notes || '',
+      higherEducation: plc.higherEducation || plc.qualification || '',
       passingYear: plc.passingYear || '',
-      boardUniversity: plc.boardUniversity || '',
-      trainingCompleted: plc.trainingCompleted || 'Certified',
-      placementStatus: plc.placementStatus || 'Employed',
-      employer: plc.employer || '',
-      jobRole: plc.jobRole || '',
-      location: plc.location || 'Odisha',
-      salary: plc.salary || '₹15,000/mo',
-      joiningDate: plc.joiningDate || new Date().toISOString().split('T')[0],
-      district: plc.district || '',
-      state: plc.state || 'Odisha'
-    });
-    setPhotoDoc(plc.photoDoc || '');
-    setAadharDoc(plc.aadharDoc || '');
-    setExtraDocs(plc.extraDocs || []);
-    setDocError('');
-  };
-
-  // Document Upload Handlers (5MB limit)
-  const handlePhotoUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setDocError('File size exceeds the allowed 5MB limit.');
-        return;
-      }
-      setDocError('');
-      const reader = new FileReader();
-      reader.onloadend = () => setPhotoDoc(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleAadharUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setDocError('File size exceeds the allowed 5MB limit.');
-        return;
-      }
-      setDocError('');
-      const reader = new FileReader();
-      reader.onloadend = () => setAadharDoc(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleAddExtraDoc = () => {
-    setExtraDocs(prev => [...prev, { title: '', file: '', fileName: '' }]);
-  };
-
-  const handleExtraDocTitleChange = (index, title) => {
-    setExtraDocs(prev => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], title };
-      return updated;
+      collegeName: plc.collegeName || ''
     });
   };
 
-  const handleExtraDocFileChange = (index, file) => {
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setDocError('File size exceeds the allowed 5MB limit.');
-      return;
-    }
-    setDocError('');
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setExtraDocs(prev => {
-        const updated = [...prev];
-        updated[index] = { ...updated[index], file: reader.result, fileName: file.name };
-        return updated;
-      });
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveExtraDoc = (index) => {
-    setExtraDocs(prev => prev.filter((_, i) => i !== index));
-  };
-
-  // Save Placement Updates
-  const handleSavePlacement = async (e) => {
-    if (e) e.preventDefault();
-    if (!editFormData.student.trim()) {
+  // Save Edit Application Form
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editForm.name.trim()) {
       notify('Please enter student name', 'error');
       return;
     }
 
-    const updatedPlacement = {
+    const updated = {
       ...editingItem,
-      ...editFormData,
-      photoDoc: photoDoc || '',
-      aadharDoc: aadharDoc || '',
-      extraDocs: extraDocs || []
+      student: editForm.name,
+      name: editForm.name,
+      phone: editForm.phone,
+      mobile: editForm.phone,
+      email: editForm.email,
+      course: editForm.course,
+      training: editForm.course,
+      location: editForm.location,
+      placementStatus: editForm.placementStatus,
+      status: editForm.placementStatus,
+      remarks: editForm.remarks,
+      notes: editForm.remarks,
+      higherEducation: editForm.higherEducation,
+      passingYear: editForm.passingYear,
+      collegeName: editForm.collegeName,
+      updatedAt: new Date().toISOString()
     };
 
-    try {
-      await saveToFirestore('placements', updatedPlacement, 'lvs_update_placement');
-    } catch (err) {
-      console.warn("Firestore update placement notice:", err);
-    }
-
     if (setPlacements) {
-      setPlacements(prev => prev.map(p => p.id === editingItem.id ? updatedPlacement : p));
+      setPlacements(prev => prev.map(p => (p.id === editingItem.id || (p.firestoreId && p.firestoreId === editingItem.firestoreId)) ? updated : p));
     }
 
-    notify(`Updated placement record for ${updatedPlacement.student}!`, 'success');
+    const docId = editingItem.firestoreId || editingItem.id;
+    if (docId) {
+      try {
+        await updateDoc(doc(db, "placements", docId), updated);
+      } catch (err) {
+        console.warn("Firestore update placement edit notice:", err);
+      }
+    }
+
+    notify(`✓ Application for ${editForm.name} updated!`, 'success');
     setEditingItem(null);
   };
 
-  // Delete Placement Record
+  // Delete Placement Support Application
   const handleDeletePlacement = async (plc) => {
-    if (window.confirm(`Are you sure you want to delete placement record for ${plc.student || 'this student'}?`)) {
-      const docIdToDelete = plc.firestoreId || plc.id;
-      try {
-        if (docIdToDelete) {
-          await deleteDoc(doc(db, 'placements', docIdToDelete));
+    if (window.confirm(`Are you sure you want to delete placement support application for "${plc.student || plc.name}" (${plc.id || plc.applicationId})?`)) {
+      const docId = plc.firestoreId || plc.id;
+      if (docId) {
+        try {
+          await deleteDoc(doc(db, 'placements', docId));
+        } catch (err) {
+          console.warn("Firestore delete placement notice:", err);
         }
-      } catch (err) {
-        console.warn("Firestore delete placement notice:", err);
       }
 
       if (setPlacements) {
         setPlacements(prev => prev.filter(p => p.id !== plc.id && (!plc.firestoreId || p.firestoreId !== plc.firestoreId)));
       }
 
-      notify(`Deleted placement record for ${plc.student || 'student'}.`, 'info');
+      notify(`Deleted placement application for ${plc.student || plc.name}.`, 'info');
     }
   };
 
-  // Get Three-Dot Action Popover Items
-  const getPlacementActionItems = (plc) => [
-    {
-      label: 'View Student Details',
-      icon: Eye,
-      onClick: () => setViewingItem(plc)
-    },
-    {
-      label: 'Edit Placement Form',
-      icon: Edit,
-      onClick: () => handleOpenEdit(plc)
-    },
-    {
-      label: 'Delete Record',
-      icon: Trash2,
-      danger: true,
-      onClick: () => handleDeletePlacement(plc)
+  // Get status color styling
+  const getStatusBadgeStyle = (status) => {
+    switch (status) {
+      case 'Applied': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'Contacted': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'Counseling/Discussion': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'Placement in Process': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+      case 'Placed': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'Not Interested': return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'Closed': return 'bg-rose-100 text-rose-800 border-rose-200';
+      default: return 'bg-slate-100 text-slate-800 border-slate-200';
     }
-  ];
-
-  const filteredPlacements = placements.filter(p => {
-    if (subTab === 'students-seeking-jobs') return p.placementStatus?.toLowerCase().includes('seeking') || p.placementStatus?.toLowerCase().includes('pending');
-    if (subTab === 'job-opportunities') return true;
-    if (subTab === 'interviews') return p.placementStatus?.toLowerCase().includes('interview');
-    if (subTab === 'selected-students') return p.placementStatus?.toLowerCase().includes('selected');
-    if (subTab === 'employed-students') return p.placementStatus?.toLowerCase().includes('employed') && !p.placementStatus?.toLowerCase().includes('self');
-    if (subTab === 'self-employed') return p.placementStatus?.toLowerCase().includes('self');
-    return true; // placement-overview
-  });
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight font-serif">Placement & Livelihood Pipeline</h1>
-          <p className="text-xs text-slate-500">Track student job placements, corporate interviews, micro-boutique self-employment & employer linkages</p>
+    <div className="space-y-6 font-sans">
+      
+      {/* Header Banner */}
+      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center space-x-2 text-emerald-700 text-xs font-bold uppercase tracking-wider mb-1">
+              <Briefcase className="w-4 h-4 text-emerald-600" />
+              <span>Placement Support System</span>
+            </div>
+            <h1 className="text-xl font-bold text-slate-900 font-serif">Placement Support Application Management</h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Review and manage job placement support requests submitted by students from the public NGO portal.
+            </p>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <span className="px-3 py-1.5 bg-[#123B5D] text-white text-xs font-bold rounded-xl shadow-xs">
+              {placementApplications.length} Applications Total
+            </span>
+          </div>
+        </div>
+
+        {/* Filter & Search Control Bar */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-3 border-t border-slate-100">
+          
+          {/* Search Box */}
+          <div className="md:col-span-8 relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
+            <input
+              type="text"
+              placeholder="Search by student name, application ID, course, mobile, location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
+            />
+          </div>
+
+          {/* Status Dropdown Filter */}
+          <div className="md:col-span-4 flex items-center space-x-2">
+            <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#123B5D] cursor-pointer"
+            >
+              <option value="All">All Statuses ({placements.length})</option>
+              {STATUS_OPTIONS.map(st => (
+                <option key={st} value={st}>{st}</option>
+              ))}
+            </select>
+          </div>
+
         </div>
       </div>
 
-      {/* Sub Nav Tabs */}
-      <div className="flex items-center space-x-2 border-b border-slate-200 overflow-x-auto pb-2 scrollbar-none">
-        {[
-          { id: 'placement-overview', label: '📊 Overview', count: placements.length },
-          { id: 'students-seeking-jobs', label: '🔍 Seeking Jobs' },
-          { id: 'job-opportunities', label: '🏢 Job Openings' },
-          { id: 'interviews', label: '🗣️ Interviews' },
-          { id: 'selected-students', label: '✅ Selected' },
-          { id: 'employed-students', label: '👔 Employed' },
-          { id: 'self-employed', label: '🚀 Self-Employed' }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setSubTab(tab.id)}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer ${
-              subTab === tab.id 
-                ? 'bg-[#123B5D] text-white shadow-sm' 
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
-          >
-            {tab.label} {tab.count !== undefined && <span className="ml-1 opacity-75">({tab.count})</span>}
-          </button>
-        ))}
-      </div>
-
-      {/* Placement Table */}
-      <div className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+      {/* Applications Table */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-slate-200 text-slate-500 bg-slate-50 uppercase tracking-wider font-bold">
-                <th className="p-4">Student</th>
-                <th className="p-4">Course</th>
-                <th className="p-4">Training Status</th>
-                <th className="p-4">Placement Status</th>
-                <th className="p-4">Employer / Business</th>
-                <th className="p-4">Job Role</th>
-                <th className="p-4">Location</th>
-                <th className="p-4">Joining / Package</th>
-                <th className="p-4 text-right">Action</th>
+          <table className="w-full text-left text-xs text-slate-700">
+            <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase text-[10px] font-bold">
+              <tr>
+                <th className="p-3.5">Student Name</th>
+                <th className="p-3.5">Application ID</th>
+                <th className="p-3.5">Course / Training</th>
+                <th className="p-3.5">Mobile Number</th>
+                <th className="p-3.5">Email</th>
+                <th className="p-3.5">Location</th>
+                <th className="p-3.5">Application Date</th>
+                <th className="p-3.5 min-w-[160px]">Placement Status</th>
+                <th className="p-3.5 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
-              {filteredPlacements.length === 0 ? (
+              {placementApplications.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="p-12 text-center text-slate-500">
-                    <div className="max-w-xs mx-auto space-y-2">
-                      <Briefcase className="w-10 h-10 text-slate-300 mx-auto" />
-                      <p className="font-bold text-slate-700 text-sm">No Student Records Found</p>
-                      <p className="text-xs text-slate-500">Submissions from the public website form will appear here live in real-time.</p>
+                  <td colSpan={9} className="p-10 text-center text-slate-400">
+                    <div className="space-y-2">
+                      <Briefcase className="w-8 h-8 text-slate-300 mx-auto" />
+                      <p className="font-semibold text-xs">No placement support applications found.</p>
+                      <p className="text-[11px] text-slate-400">Only students who submit a Placement Support request from the NGO website will appear here.</p>
                     </div>
                   </td>
                 </tr>
               ) : (
-                filteredPlacements.map((plc) => (
-                  <tr key={plc.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-4 font-bold text-slate-900 flex items-center space-x-2">
-                      {plc.photoDoc ? (
-                        <img src={plc.photoDoc} alt={plc.student} className="w-7 h-7 rounded-full object-cover border border-slate-200" />
-                      ) : (
-                        <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-xs">
-                          {plc.student ? plc.student.charAt(0) : 'S'}
+                placementApplications.map(plc => {
+                  const studentName = plc.student || plc.name || 'Candidate';
+                  const appNo = plc.id || plc.applicationId || plc.firestoreId || 'APP-PLC-001';
+                  const currentStatus = plc.placementStatus || plc.status || 'Applied';
+
+                  return (
+                    <tr key={plc.id || plc.firestoreId} className="hover:bg-slate-50/80 transition-colors">
+                      
+                      {/* Student Name */}
+                      <td className="p-3.5 font-bold text-slate-900">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs shrink-0">
+                            {studentName.charAt(0)}
+                          </div>
+                          <span>{studentName}</span>
                         </div>
-                      )}
-                      <span>{plc.student}</span>
-                    </td>
-                    <td className="p-4 text-slate-800">{plc.course}</td>
-                    <td className="p-4 text-slate-600 font-medium">{plc.trainingCompleted || 'Certified'}</td>
-                    <td className="p-4">
-                      <StatusBadge status={plc.placementStatus} />
-                    </td>
-                    <td className="p-4 font-bold text-slate-900">{plc.employer || 'Pending Placement'}</td>
-                    <td className="p-4 text-slate-800">{plc.jobRole || 'Trainee'}</td>
-                    <td className="p-4 text-slate-600">{plc.location || 'Odisha'}</td>
-                    <td className="p-4 text-emerald-800 font-extrabold">{plc.joiningDate || '2026'} ({plc.salary || '₹15,000/mo'})</td>
-                    <td className="p-4 text-right">
-                      {/* THREE-DOT MENU FOR VIEW, EDIT, DELETE */}
-                      <ActionPopover items={getPlacementActionItems(plc)} />
-                    </td>
-                  </tr>
-                ))
+                      </td>
+
+                      {/* Application ID */}
+                      <td className="p-3.5 font-mono font-bold text-slate-800 whitespace-nowrap">
+                        {appNo}
+                      </td>
+
+                      {/* Course / Training */}
+                      <td className="p-3.5">
+                        <span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-md text-2xs font-bold whitespace-nowrap">
+                          {plc.course || plc.training || 'Skill Training'}
+                        </span>
+                      </td>
+
+                      {/* Mobile Number */}
+                      <td className="p-3.5 font-mono text-slate-700 whitespace-nowrap">
+                        {plc.phone || plc.mobile || 'N/A'}
+                      </td>
+
+                      {/* Email */}
+                      <td className="p-3.5 text-slate-600 truncate max-w-[140px]">
+                        {plc.email || 'N/A'}
+                      </td>
+
+                      {/* Location */}
+                      <td className="p-3.5 text-slate-700 whitespace-nowrap">
+                        {plc.location || plc.district || plc.address || 'Odisha'}
+                      </td>
+
+                      {/* Application Date */}
+                      <td className="p-3.5 text-slate-600 font-mono text-2xs whitespace-nowrap">
+                        {plc.applicationDate || plc.registeredAt || plc.date || plc.createdAt || '2026-09-01'}
+                      </td>
+
+                      {/* Placement Status Dropdown */}
+                      <td className="p-3.5">
+                        <select
+                          value={currentStatus}
+                          onChange={(e) => handleStatusChange(plc, e.target.value)}
+                          className={`w-full px-2.5 py-1 rounded-lg text-2xs font-bold border focus:outline-none cursor-pointer ${getStatusBadgeStyle(currentStatus)}`}
+                        >
+                          {STATUS_OPTIONS.map(st => (
+                            <option key={st} value={st}>{st}</option>
+                          ))}
+                        </select>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="p-3.5 text-right whitespace-nowrap space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenView(plc)}
+                          className="p-1.5 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                          title="View Student & Application Details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(plc)}
+                          className="p-1.5 text-slate-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                          title="Edit Application"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePlacement(plc)}
+                          className="p-1.5 text-slate-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          title="Delete Application"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* VIEW STUDENT PLACEMENT DETAILS MODAL */}
+      {/* VIEW STUDENT DETAILS MODAL */}
       {viewingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto">
-          <div className="w-full max-w-2xl bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden my-auto space-y-0 relative">
+          <div className="w-full max-w-3xl bg-white rounded-3xl border border-slate-200 shadow-2xl p-6 relative my-auto space-y-5">
             
-            {/* Header with Visible Close X Button */}
-            <div className="p-5 bg-gradient-to-r from-[#123B5D] to-[#1E527B] text-white flex items-center justify-between">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20">
-                  <User className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white font-black text-lg flex items-center justify-center shadow-md">
+                  {(viewingItem.student || viewingItem.name || 'S').charAt(0)}
                 </div>
                 <div>
-                  <h3 className="text-base font-bold font-serif">{viewingItem.student}</h3>
-                  <p className="text-xs text-slate-200">{viewingItem.course} • ID: {viewingItem.id}</p>
+                  <h3 className="text-lg font-bold text-slate-900 font-serif">
+                    {viewingItem.student || viewingItem.name}
+                  </h3>
+                  <div className="flex items-center space-x-2 text-2xs mt-0.5">
+                    <span className="font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">
+                      ID: {viewingItem.id || viewingItem.applicationId || viewingItem.firestoreId}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-md font-bold border ${getStatusBadgeStyle(viewingItem.placementStatus || viewingItem.status || 'Applied')}`}>
+                      ● {viewingItem.placementStatus || viewingItem.status || 'Applied'}
+                    </span>
+                  </div>
                 </div>
               </div>
+
               <button
                 type="button"
                 onClick={() => setViewingItem(null)}
-                className="p-2 rounded-full bg-white/10 hover:bg-rose-500 text-white transition-all cursor-pointer border border-white/20"
-                title="Close"
-                aria-label="Close Modal"
+                className="p-2 rounded-full bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 transition-all cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Details Content */}
-            <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto text-xs font-sans">
-              
-              {/* Section 1: Placement & Status */}
-              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-3">
-                <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                  <Briefcase className="w-4 h-4 text-[#123B5D]" />
-                  <span>Placement & Employment Status</span>
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Status</span>
-                    <StatusBadge status={viewingItem.placementStatus} />
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Employer / Business</span>
-                    <span className="font-bold text-slate-900">{viewingItem.employer || 'N/A'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Job Role / Designation</span>
-                    <span className="font-bold text-slate-800">{viewingItem.jobRole || 'N/A'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Location</span>
-                    <span className="font-bold text-slate-800">{viewingItem.location || 'Odisha'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Salary / Package</span>
-                    <span className="font-extrabold text-emerald-700">{viewingItem.salary || 'N/A'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Joining Date</span>
-                    <span className="font-bold text-slate-800">{viewingItem.joiningDate || 'N/A'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 2: Personal & Contact Information */}
-              <div className="space-y-3">
-                <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                  <User className="w-4 h-4 text-[#123B5D]" />
-                  <span>Student Personal & Contact Details</span>
-                </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-white p-4 rounded-2xl border border-slate-200">
-                  <div>
-                    <span className="text-slate-500 block text-[10px]">Full Name</span>
-                    <span className="font-bold text-slate-900">{viewingItem.student}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px]">Gender</span>
-                    <span className="font-semibold text-slate-800">{viewingItem.gender || 'Female'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px]">Contact Phone</span>
-                    <span className="font-mono font-bold text-emerald-700">{viewingItem.phone || '+91 9416362914'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px]">Email Address</span>
-                    <span className="font-semibold text-slate-800 truncate block">{viewingItem.email || 'N/A'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px]">Guardian Name</span>
-                    <span className="font-semibold text-slate-800">{viewingItem.guardianName || 'N/A'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px]">Date of Birth</span>
-                    <span className="font-semibold text-slate-800">{viewingItem.dob || 'N/A'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 3: Education & Qualification */}
-              <div className="space-y-3">
-                <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                  <GraduationCap className="w-4 h-4 text-[#123B5D]" />
-                  <span>Education & Training Qualification</span>
-                </h4>
-                <div className="grid grid-cols-2 gap-3 bg-white p-4 rounded-2xl border border-slate-200">
-                  <div>
-                    <span className="text-slate-500 block text-[10px]">Course / Qualification</span>
-                    <span className="font-bold text-slate-900">{viewingItem.course}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px]">Training Completion</span>
-                    <span className="font-semibold text-slate-800">{viewingItem.trainingCompleted || 'Certified'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px]">College / Institute</span>
-                    <span className="font-semibold text-slate-800">{viewingItem.collegeName || 'N/A'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px]">Board / University</span>
-                    <span className="font-semibold text-slate-800">{viewingItem.boardUniversity || 'N/A'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 4: Document Verification */}
-              <div className="space-y-3">
-                <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-[#123B5D]" />
-                  <span>Uploaded Documents</span>
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Photo Document */}
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <FileText className="w-4 h-4 text-emerald-600" />
-                      <span className="font-bold text-slate-700">Passport Photo</span>
-                    </div>
-                    {viewingItem.photoDoc ? (
-                      <a href={viewingItem.photoDoc} download={`${viewingItem.student}_Photo.png`} className="px-3 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-lg hover:bg-emerald-200 flex items-center gap-1">
-                        <Download className="w-3 h-3" />
-                        <span>Download</span>
-                      </a>
-                    ) : (
-                      <span className="text-[10px] text-slate-400 font-medium">Not Uploaded</span>
-                    )}
-                  </div>
-
-                  {/* Aadhar Document */}
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <FileText className="w-4 h-4 text-emerald-600" />
-                      <span className="font-bold text-slate-700">Aadhar Card</span>
-                    </div>
-                    {viewingItem.aadharDoc ? (
-                      <a href={viewingItem.aadharDoc} download={`${viewingItem.student}_Aadhar.png`} className="px-3 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-lg hover:bg-emerald-200 flex items-center gap-1">
-                        <Download className="w-3 h-3" />
-                        <span>Download</span>
-                      </a>
-                    ) : (
-                      <span className="text-[10px] text-slate-400 font-medium">Not Uploaded</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Extra Documents */}
-                {viewingItem.extraDocs && viewingItem.extraDocs.length > 0 && (
-                  <div className="space-y-2 pt-2">
-                    <span className="text-slate-500 font-bold text-[10px] uppercase">Additional Documents</span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {viewingItem.extraDocs.map((docItem, idx) => (
-                        <div key={idx} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
-                          <span className="font-semibold text-slate-700 truncate max-w-[150px]">{docItem.title || `Document #${idx + 1}`}</span>
-                          {docItem.file && (
-                            <a href={docItem.file} download={docItem.fileName || `${docItem.title || 'Doc'}.png`} className="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 text-[10px] font-bold rounded-md flex items-center gap-1">
-                              <Download className="w-3 h-3" />
-                              <span>View</span>
-                            </a>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+            {/* Quick Contact Action Toolbar */}
+            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span className="font-bold text-slate-700">Contact Student Directly:</span>
+              <div className="flex items-center space-x-2">
+                {viewingItem.phone && (
+                  <a
+                    href={`tel:${viewingItem.phone}`}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>Call: {viewingItem.phone}</span>
+                  </a>
+                )}
+                {viewingItem.email && (
+                  <a
+                    href={`mailto:${viewingItem.email}`}
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Email Student</span>
+                  </a>
+                )}
+                {viewingItem.phone && (
+                  <a
+                    href={`https://wa.me/91${viewingItem.phone.replace(/[^0-9]/g, '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>WhatsApp</span>
+                  </a>
                 )}
               </div>
-
             </div>
 
-            {/* Footer Actions */}
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end space-x-3">
-              <button
-                type="button"
-                onClick={() => setViewingItem(null)}
-                className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl text-xs transition-all cursor-pointer"
-              >
-                Close Window
-              </button>
+            {/* Grid Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              
+              {/* Personal & Academic Details */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                <h4 className="font-bold text-slate-900 border-b border-slate-200 pb-1.5 uppercase tracking-wider text-2xs text-emerald-800">
+                  Student Information
+                </h4>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between"><span className="text-slate-500">Full Name:</span><span className="font-bold text-slate-900">{viewingItem.student || viewingItem.name}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">Course / Training:</span><span className="font-bold text-emerald-900">{viewingItem.course || viewingItem.training || 'N/A'}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">Mobile Number:</span><span className="font-bold text-slate-900">{viewingItem.phone || viewingItem.mobile || 'N/A'}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">Email Address:</span><span className="font-bold text-slate-900">{viewingItem.email || 'N/A'}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">Location / District:</span><span className="font-bold text-slate-900">{viewingItem.location || viewingItem.district || viewingItem.address || 'Odisha'}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">Higher Education:</span><span className="font-bold text-slate-900">{viewingItem.higherEducation || viewingItem.qualification || 'N/A'}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">College / Institution:</span><span className="font-bold text-slate-900">{viewingItem.collegeName || 'N/A'}</span></div>
+                </div>
+              </div>
+
+              {/* Application Status & Remarks Editor */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                <h4 className="font-bold text-slate-900 border-b border-slate-200 pb-1.5 uppercase tracking-wider text-2xs text-emerald-800">
+                  Placement Status & Admin Remarks
+                </h4>
+
+                <div className="space-y-2">
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Update Placement Status:</label>
+                    <select
+                      value={viewingItem.placementStatus || viewingItem.status || 'Applied'}
+                      onChange={(e) => handleStatusChange(viewingItem, e.target.value)}
+                      className={`w-full p-2 rounded-xl text-xs font-bold border focus:outline-none cursor-pointer ${getStatusBadgeStyle(viewingItem.placementStatus || viewingItem.status || 'Applied')}`}
+                    >
+                      {STATUS_OPTIONS.map(st => (
+                        <option key={st} value={st}>{st}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Admin Discussion Remarks / Notes:</label>
+                    <textarea
+                      rows={3}
+                      value={remarksText}
+                      onChange={(e) => setRemarksText(e.target.value)}
+                      placeholder="Add notes about candidate interview counseling, salary preferences, call discussions..."
+                      className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSaveRemarks(viewingItem)}
+                    disabled={updatingStatus}
+                    className="w-full py-2 bg-[#047857] hover:bg-[#065F46] text-white font-bold rounded-xl text-xs transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Save Remarks & Update</span>
+                  </button>
+                </div>
+              </div>
+
             </div>
 
           </div>
         </div>
       )}
 
-      {/* EDIT PLACEMENT FORM MODAL (DESIGNED LIKE MAIN PAGE PLACEMENT FORM WITH CLOSE X) */}
+      {/* EDIT APPLICATION MODAL */}
       {editingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto">
-          <div className="w-full max-w-3xl bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden my-auto relative space-y-0 font-sans">
+          <div className="w-full max-w-xl bg-white rounded-3xl border border-slate-200 shadow-2xl p-6 relative my-auto space-y-4">
             
-            {/* Modal Header with Close X */}
-            <div className="p-6 bg-gradient-to-r from-[#123B5D] via-[#1E527B] to-[#047857] text-white flex items-center justify-between relative">
-              <div className="space-y-1">
-                <div className="inline-flex items-center gap-2 bg-white/10 text-emerald-200 text-[10px] font-black px-3 py-1 rounded-full border border-white/20">
-                  <GraduationCap className="w-3.5 h-3.5" />
-                  <span>Student Placement Form Editor</span>
-                </div>
-                <h3 className="text-xl font-black font-serif tracking-wide">
-                  Edit Placement Record: {editingItem.student}
-                </h3>
-                <p className="text-xs text-slate-200">
-                  Update candidate personal details, qualification, employment status, employer offer, and documents.
-                </p>
-              </div>
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="text-base font-bold text-slate-900 font-serif">Edit Placement Support Application</h3>
               <button
                 type="button"
                 onClick={() => setEditingItem(null)}
-                className="p-2.5 rounded-full bg-white/10 hover:bg-rose-500 text-white transition-all cursor-pointer border border-white/20 shrink-0"
-                title="Close Form"
-                aria-label="Close Form"
+                className="p-1.5 rounded-full bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 transition-all cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Edit Form Body */}
-            <form onSubmit={handleSavePlacement} className="p-6 space-y-6 max-h-[78vh] overflow-y-auto text-xs">
-              
-              {/* Section 1: Placement & Employment Status */}
-              <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-[#123B5D] uppercase tracking-wider text-xs flex items-center gap-2">
-                  <Briefcase className="w-4 h-4 text-[#047857]" />
-                  <span>1. Placement & Employment Status</span>
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Placement Status</label>
-                    <select
-                      value={editFormData.placementStatus}
-                      onChange={(e) => setEditFormData({ ...editFormData, placementStatus: e.target.value })}
-                      className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-semibold text-slate-900 focus:ring-2 focus:ring-[#123B5D] outline-none"
-                    >
-                      <option value="Seeking Employment">Seeking Employment</option>
-                      <option value="Interview Scheduled">Interview Scheduled</option>
-                      <option value="Selected">Selected</option>
-                      <option value="Employed">Employed</option>
-                      <option value="Self-Employed">Self-Employed</option>
-                      <option value="Not Placed">Not Placed</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Training Completion</label>
-                    <select
-                      value={editFormData.trainingCompleted}
-                      onChange={(e) => setEditFormData({ ...editFormData, trainingCompleted: e.target.value })}
-                      className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-semibold text-slate-900 focus:ring-2 focus:ring-[#123B5D] outline-none"
-                    >
-                      <option value="Certified">Certified</option>
-                      <option value="Completed Training">Completed Training</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Scholarship Requested">Scholarship Requested</option>
-                    </select>
-                  </div>
+            <form onSubmit={handleSaveEdit} className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-slate-700">Student Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.name}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700">Mobile Number</label>
+                  <input
+                    type="text"
+                    value={editForm.phone}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">Email Address</label>
+                  <input
+                    type="email"
+                    value={editForm.email}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold"
+                  />
                 </div>
               </div>
 
-              {/* Section 2: Student Personal Information */}
-              <div className="space-y-3">
-                <h4 className="font-bold text-[#123B5D] uppercase tracking-wider text-xs flex items-center gap-2">
-                  <User className="w-4 h-4 text-[#047857]" />
-                  <span>2. Student Personal Information</span>
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Full Student Name *</label>
-                    <input
-                      type="text"
-                      required
-                      value={editFormData.student}
-                      onChange={(e) => setEditFormData({ ...editFormData, student: e.target.value })}
-                      placeholder="Enter Full Name"
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Contact Phone *</label>
-                    <input
-                      type="text"
-                      value={editFormData.phone}
-                      onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                      placeholder="+91 9416362914"
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Email Address</label>
-                    <input
-                      type="email"
-                      value={editFormData.email}
-                      onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                      placeholder="student@gmail.com"
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Gender</label>
-                    <select
-                      value={editFormData.gender}
-                      onChange={(e) => setEditFormData({ ...editFormData, gender: e.target.value })}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium"
-                    >
-                      <option value="Female">Female</option>
-                      <option value="Male">Male</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Guardian Name</label>
-                    <input
-                      type="text"
-                      value={editFormData.guardianName}
-                      onChange={(e) => setEditFormData({ ...editFormData, guardianName: e.target.value })}
-                      placeholder="Father / Husband Name"
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Date of Birth</label>
-                    <input
-                      type="date"
-                      value={editFormData.dob}
-                      onChange={(e) => setEditFormData({ ...editFormData, dob: e.target.value })}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
-                    />
-                  </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700">Course / Training</label>
+                  <input
+                    type="text"
+                    value={editForm.course}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, course: e.target.value }))}
+                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">Location / District</label>
+                  <input
+                    type="text"
+                    value={editForm.location}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, location: e.target.value }))}
+                    className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold"
+                  />
                 </div>
               </div>
 
-              {/* Section 3: Course & Qualification */}
-              <div className="space-y-3">
-                <h4 className="font-bold text-[#123B5D] uppercase tracking-wider text-xs flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4 text-[#047857]" />
-                  <span>3. Course & Educational Qualification</span>
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Course / Trade / Sector</label>
-                    <input
-                      type="text"
-                      value={editFormData.course}
-                      onChange={(e) => setEditFormData({ ...editFormData, course: e.target.value })}
-                      placeholder="e.g. B.Tech / Assistant Beauty Therapist"
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">College / Institute Name</label>
-                    <input
-                      type="text"
-                      value={editFormData.collegeName}
-                      onChange={(e) => setEditFormData({ ...editFormData, collegeName: e.target.value })}
-                      placeholder="e.g. Life Vision Society Training Center"
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Board / University</label>
-                    <input
-                      type="text"
-                      value={editFormData.boardUniversity}
-                      onChange={(e) => setEditFormData({ ...editFormData, boardUniversity: e.target.value })}
-                      placeholder="e.g. BPUT / NCVET / CHSE"
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Passing Year</label>
-                    <input
-                      type="text"
-                      value={editFormData.passingYear}
-                      onChange={(e) => setEditFormData({ ...editFormData, passingYear: e.target.value })}
-                      placeholder="2025 / 2026"
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 4: Placement Offer Details */}
-              <div className="space-y-3 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-200">
-                <h4 className="font-bold text-[#047857] uppercase tracking-wider text-xs flex items-center gap-2">
-                  <Award className="w-4 h-4 text-[#047857]" />
-                  <span>4. Employer Offer & Job Placement Details</span>
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Employer / Boutique Name</label>
-                    <input
-                      type="text"
-                      value={editFormData.employer}
-                      onChange={(e) => setEditFormData({ ...editFormData, employer: e.target.value })}
-                      placeholder="e.g. Cuttack Beauty Hub / Self Boutique"
-                      className="w-full p-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Job Designation / Role</label>
-                    <input
-                      type="text"
-                      value={editFormData.jobRole}
-                      onChange={(e) => setEditFormData({ ...editFormData, jobRole: e.target.value })}
-                      placeholder="e.g. Senior Beautician / Junior Developer"
-                      className="w-full p-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Location</label>
-                    <input
-                      type="text"
-                      value={editFormData.location}
-                      onChange={(e) => setEditFormData({ ...editFormData, location: e.target.value })}
-                      placeholder="e.g. Bhubaneswar, Odisha"
-                      className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Salary / Monthly Income Package</label>
-                    <input
-                      type="text"
-                      value={editFormData.salary}
-                      onChange={(e) => setEditFormData({ ...editFormData, salary: e.target.value })}
-                      placeholder="e.g. ₹15,000/mo"
-                      className="w-full p-2.5 bg-white border border-slate-200 rounded-xl font-bold text-emerald-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Joining Date</label>
-                    <input
-                      type="date"
-                      value={editFormData.joiningDate}
-                      onChange={(e) => setEditFormData({ ...editFormData, joiningDate: e.target.value })}
-                      className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 font-medium"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 5: Document Uploads */}
-              <div className="space-y-4">
-                <h4 className="font-bold text-[#123B5D] uppercase tracking-wider text-xs flex items-center gap-2">
-                  <Upload className="w-4 h-4 text-[#047857]" />
-                  <span>5. Document Uploads (Max file size: 5MB)</span>
-                </h4>
-
-                {docError && (
-                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 font-bold text-xs">
-                    ⚠️ {docError}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Photo Upload */}
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                    <label className="font-bold text-slate-800 block text-xs">Upload Student Photo</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#123B5D] file:text-white hover:file:bg-[#1E527B] cursor-pointer"
-                    />
-                    {photoDoc && (
-                      <div className="flex items-center space-x-2 pt-1 text-emerald-700 font-bold text-[11px]">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Photo Attached</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Aadhar Upload */}
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                    <label className="font-bold text-slate-800 block text-xs">Upload Aadhar Card</label>
-                    <input
-                      type="file"
-                      accept="image/*,application/pdf"
-                      onChange={handleAadharUpload}
-                      className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#123B5D] file:text-white hover:file:bg-[#1E527B] cursor-pointer"
-                    />
-                    {aadharDoc && (
-                      <div className="flex items-center space-x-2 pt-1 text-emerald-700 font-bold text-[11px]">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Aadhar Attached</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Additional Extra Documents */}
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-800 text-xs">Add More Documents</span>
-                    <button
-                      type="button"
-                      onClick={handleAddExtraDoc}
-                      className="px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-[#047857] font-bold rounded-xl text-xs flex items-center gap-1 transition-all cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Add Document</span>
-                    </button>
-                  </div>
-
-                  {extraDocs.map((docItem, index) => (
-                    <div key={index} className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center gap-3">
-                      <input
-                        type="text"
-                        placeholder="Document Name (e.g. Marksheet, Certificate)"
-                        value={docItem.title}
-                        onChange={(e) => handleExtraDocTitleChange(index, e.target.value)}
-                        className="w-full sm:w-1/2 p-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
-                      />
-                      <input
-                        type="file"
-                        accept="image/*,application/pdf"
-                        onChange={(e) => handleExtraDocFileChange(index, e.target.files[0])}
-                        className="w-full sm:w-1/2 text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#123B5D] file:text-white hover:file:bg-[#1E527B] cursor-pointer"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveExtraDoc(index)}
-                        className="p-1.5 text-rose-600 hover:bg-rose-100 rounded-lg shrink-0 transition-colors"
-                        title="Remove Document"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+              <div>
+                <label className="font-bold text-slate-700">Placement Status</label>
+                <select
+                  value={editForm.placementStatus}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, placementStatus: e.target.value }))}
+                  className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold cursor-pointer"
+                >
+                  {STATUS_OPTIONS.map(st => (
+                    <option key={st} value={st}>{st}</option>
                   ))}
-                </div>
+                </select>
               </div>
 
-              {/* Form Actions */}
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200">
+              <div>
+                <label className="font-bold text-slate-700">Admin Remarks / Notes</label>
+                <textarea
+                  rows={2}
+                  value={editForm.remarks}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, remarks: e.target.value }))}
+                  className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end space-x-2">
                 <button
                   type="button"
                   onClick={() => setEditingItem(null)}
-                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all cursor-pointer"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-[#123B5D] hover:bg-[#1E527B] text-white font-bold rounded-xl text-xs shadow-md transition-all cursor-pointer flex items-center gap-2"
+                  className="px-5 py-2 bg-[#047857] hover:bg-[#065F46] text-white font-bold rounded-xl transition-all shadow-sm cursor-pointer"
                 >
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>Save Placement Updates</span>
+                  Save Changes
                 </button>
               </div>
-
             </form>
 
           </div>
         </div>
       )}
+
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { 
   getFirestore, collection, addDoc, getDocs, query, orderBy, 
-  serverTimestamp, doc, updateDoc, deleteDoc, onSnapshot 
+  serverTimestamp, doc, setDoc, updateDoc, deleteDoc, onSnapshot 
 } from "firebase/firestore";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "firebase/auth";
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
@@ -40,6 +40,7 @@ export {
   orderBy, 
   serverTimestamp,
   doc,
+  setDoc,
   updateDoc,
   deleteDoc,
   onSnapshot,
