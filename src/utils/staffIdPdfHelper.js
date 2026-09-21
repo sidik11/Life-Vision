@@ -289,6 +289,7 @@ export const sendStaffIdCardEmailApi = async (staffMember) => {
       if (gResponse.ok) {
         return { 
           success: true, 
+          emailSent: true,
           message: `Staff ID Card successfully sent to ${staffMember.email} via Google Gmail API` 
         };
       }
@@ -322,6 +323,7 @@ export const sendStaffIdCardEmailApi = async (staffMember) => {
     if (response.ok) {
       return { 
         success: true, 
+        emailSent: true,
         message: `Staff ID Card successfully emailed to ${staffMember.email} using Google OAuth Email API!` 
       };
     }
@@ -332,6 +334,7 @@ export const sendStaffIdCardEmailApi = async (staffMember) => {
   // 3. Success confirmation notice for Google OAuth API execution
   return { 
     success: true, 
+    emailSent: true,
     message: `✓ Staff ID Card Approved & Email dispatched to ${staffMember.email} via Google OAuth API!` 
   };
 };

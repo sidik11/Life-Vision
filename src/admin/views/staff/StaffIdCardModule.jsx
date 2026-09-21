@@ -78,8 +78,8 @@ export default function StaffIdCardModule({
     }
 
     // 2. IF EMAIL FAILS: Do NOT mark status as Generated! Keep as Pending Approval & show error message
-    if (!emailResult.success || !emailResult.emailSent) {
-      const errorMsg = emailResult.error || emailResult.message || 'Email dispatch failed';
+    if (!emailResult || emailResult.success === false) {
+      const errorMsg = emailResult?.error || emailResult?.message || 'Email dispatch failed';
       
       // Track failure in Firestore without setting status to Generated
       if (staffMember.firestoreId) {
