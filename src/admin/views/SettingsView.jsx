@@ -27,13 +27,12 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
   const [smsAlerts, setSmsAlerts] = useState(true);
 
   // Email API Form State
-  const [emailProvider, setEmailProvider] = useState('google_oauth');
-  const [googleClientId, setGoogleClientId] = useState('');
-  const [googleClientSecret, setGoogleClientSecret] = useState('');
-  const [serviceId, setServiceId] = useState('service_lifevision');
-  const [templateId, setTemplateId] = useState('template_id_card');
+  const [emailProvider, setEmailProvider] = useState('web3forms');
+  const [web3FormsKey, setWeb3FormsKey] = useState('');
+  const [serviceId, setServiceId] = useState('');
+  const [templateId, setTemplateId] = useState('');
   const [publicKey, setPublicKey] = useState('');
-  const [apiUrl, setApiUrl] = useState('https://gmail.googleapis.com/gmail/v1/users/me/messages/send');
+  const [apiUrl, setApiUrl] = useState('');
   const [testSending, setTestSending] = useState(false);
 
   useEffect(() => {
@@ -45,13 +44,12 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
       setAvatar(adminUser.avatar || '/image/logo.png');
     }
     const apiConf = getEmailApiConfig();
-    setEmailProvider(apiConf.provider || 'google_oauth');
-    setGoogleClientId(apiConf.googleClientId || (typeof window !== 'undefined' ? localStorage.getItem('lvs_google_client_id') : '') || '');
-    setGoogleClientSecret(apiConf.googleClientSecret || (typeof window !== 'undefined' ? localStorage.getItem('lvs_google_client_secret') : '') || '');
-    setServiceId(apiConf.serviceId || 'service_lifevision');
-    setTemplateId(apiConf.templateId || 'template_id_card');
-    setPublicKey(apiConf.publicKey || '');
-    setApiUrl(apiConf.apiUrl || 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send');
+    setEmailProvider(apiConf.provider || 'emailjs');
+    setWeb3FormsKey(apiConf.web3FormsKey || (typeof window !== 'undefined' ? localStorage.getItem('lvs_web3forms_key') : '') || '');
+    setServiceId(apiConf.serviceId || (typeof window !== 'undefined' ? localStorage.getItem('lvs_emailjs_service_id') : '') || '');
+    setTemplateId(apiConf.templateId || (typeof window !== 'undefined' ? localStorage.getItem('lvs_emailjs_template_id') : '') || '');
+    setPublicKey(apiConf.publicKey || (typeof window !== 'undefined' ? localStorage.getItem('lvs_emailjs_public_key') : '') || '');
+    setApiUrl(apiConf.apiUrl || '');
   }, [adminUser]);
 
   const handleProfileSave = (e) => {
@@ -93,15 +91,14 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
     e.preventDefault();
     const config = {
       provider: emailProvider,
-      googleClientId: googleClientId.trim(),
-      googleClientSecret: googleClientSecret.trim(),
+      web3FormsKey: web3FormsKey.trim(),
       serviceId: serviceId.trim(),
       templateId: templateId.trim(),
       publicKey: publicKey.trim(),
       apiUrl: apiUrl.trim()
     };
     saveEmailApiConfig(config);
-    notify('Google OAuth Email API credentials saved successfully!', 'success');
+    notify('Email API credentials saved successfully!', 'success');
   };
 
   const handleTestEmailApi = async () => {
@@ -120,7 +117,7 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
     setTestSending(false);
 
     if (res.success) {
-      notify(`✓ Test email dispatched to ${dummyStaff.email} using Google OAuth API!`, 'success');
+      notify(`✓ Test email dispatched to ${dummyStaff.email}!`, 'success');
     } else {
       notify(`✕ Test email notice: ${res.error}`, 'error');
     }
@@ -137,7 +134,7 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
           </div>
           <h1 className="text-2xl font-bold font-serif">Admin System & Profile Settings</h1>
           <p className="text-slate-200 text-xs mt-1">
-            Manage Super Admin credentials, security preferences, Google OAuth Email API setup & NGO profile.
+            Manage Super Admin credentials, security preferences, Email API setup & NGO profile.
           </p>
         </div>
 
@@ -331,65 +328,53 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
             <div>
               <h3 className="text-base font-bold text-slate-900 font-serif flex items-center gap-2">
                 <Mail className="w-5 h-5 text-emerald-600" />
-                <span>Google OAuth & Email API Setup</span>
+                <span>Staff ID Card Email API Setup</span>
               </h3>
-              <p className="text-xs text-slate-500">Configure your Google OAuth Client ID & Secret to send approved Staff ID Cards to staff emails</p>
+              <p className="text-xs text-slate-500">Connect your EmailJS or Web3Forms Key to deliver approved Staff ID Cards directly to staff email inboxes</p>
             </div>
             <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-extrabold flex items-center gap-1">
-              <Key className="w-3 h-3 text-emerald-600" /> Google OAuth Connector
+              <Key className="w-3 h-3 text-emerald-600" /> Live Email Service
             </span>
           </div>
 
           <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 text-xs text-emerald-900 space-y-1.5">
             <div className="font-bold flex items-center gap-1.5 text-emerald-800">
               <Sparkles className="w-4 h-4 text-emerald-600" />
-              <span>Google OAuth Email Connector Setup:</span>
+              <span>Easy 1-Step Email API Setup Options:</span>
             </div>
-            <p className="text-[11px] text-emerald-800 font-medium">
-              Enter your Google OAuth Client ID & Client Secret below. Upon staff approval, the system dispatches the official ID Card email directly using Google OAuth API.
-            </p>
+            <ul className="list-disc list-inside space-y-1 text-[11px] text-emerald-800 font-medium">
+              <li><strong>Option 1 (Web3Forms - 10 Second Setup)</strong>: Go to <a href="https://web3forms.com" target="_blank" rel="noreferrer" className="underline font-bold">web3forms.com</a>, enter your email to get a free Access Key instantly, and paste it below!</li>
+              <li><strong>Option 2 (EmailJS)</strong>: Create a free account at <a href="https://www.emailjs.com" target="_blank" rel="noreferrer" className="underline font-bold">emailjs.com</a> and enter your Service ID, Template ID & Public Key.</li>
+            </ul>
           </div>
 
           <div className="space-y-4 text-xs">
             <div>
-              <label className="font-bold text-slate-700">Email Service Connector Mode</label>
+              <label className="font-bold text-slate-700">Email Service Provider</label>
               <select
                 value={emailProvider}
                 onChange={(e) => setEmailProvider(e.target.value)}
                 className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
               >
-                <option value="google_oauth">Google OAuth / Gmail API (Recommended)</option>
+                <option value="web3forms">Web3Forms (Instant 1-Key Setup - Recommended)</option>
                 <option value="emailjs">EmailJS REST API</option>
                 <option value="custom_webhook">Custom Webhook / REST API Endpoint</option>
               </select>
             </div>
 
-            {emailProvider === 'google_oauth' && (
-              <>
-                <div>
-                  <label className="font-bold text-slate-700">Google OAuth Client ID</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 158794333888-xxx.apps.googleusercontent.com"
-                    value={googleClientId}
-                    onChange={(e) => setGoogleClientId(e.target.value)}
-                    className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700">Google OAuth Client Secret</label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="e.g. GOCSPX-xxx..."
-                    value={googleClientSecret}
-                    onChange={(e) => setGoogleClientSecret(e.target.value)}
-                    className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
-                  />
-                </div>
-              </>
+            {emailProvider === 'web3forms' && (
+              <div>
+                <label className="font-bold text-slate-700">Web3Forms Access Key</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. a1b2c3d4-e5f6-7890-abcd-1234567890ab"
+                  value={web3FormsKey}
+                  onChange={(e) => setWeb3FormsKey(e.target.value)}
+                  className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">Get your free Access Key instantly at <a href="https://web3forms.com" target="_blank" rel="noreferrer" className="underline font-bold">web3forms.com</a>.</p>
+              </div>
             )}
 
             {emailProvider === 'emailjs' && (
@@ -399,7 +384,7 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
                   <input
                     type="text"
                     required
-                    placeholder="e.g. service_lifevision"
+                    placeholder="e.g. service_xxxxxx"
                     value={serviceId}
                     onChange={(e) => setServiceId(e.target.value)}
                     className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
@@ -411,7 +396,7 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
                   <input
                     type="text"
                     required
-                    placeholder="e.g. template_id_card"
+                    placeholder="e.g. template_xxxxxx"
                     value={templateId}
                     onChange={(e) => setTemplateId(e.target.value)}
                     className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
@@ -423,7 +408,7 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
                   <input
                     type="text"
                     required
-                    placeholder="e.g. user_pk_983172xxxx"
+                    placeholder="e.g. user_pk_xxxxxx"
                     value={publicKey}
                     onChange={(e) => setPublicKey(e.target.value)}
                     className="w-full mt-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#123B5D]"
