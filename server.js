@@ -326,18 +326,27 @@ app.post('/api/staff/send-id-card-email', async (req, res) => {
 
     // 2. Transporter Initialization (Google OAuth2 via Gmail API, standard SMTP, or Ethereal fallback)
     let transporter;
+    const { accessToken } = req.body;
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+    const senderEmail = process.env.GOOGLE_USER_EMAIL || process.env.GMAIL_USER || process.env.SMTP_USER || 'support.lifevision@gmail.com';
+
     try {
-      if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN) {
-        // Google OAuth2 Transport for Gmail API
+      if ((clientId && clientSecret && (accessToken || refreshToken)) || (accessToken && senderEmail)) {
+        // Google OAuth2 Transport with Access Token or Refresh Token
+        const oauthAuth = {
+          type: 'OAuth2',
+          user: senderEmail,
+          clientId: clientId,
+          clientSecret: clientSecret,
+        };
+        if (accessToken) oauthAuth.accessToken = accessToken;
+        if (refreshToken) oauthAuth.refreshToken = refreshToken;
+
         transporter = nodemailer.createTransport({
           service: 'gmail',
-          auth: {
-            type: 'OAuth2',
-            user: process.env.GOOGLE_USER_EMAIL || process.env.GMAIL_USER || process.env.SMTP_USER || 'support.lifevision@gmail.com',
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
-          }
+          auth: oauthAuth
         });
       } else if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
         transporter = nodemailer.createTransport({
@@ -349,12 +358,12 @@ app.post('/api/staff/send-id-card-email', async (req, res) => {
             pass: process.env.SMTP_PASS
           }
         });
-      } else if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+      } else if (process.env.SMTP_USER && (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD)) {
         transporter = nodemailer.createTransport({
           service: 'gmail',
           auth: {
             user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS
+            pass: process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD
           }
         });
       } else {

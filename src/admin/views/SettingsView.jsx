@@ -95,7 +95,7 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
   };
 
   const handleAuthorizeGoogleAccount = () => {
-    const clientId = googleClientId || '158794333888-56vsp9n464mgk88u9ultv24fjrur2dkf.apps.googleusercontent.com';
+    const clientId = googleClientId || (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GOOGLE_CLIENT_ID) || (typeof window !== 'undefined' ? localStorage.getItem('lvs_google_client_id') || '' : '');
     
     const triggerAuth = () => {
       if (window.google && window.google.accounts && window.google.accounts.oauth2) {
@@ -384,12 +384,12 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
             <div>
               <h3 className="text-base font-bold text-slate-900 font-serif flex items-center gap-2">
                 <Mail className="w-5 h-5 text-emerald-600" />
-                <span>Google OAuth & Gmail API Status</span>
+                <span>Google OAuth & Gmail API Setup</span>
               </h3>
-              <p className="text-xs text-slate-500">Backend service dispatches approved Staff ID Cards directly to staff email inboxes via Gmail API</p>
+              <p className="text-xs text-slate-500">Authorize Google Gmail Account (support.lifevision@gmail.com) to send approved Staff ID Cards directly to staff email inboxes</p>
             </div>
             <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-extrabold flex items-center gap-1">
-              <Key className="w-3 h-3 text-emerald-600" /> Secure Backend Integration
+              <Key className="w-3 h-3 text-emerald-600" /> Gmail API Active
             </span>
           </div>
 
@@ -397,19 +397,31 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
             <div className="font-bold flex items-center justify-between text-emerald-900">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-emerald-600" />
-                <span>Backend Gmail API Dispatcher</span>
+                <span>Google Account Authorization (support.lifevision@gmail.com):</span>
               </div>
-              <span className="px-2.5 py-1 bg-emerald-600 text-white rounded-full text-[10px] font-extrabold flex items-center gap-1">
-                <Check className="w-3 h-3" /> Configured Server-Side
-              </span>
+              {googleAuthorized ? (
+                <span className="px-2.5 py-1 bg-emerald-600 text-white rounded-full text-[10px] font-extrabold flex items-center gap-1">
+                  <Check className="w-3 h-3" /> Authorized & Active
+                </span>
+              ) : (
+                <span className="px-2.5 py-1 bg-amber-500 text-white rounded-full text-[10px] font-extrabold">
+                  Authorization Available
+                </span>
+              )}
             </div>
 
             <p className="text-[11px] text-emerald-800 font-medium leading-relaxed">
-              Google OAuth Client credentials (<code className="bg-emerald-100 px-1 rounded">GOOGLE_CLIENT_ID</code>, <code className="bg-emerald-100 px-1 rounded">GOOGLE_CLIENT_SECRET</code>, <code className="bg-emerald-100 px-1 rounded">GOOGLE_REFRESH_TOKEN</code>) are loaded securely from environment variables (<code className="bg-emerald-100 px-1 rounded">.env</code>) on the server.
+              Google OAuth Client ID: <code className="bg-emerald-100 px-1 py-0.5 rounded font-mono text-[10px]">{googleClientId || 'Configured via Environment / Settings'}</code>
             </p>
-            <p className="text-[11px] text-emerald-800 font-medium leading-relaxed">
-              When Admin approves a staff ID card, the backend automatically generates the PDF and sends it from <strong>support.lifevision@gmail.com</strong>.
-            </p>
+
+            <button
+              type="button"
+              onClick={handleAuthorizeGoogleAccount}
+              className="px-5 py-2.5 bg-[#047857] hover:bg-[#065F46] text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-md transition-all cursor-pointer"
+            >
+              <Key className="w-4 h-4 text-white" />
+              <span>{googleAuthorized ? 'Re-Authorize Google Account (support.lifevision@gmail.com)' : 'Authorize Google Gmail Account (support.lifevision@gmail.com)'}</span>
+            </button>
           </div>
 
           <div className="flex items-center space-x-3 pt-2">
@@ -417,10 +429,10 @@ export default function SettingsView({ adminUser, setAdminUser, showToast, onSho
               type="button"
               onClick={handleTestEmailApi}
               disabled={testSending}
-              className="px-5 py-3 bg-[#047857] hover:bg-[#065F46] text-white rounded-xl text-xs font-bold shadow-md flex items-center space-x-2 cursor-pointer transition-all"
+              className="px-5 py-3 bg-[#123B5D] hover:bg-[#0E2F4A] text-white rounded-xl text-xs font-bold shadow-md flex items-center space-x-2 cursor-pointer transition-all"
             >
               <Send className="w-4 h-4 text-white" />
-              <span>{testSending ? 'Sending Test Email...' : 'Send Test Email via Backend'}</span>
+              <span>{testSending ? 'Sending Test Email...' : 'Send Test Staff ID Card Email'}</span>
             </button>
           </div>
         </div>

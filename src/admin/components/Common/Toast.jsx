@@ -20,22 +20,22 @@ export default function Toast({ message, type = 'success', onClose }) {
   const Icon = icons[type] || (type === 'error' || type === 'danger' ? AlertCircle : CheckCircle2);
 
   const styles = {
-    success: 'bg-emerald-950 border-emerald-500 text-emerald-200 shadow-emerald-950/60',
-    error: 'bg-red-950 border-red-500 text-red-100 shadow-red-950/60',
-    danger: 'bg-red-950 border-red-500 text-red-100 shadow-red-950/60',
-    warning: 'bg-amber-950 border-amber-500 text-amber-200 shadow-amber-950/60',
-    info: 'bg-slate-900 border-sky-500 text-slate-100 shadow-slate-950/60'
+    success: 'bg-emerald-800 text-white border-emerald-500 shadow-emerald-950/50',
+    error: 'bg-rose-800 text-white border-rose-500 shadow-rose-950/50',
+    danger: 'bg-rose-800 text-white border-rose-500 shadow-rose-950/50',
+    warning: 'bg-amber-700 text-white border-amber-400 shadow-amber-950/50',
+    info: 'bg-slate-900 text-white border-sky-500 shadow-slate-950/50'
   };
 
   const activeStyle = styles[type] || styles.success;
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 flex items-center space-x-3 px-4 py-3 rounded-2xl border shadow-2xl backdrop-blur-md animate-slide-up ${activeStyle}`}>
-      <Icon className="w-5 h-5 shrink-0" />
-      <span className="text-xs font-bold text-slate-100">{message}</span>
+    <div className={`fixed bottom-6 right-6 z-50 flex items-center space-x-3 px-5 py-3.5 rounded-2xl border shadow-2xl backdrop-blur-md animate-slide-up ${activeStyle}`}>
+      <Icon className="w-5 h-5 shrink-0 text-white" />
+      <span className="text-xs font-bold text-white max-w-md leading-snug">{message}</span>
       <button 
         onClick={onClose}
-        className="p-1 text-slate-300 hover:text-white rounded-lg transition-colors cursor-pointer"
+        className="p-1 text-white/80 hover:text-white rounded-lg transition-colors cursor-pointer"
       >
         <X className="w-4 h-4" />
       </button>
