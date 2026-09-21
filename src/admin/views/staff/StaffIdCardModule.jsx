@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import ActionPopover from '../../components/Common/ActionPopover';
 import { db, doc, updateDoc, collection, addDoc, serverTimestamp } from '../../../firebase';
-import { sendStaffIdCardEmailApi, printOrSaveStaffIdCardPdf, downloadStaffIdCardHtmlFile } from '../../../utils/staffIdPdfHelper';
+import { sendStaffIdCardEmailApi, printOrSaveStaffIdCardPdf, downloadStaffIdCardPdf } from '../../../utils/staffIdPdfHelper';
 
 export default function StaffIdCardModule({ 
   staffList = [], 
@@ -254,9 +254,9 @@ export default function StaffIdCardModule({
           onClick: () => handleResendPdfEmail(staffMember)
         },
         {
-          label: 'Download ID Card File',
+          label: 'Download ID Card PDF',
           icon: Printer,
-          onClick: () => downloadStaffIdCardHtmlFile(staffMember)
+          onClick: () => downloadStaffIdCardPdf(staffMember)
         }
       );
     }
@@ -552,10 +552,18 @@ export default function StaffIdCardModule({
               <button
                 type="button"
                 onClick={() => printOrSaveStaffIdCardPdf(selectedCardStaff)}
-                className="px-5 py-2 bg-[#047857] hover:bg-[#065F46] text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
-                <span>Print Official PDF ID Card</span>
+                <span>Print Card</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => downloadStaffIdCardPdf(selectedCardStaff)}
+                className="px-5 py-2 bg-[#047857] hover:bg-[#065F46] text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
+              >
+                <IdCard className="w-4 h-4" />
+                <span>Download Official PDF ID Card</span>
               </button>
             </div>
 

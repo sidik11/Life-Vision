@@ -1,3 +1,6 @@
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+
 // Staff ID Card PDF Generation & Email Dispatch Utility
 // Handles generating official Staff ID Card PDFs and emailing them to staff members
 
@@ -210,19 +213,111 @@ export const sendStaffIdCardEmailApi = async (staffMember) => {
   }
 };
 
-// Direct Download HTML/PDF Card File
-export const downloadStaffIdCardHtmlFile = (staffMember) => {
-  const htmlContent = generateStaffIdCardHtml(staffMember);
-  const blob = new Blob([htmlContent], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `Staff_ID_Card_${staffMember.id || staffMember.employeeId || 'LVS'}.html`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+// Direct Download High-Resolution PDF File of Exact View ID Card Design
+export const downloadStaffIdCardPdf = async (staffMember) => {
+  if (!staffMember) return;
+
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.left = '-9999px';
+  container.style.top = '-9999px';
+  container.style.width = '740px';
+  container.style.background = '#0f172a';
+  container.style.padding = '30px';
+  container.style.display = 'flex';
+  container.style.alignItems = 'center';
+  container.style.justifyContent = 'center';
+  container.style.gap = '30px';
+  container.style.boxSizing = 'border-box';
+  container.style.fontFamily = "'Plus Jakarta Sans', sans-serif";
+
+  const photoUrl = staffMember.avatar || staffMember.photoDoc || '/image/logo.png';
+  const staffName = staffMember.name || 'Staff Member';
+  const staffRole = staffMember.role || staffMember.designation || 'Staff';
+  const empId = staffMember.id || staffMember.employeeId || 'STF-2026-101';
+  const dept = staffMember.department || 'Mobilization';
+  const phone = staffMember.phone || '+91 9416362914';
+  const joinDate = staffMember.joinDate || staffMember.joiningDate || '2026-01-01';
+
+  container.innerHTML = `
+    <!-- FRONT SIDE CARD -->
+    <div style="width: 340px; height: 510px; position: relative; border-radius: 20px; overflow: hidden; background: #fff; border: 2px solid #10b981; flex-shrink: 0; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
+      <img src="/Team Member/id_card_front.jpg" style="width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 1;" />
+      <img src="${photoUrl}" style="position: absolute; top: 154px; left: 50%; transform: translateX(-50%); width: 114px; height: 114px; border-radius: 18px; object-fit: cover; border: 2px solid #10b981; z-index: 10; background: #fff;" />
+      
+      <div style="position: absolute; top: 275px; width: 100%; text-align: center; z-index: 10; font-family: sans-serif; padding: 0 10px; box-sizing: border-box;">
+        <div style="font-size: 14px; font-weight: 900; color: #021a10; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${staffName}</div>
+      </div>
+      <div style="position: absolute; top: 293px; width: 100%; text-align: center; z-index: 10; padding: 0 10px; box-sizing: border-box;">
+        <div style="font-size: 10px; font-weight: 800; color: #047857; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${staffRole}</div>
+      </div>
+
+      <div style="position: absolute; top: 316px; left: 68px; right: 20px; z-index: 10; display: flex; flex-direction: column; gap: 3px; font-family: 'Plus Jakarta Sans', sans-serif;">
+        <div style="display: flex; align-items: center; font-size: 9.5px; line-height: 1;">
+          <div style="width: 16px; height: 16px; border-radius: 50%; background: #047857; display: flex; align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0; color: white; font-weight: bold; font-size: 8px;">ID</div>
+          <span style="font-weight: 700; color: #1e293b; width: 68px; flex-shrink: 0;">Employee ID</span>
+          <span style="font-weight: 700; color: #1e293b; margin-right: 6px;">:</span>
+          <span style="font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 145px;">${empId}</span>
+        </div>
+        <div style="display: flex; align-items: center; font-size: 9.5px; line-height: 1;">
+          <div style="width: 16px; height: 16px; border-radius: 50%; background: #047857; display: flex; align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0; color: white; font-weight: bold; font-size: 8px;">DP</div>
+          <span style="font-weight: 700; color: #1e293b; width: 68px; flex-shrink: 0;">Department</span>
+          <span style="font-weight: 700; color: #1e293b; margin-right: 6px;">:</span>
+          <span style="font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 145px;">${dept}</span>
+        </div>
+        <div style="display: flex; align-items: center; font-size: 9.5px; line-height: 1;">
+          <div style="width: 16px; height: 16px; border-radius: 50%; background: #0e4b55; display: flex; align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0; color: white; font-weight: bold; font-size: 8px;">PH</div>
+          <span style="font-weight: 700; color: #1e293b; width: 68px; flex-shrink: 0;">Contact No.</span>
+          <span style="font-weight: 700; color: #1e293b; margin-right: 6px;">:</span>
+          <span style="font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 145px;">${phone}</span>
+        </div>
+        <div style="display: flex; align-items: center; font-size: 9.5px; line-height: 1;">
+          <div style="width: 16px; height: 16px; border-radius: 50%; background: #047857; display: flex; align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0; color: white; font-weight: bold; font-size: 8px;">DT</div>
+          <span style="font-weight: 700; color: #1e293b; width: 68px; flex-shrink: 0;">Joining Date</span>
+          <span style="font-weight: 700; color: #1e293b; margin-right: 6px;">:</span>
+          <span style="font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 145px;">${joinDate}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BACK SIDE CARD -->
+    <div style="width: 340px; height: 510px; position: relative; border-radius: 20px; overflow: hidden; background: #fff; border: 2px solid #10b981; flex-shrink: 0; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
+      <img src="/Team Member/id_card_back.jpg" style="width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 1;" />
+    </div>
+  `;
+
+  document.body.appendChild(container);
+
+  try {
+    const canvas = await html2canvas(container, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      backgroundColor: '#0f172a'
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'px',
+      format: [canvas.width, canvas.height]
+    });
+
+    pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+    pdf.save(`Staff_ID_Card_${empId}.pdf`);
+
+  } catch (err) {
+    console.error("Error generating PDF:", err);
+    printOrSaveStaffIdCardPdf(staffMember);
+  } finally {
+    if (document.body.contains(container)) {
+      document.body.removeChild(container);
+    }
+  }
 };
+
+export const downloadStaffIdCardHtmlFile = downloadStaffIdCardPdf;
 
 // Trigger Print / PDF window
 export const printOrSaveStaffIdCardPdf = (staffMember) => {
