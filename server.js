@@ -324,7 +324,7 @@ app.post('/api/staff/send-id-card-email', async (req, res) => {
       return res.status(500).json({ success: false, emailSent: false, error: `Failed to generate ID card PDF: ${pdfErr.message}` });
     }
 
-    // 2. Transporter Initialization (Google OAuth2 via Gmail API, standard SMTP, or Ethereal fallback)
+    // 2. Transporter Initialization (real Gmail OAuth2 or SMTP only)
     let transporter;
     const { accessToken } = req.body;
     const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -367,16 +367,10 @@ app.post('/api/staff/send-id-card-email', async (req, res) => {
           }
         });
       } else {
-        // Ethereal test inbox fallback for local dev/testing
-        const testAccount = await nodemailer.createTestAccount();
-        transporter = nodemailer.createTransport({
-          host: 'smtp.ethereal.email',
-          port: 587,
-          secure: false,
-          auth: {
-            user: testAccount.user,
-            pass: testAccount.pass
-          }
+        return res.status(500).json({
+          success: false,
+          emailSent: false,
+          error: 'Email service is not configured. Set Gmail OAuth2 or SMTP credentials on the backend.'
         });
       }
     } catch (transporterErr) {
@@ -386,7 +380,6 @@ app.post('/api/staff/send-id-card-email', async (req, res) => {
 
     // 3. Email Dispatch Options matching strict specifications
     const staffName = staff.name || 'Staff Member';
-    const senderEmail = process.env.GOOGLE_USER_EMAIL || process.env.GMAIL_USER || process.env.SMTP_USER || 'support.lifevision@gmail.com';
     const mailOptions = {
       from: process.env.EMAIL_FROM || `"Life Vision Society Administration" <${senderEmail}>`,
       to: staff.email.trim(),
@@ -421,21 +414,18 @@ app.post('/api/staff/send-id-card-email', async (req, res) => {
       ]
     };
 
-    // 4. Send Email via Transport
-    const info = await transporter.sendMail(mailOptions);
-    const previewUrl = nodemailer.getTestMessageUrl ? nodemailer.getTestMessageUrl(info) : null;
+    // 4. Verify the configured transport before reporting success
+    await transporter.verify();
 
+    // 5. Send Email via Transport
+    const info = await transporter.sendMail(mailOptions);
     console.log(`[Staff ID Email Service] Successfully sent ID Card PDF email to: ${staff.email}. MessageId: ${info.messageId}`);
-    if (previewUrl) {
-      console.log(`[Staff ID Email Service] Online test email preview: ${previewUrl}`);
-    }
 
     return res.json({
       success: true,
       emailSent: true,
       recipient: staff.email,
       messageId: info.messageId,
-      previewUrl: previewUrl,
       message: `Staff ID Card PDF successfully emailed to ${staff.email}`
     });
 
