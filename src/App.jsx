@@ -68,6 +68,20 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    let robotsMeta = document.querySelector('meta[name="robots"]');
+    if (!robotsMeta) {
+      robotsMeta = document.createElement('meta');
+      robotsMeta.setAttribute('name', 'robots');
+      document.head.appendChild(robotsMeta);
+    }
+    if (isAdmin || verifyCertCode !== null) {
+      robotsMeta.setAttribute('content', 'noindex, nofollow');
+    } else {
+      robotsMeta.setAttribute('content', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
+    }
+  }, [isAdmin, verifyCertCode]);
+
   const [activeSection, setActiveSection] = useState('home');
   const [isApplyOpen, setIsApplyOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState('Tailoring & Stitching Training');
