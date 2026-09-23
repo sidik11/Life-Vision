@@ -1,11 +1,11 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { 
-  getFirestore, collection, addDoc, getDocs, query, orderBy, 
+  getFirestore, collection, addDoc, getDocs, query, orderBy, where,
   serverTimestamp, doc, setDoc, updateDoc, deleteDoc, onSnapshot 
 } from "firebase/firestore";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "firebase/auth";
-import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "firebase/storage";
+import { getStorage, ref, uploadString, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -38,6 +38,7 @@ export {
   getDocs, 
   query, 
   orderBy, 
+  where,
   serverTimestamp,
   doc,
   setDoc,
@@ -46,6 +47,7 @@ export {
   onSnapshot,
   ref,
   uploadString,
+  uploadBytes,
   getDownloadURL,
   deleteObject,
   signInWithEmailAndPassword,

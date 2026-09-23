@@ -4,9 +4,12 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 export default function StatCard({ title, value, change, isPositive, icon: Icon, color = 'blue', onClick }) {
   const colorMap = {
     green: 'bg-emerald-50 border-emerald-200 text-[#16A34A]',
+    emerald: 'bg-emerald-50 border-emerald-200 text-[#16A34A]',
     blue: 'bg-blue-50 border-blue-200 text-[#2563EB]',
     amber: 'bg-amber-50 border-amber-200 text-[#F59E0B]',
     red: 'bg-rose-50 border-rose-200 text-[#DC2626]',
+    rose: 'bg-rose-50 border-rose-200 text-[#DC2626]',
+    pink: 'bg-pink-50 border-pink-200 text-[#C52B75]',
     purple: 'bg-purple-50 border-purple-200 text-[#7C3AED]',
     navy: 'bg-[#123B5D]/10 border-[#123B5D]/20 text-[#123B5D]'
   };

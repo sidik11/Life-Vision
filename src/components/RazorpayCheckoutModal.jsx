@@ -243,7 +243,7 @@ export default function RazorpayCheckoutModal({ isOpen, onClose, onSuccess, dono
                 <img src="/image/logo.png" alt="Life Vision Logo" className="w-12 h-12 object-contain" />
                 <div>
                   <h4 className="font-black text-sm text-slate-900 tracking-tight">LIFE VISION SOCIETY</h4>
-                  <p className="text-3xs text-slate-500 font-medium">Reg. No: 1234/2012 | 80G Reg: AAATL1234F20261</p>
+                  <p className="text-3xs text-slate-500 font-medium">Reg. No: HR/2019/0233651 | 80G Reg: AABAL5246RE20251</p>
                   <p className="text-3xs text-slate-500">Odisha, India | support.lifevision@gmail.com</p>
                 </div>
               </div>

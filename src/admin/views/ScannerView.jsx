@@ -27,8 +27,8 @@ export default function ScannerView({ showToast }) {
         {/* Action Buttons */}
         <div className="flex items-center space-x-3">
           <a
-            href="/image/Scanner.png"
-            download="Life_Vision_Society_Official_Scanner.png"
+            href="/image/payment scanner.jpeg"
+            download="Life_Vision_Society_Official_Payment_Scanner.jpeg"
             className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer border border-slate-300"
           >
             <Download className="w-4 h-4" />
@@ -67,7 +67,7 @@ export default function ScannerView({ showToast }) {
           {/* Display Scanner.png Image */}
           <div className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center p-2 sm:p-4">
             <img 
-              src="/image/Scanner.png" 
+              src="/image/payment scanner.jpeg" 
               alt="Life Vision Society Official QR Scanner Poster" 
               className="max-h-[75vh] w-auto object-contain rounded-xl shadow-md"
             />
@@ -79,7 +79,7 @@ export default function ScannerView({ showToast }) {
       {/* 3. PRINT-ONLY VIEW: Prints ONLY the Scanner.png image */}
       <div className="hidden print:flex fixed inset-0 bg-white items-center justify-center p-0 m-0 z-[99999]">
         <img 
-          src="/image/Scanner.png" 
+          src="/image/payment scanner.jpeg" 
           alt="Life Vision Society Official QR Scanner Poster" 
           className="w-full h-auto max-h-screen object-contain mx-auto my-auto"
         />

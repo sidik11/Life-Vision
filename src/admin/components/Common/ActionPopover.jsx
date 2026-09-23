@@ -3,78 +3,57 @@ import { MoreVertical } from 'lucide-react';
 
 export default function ActionPopover({ items = [], actions = [] }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [coords, setCoords] = useState({ top: 0, left: 0 });
-  const buttonRef = useRef(null);
-  const popoverRef = useRef(null);
+  const containerRef = useRef(null);
 
   const menuItems = items && items.length > 0 ? items : actions;
 
   const toggleOpen = (e) => {
+    e.preventDefault();
     e.stopPropagation();
-    if (!isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const popoverHeight = Math.min(menuItems.length * 36 + 24, 360);
-      const spaceBelow = viewportHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      const openUpward = spaceBelow < popoverHeight && spaceAbove > spaceBelow;
-
-      setCoords({
-        top: openUpward ? Math.max(10, rect.top - popoverHeight) : Math.min(rect.bottom + 4, viewportHeight - popoverHeight - 10),
-        left: Math.max(10, Math.min(rect.right - 224, window.innerWidth - 234))
-      });
-    }
-    setIsOpen(!isOpen);
+    setIsOpen(prev => !prev);
   };
 
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (e) => {
-      if (
-        popoverRef.current && 
-        !popoverRef.current.contains(e.target) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(e.target)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
         setIsOpen(false);
       }
     };
 
-    const handleScroll = (e) => {
-      if (popoverRef.current && popoverRef.current.contains(e.target)) {
-        return; // Don't close if scrolling inside popover menu!
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
       }
-      setIsOpen(false);
     };
 
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('scroll', handleScroll, true);
-    }
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('keydown', handleKeyDown);
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen]);
 
+  if (!menuItems || menuItems.length === 0) return null;
+
   return (
-    <div className="relative inline-block text-left">
+    <div ref={containerRef} className="relative inline-block text-left">
       <button
-        ref={buttonRef}
+        type="button"
         onClick={toggleOpen}
-        className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer border border-transparent hover:border-slate-200"
+        className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-200 active:bg-slate-300 transition-colors cursor-pointer border border-slate-200 shadow-2xs bg-slate-50"
         aria-label="Actions menu"
       >
-        <MoreVertical className="w-4 h-4" />
+        <MoreVertical className="w-4 h-4 text-slate-700" />
       </button>
 
       {isOpen && (
         <div
-          ref={popoverRef}
-          className="fixed z-[9999] w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 text-xs animate-in fade-in-0 zoom-in-95 duration-150 max-h-[340px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300"
-          style={{
-            top: `${coords.top}px`,
-            left: `${coords.left}px`
-          }}
+          onClick={(e) => e.stopPropagation()}
+          className="absolute right-0 top-full mt-1.5 z-50 w-48 bg-white rounded-xl shadow-2xl border border-slate-200 py-1.5 text-xs animate-in fade-in-0 zoom-in-95 duration-100 font-sans"
         >
           {menuItems.map((item, idx) => {
             if (item.divider) {
@@ -83,22 +62,24 @@ export default function ActionPopover({ items = [], actions = [] }) {
             const Icon = item.icon;
             return (
               <button
+                type="button"
                 key={idx}
                 onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   setIsOpen(false);
                   if (item.onClick) item.onClick();
                 }}
                 disabled={item.disabled}
-                className={`w-full text-left px-3.5 py-2 font-medium flex items-center space-x-2 transition-colors cursor-pointer ${
+                className={`w-full text-left px-3.5 py-2 font-semibold flex items-center space-x-2.5 transition-colors cursor-pointer ${
                   item.danger 
                     ? 'text-rose-600 hover:bg-rose-50 font-bold' 
                     : item.disabled
                     ? 'text-slate-300 cursor-not-allowed'
-                    : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                    : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
-                {Icon && <Icon className={`w-3.5 h-3.5 shrink-0 ${item.danger ? 'text-rose-600' : 'text-slate-400'}`} />}
+                {Icon && <Icon className={`w-4 h-4 shrink-0 ${item.danger ? 'text-rose-600' : 'text-slate-500'}`} />}
                 <span className="truncate">{item.label}</span>
               </button>
             );

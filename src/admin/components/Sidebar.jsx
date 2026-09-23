@@ -234,7 +234,6 @@ export default function Sidebar({
         { id: 'successful-donations', label: 'Successful Donations' },
         { id: 'pending-donations', label: 'Pending Donations' },
         { id: 'failed-donations', label: 'Failed / Refunded' },
-        { id: 'campaigns', label: 'Campaigns' },
         { id: 'donation-receipts', label: 'Donation Receipts' }
       ]
     },

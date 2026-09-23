@@ -871,7 +871,6 @@ export default function AdminApp({ user: authUser, onLogout }) {
       case 'successful-donations':
       case 'pending-donations':
       case 'failed-donations':
-      case 'campaigns':
       case 'donation-receipts':
         return <DonationsView donations={donations} setDonations={setDonations} showToast={showToast} activeSubTab={activeTab} />;
 

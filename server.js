@@ -1460,6 +1460,147 @@ app.post('/api/send-email', async (req, res) => {
           </div>
         </div>`;
 
+    } else if (type === 'donation_pending') {
+      const amount = data.amount || 'N/A';
+      const donationId = data.donationId || data.id || 'N/A';
+      const paymentMethod = data.paymentMethod || 'UPI / Bank Transfer';
+      const utrNumber = data.utrNumber || data.utr || 'N/A';
+
+      applicantSubject = `Donation Details Received – Life Vision Society`;
+      applicantHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; color: #1e293b;">
+          <div style="background: #6B1D52; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 20px; font-family: Georgia, serif;">Life Vision Society</h2>
+            <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: bold;">Donation Details Acknowledgement</p>
+          </div>
+          <div style="padding: 24px 0; font-size: 14px; line-height: 1.6;">
+            <p>Dear <strong>${name}</strong>,</p>
+            <p>Thank you for choosing to support Life Vision Society.</p>
+            <p>We have received the details of your donation transaction.</p>
+            <div style="background: #fff7f6; border: 1px solid #fbcfe8; padding: 16px; border-radius: 10px; margin: 16px 0;">
+              <p style="margin: 4px 0;"><strong>Donation Reference:</strong> ${donationId}</p>
+              <p style="margin: 4px 0;"><strong>Amount Submitted:</strong> ₹${amount}</p>
+              <p style="margin: 4px 0;"><strong>Payment Method:</strong> ${paymentMethod}</p>
+              <p style="margin: 4px 0;"><strong>Transaction Reference:</strong> ${utrNumber}</p>
+              <p style="margin: 4px 0;"><strong>Status:</strong> <span style="color: #b45309; font-weight: bold;">Pending Verification</span></p>
+            </div>
+            <p style="color: #475569; font-size: 13px; font-style: italic;">Please note that this acknowledgement confirms receipt of your submitted transaction details only. It does not confirm that the payment has been successfully received.</p>
+            <p>Our team will verify the transaction with our payment/bank records. You will receive another email after verification.</p>
+            <p>Thank you for supporting the initiatives of Life Vision Society.</p>
+            <p>Regards,<br/><strong>Life Vision Society</strong></p>
+          </div>
+        </div>`;
+
+      adminSubject = `[Verification Needed] New Donation Submitted: ₹${amount} by ${name} (${donationId})`;
+      adminHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <div style="background: #0f172a; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 18px;">New Donation Submitted for Verification</h2>
+          </div>
+          <div style="padding: 20px 0; color: #1e293b; font-size: 14px; line-height: 1.6;">
+            <ul style="background: #f8fafc; padding: 14px 20px; border-radius: 8px;">
+              <li><strong>Donation Reference:</strong> ${donationId}</li>
+              <li><strong>Donor Name:</strong> ${name}</li>
+              <li><strong>Amount:</strong> ₹${amount}</li>
+              <li><strong>Payment Method:</strong> ${paymentMethod}</li>
+              <li><strong>UTR / Ref ID:</strong> ${utrNumber}</li>
+              <li><strong>Email:</strong> ${applicantEmail}</li>
+              <li><strong>Mobile:</strong> ${data.mobile || 'N/A'}</li>
+            </ul>
+          </div>
+        </div>`;
+
+    } else if (type === 'donation_approved') {
+      const amount = data.amount || 'N/A';
+      const donationId = data.donationId || data.id || 'N/A';
+      const utrNumber = data.utrNumber || data.utr || 'N/A';
+
+      applicantSubject = `Thank You for Your Donation – Life Vision Society`;
+      applicantHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; color: #1e293b;">
+          <div style="background: #047857; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 20px; font-family: Georgia, serif;">Life Vision Society</h2>
+            <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: bold;">Donation Verified & Confirmed</p>
+          </div>
+          <div style="padding: 24px 0; font-size: 14px; line-height: 1.6;">
+            <p>Dear <strong>${name}</strong>,</p>
+            <p>Thank you for your generous donation of <strong>₹${amount}</strong> to Life Vision Society.</p>
+            <p>We have verified your transaction successfully.</p>
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 16px; border-radius: 10px; margin: 16px 0;">
+              <p style="margin: 4px 0;"><strong>Donation Reference:</strong> ${donationId}</p>
+              <p style="margin: 4px 0;"><strong>Amount:</strong> ₹${amount}</p>
+              <p style="margin: 4px 0;"><strong>Transaction Reference:</strong> ${utrNumber}</p>
+              <p style="margin: 4px 0;"><strong>Status:</strong> <span style="color: #15803d; font-weight: bold;">Verified</span></p>
+            </div>
+            <p>Your support helps us continue our work in skill development, women empowerment, education, training, employment support and community welfare.</p>
+            <p>We sincerely appreciate your support and contribution.</p>
+            <p>Warm regards,<br/><strong>Life Vision Society</strong></p>
+          </div>
+        </div>`;
+
+      adminSubject = `[Donation Verified] Donation ${donationId} (₹${amount}) Verified for ${name}`;
+      adminHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <div style="background: #047857; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 18px;">Donation Verified & Approved</h2>
+          </div>
+          <div style="padding: 20px 0; color: #1e293b; font-size: 14px; line-height: 1.6;">
+            <ul style="background: #f8fafc; padding: 14px 20px; border-radius: 8px;">
+              <li><strong>Donation Reference:</strong> ${donationId}</li>
+              <li><strong>Donor Name:</strong> ${name}</li>
+              <li><strong>Amount:</strong> ₹${amount}</li>
+              <li><strong>Transaction Reference:</strong> ${utrNumber}</li>
+              <li><strong>Email:</strong> ${applicantEmail}</li>
+              <li><strong>Status:</strong> Verified</li>
+            </ul>
+          </div>
+        </div>`;
+
+    } else if (type === 'donation_rejected') {
+      const donationId = data.donationId || data.id || 'N/A';
+      const reason = data.rejectionReason || 'Unverified UTR / Transaction ID';
+
+      applicantSubject = `Donation Transaction Verification Update – Life Vision Society`;
+      applicantHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; color: #1e293b;">
+          <div style="background: #b91c1c; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 20px; font-family: Georgia, serif;">Life Vision Society</h2>
+            <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: bold;">Donation Verification Update</p>
+          </div>
+          <div style="padding: 24px 0; font-size: 14px; line-height: 1.6;">
+            <p>Dear <strong>${name}</strong>,</p>
+            <p>Thank you for your intention to support Life Vision Society.</p>
+            <p>We were unable to verify the transaction details submitted with Donation Reference <strong>${donationId}</strong>.</p>
+            <p><strong>Reason:</strong> ${reason}</p>
+            <p>The transaction could not be confirmed in our bank/payment records.</p>
+            <p>Please check your transaction details and payment status.</p>
+            <p>If you believe the payment was completed successfully, please contact our team and share your Donation Reference ID and transaction details.</p>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 10px; margin: 16px 0;">
+              <p style="margin: 4px 0;"><strong>Email:</strong> support.lifevision@gmail.com</p>
+              <p style="margin: 4px 0;"><strong>Contact:</strong> +91 9416362914</p>
+            </div>
+            <p>Thank you for your support and understanding.</p>
+            <p>Regards,<br/><strong>Life Vision Society</strong></p>
+          </div>
+        </div>`;
+
+      adminSubject = `[Donation Rejected] Donation ${donationId} Rejected for ${name}`;
+      adminHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <div style="background: #b91c1c; padding: 18px; border-radius: 8px; text-align: center; color: white;">
+            <h2 style="margin: 0; font-size: 18px;">Donation Marked as Rejected</h2>
+          </div>
+          <div style="padding: 20px 0; color: #1e293b; font-size: 14px; line-height: 1.6;">
+            <ul style="background: #f8fafc; padding: 14px 20px; border-radius: 8px;">
+              <li><strong>Donation Reference:</strong> ${donationId}</li>
+              <li><strong>Donor Name:</strong> ${name}</li>
+              <li><strong>Email:</strong> ${applicantEmail}</li>
+              <li><strong>Rejection Reason:</strong> ${reason}</li>
+              <li><strong>Status:</strong> Rejected</li>
+            </ul>
+          </div>
+        </div>`;
+
     } else if (type === 'donation') {
       const amount = data.amount || 'N/A';
       const receiptId = data.receiptId || data.id || `RCPT-${Date.now()}`;
